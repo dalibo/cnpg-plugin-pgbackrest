@@ -1,0 +1,61 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app: pgbackrest
+  name: pgbackrest
+  namespace: cnpg-system
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: pgbackrest
+  strategy:
+    type: Recreate
+  template:
+    metadata:
+      labels:
+        app: pgbackrest
+    spec:
+      containers:
+        - args:
+            - operator
+            - --server-cert=/server/tls.crt
+            - --server-key=/server/tls.key
+            - --client-cert=/client/tls.crt
+            - --server-address=:9090
+            - --log-level=debug  # not yet implemented
+#         TODO add a way to build a pgbackrest dedicated image an change that ref
+#         or even better find a way to avoid the name with an ID
+#          env:
+#            - name: SIDECAR_IMAGE
+#              valueFrom:
+#                secretKeyRef:
+#                  key: SIDECAR_IMAGE
+#                  name: pgbackrest-8tfddg42gf
+          image: pgbackrest-plugin
+          imagePullPolicy: Never
+          name: pgbackrest
+          ports:
+            - containerPort: 9090
+              protocol: TCP
+          readinessProbe:
+            initialDelaySeconds: 10
+            periodSeconds: 10
+            tcpSocket:
+              port: 9090
+          resources: {}
+          volumeMounts:
+            - mountPath: /server
+              name: server
+            - mountPath: /client
+              name: client
+      serviceAccountName: plugin-pgbackrest
+      volumes:
+        - name: server
+          secret:
+            secretName: pgbackrest-server-tls
+        - name: client
+          secret:
+            secretName: pgbackrest-client-tls
