@@ -10,6 +10,7 @@ import (
 	"github.com/spf13/cobra"
 	ctrl "sigs.k8s.io/controller-runtime"
 
+	"github.com/dalibo/cnpg-i-pgbackrest/cmd/instance"
 	"github.com/dalibo/cnpg-i-pgbackrest/cmd/operator"
 )
 
@@ -28,6 +29,7 @@ func main() {
 	logFlags.AddFlags(rootCmd.PersistentFlags())
 
 	rootCmd.AddCommand(operator.NewCmd())
+	rootCmd.AddCommand(instance.NewCmd())
 
 	if err := rootCmd.ExecuteContext(ctrl.SetupSignalHandler()); err != nil {
 		if !errors.Is(err, context.Canceled) {
