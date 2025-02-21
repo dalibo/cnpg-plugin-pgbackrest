@@ -1,0 +1,14 @@
+---
+apiVersion: postgresql.cnpg.io/v1
+kind: Cluster
+metadata:
+  name: cluster-pgbackrest
+spec:
+  instances: 1
+  plugins:
+    - name: cnpg-i-pgbackrest.dalibo.com
+      parameters:
+        repo-path: /tmp/stz
+        stanza: main
+  storage:
+    size: 1Gi
