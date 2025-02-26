@@ -4,10 +4,12 @@ run: image
 
 .PHONY: image
 controller:
-	docker build -t pgbackrest-plugin:latest -f containers/Operator.container  .
+	docker build --tag pgbackrest-plugin:latest --target pgbackrest-plugin \
+		-f containers/pgbackrestPlugin.containers .
 
 sidecar:
-	docker build -t pgbackrest-sidecar:latest -f containers/Sidecar.container  .
+	docker build --tag pgbackrest-sidecar:latest --target pgbackrest-sidecar \
+		-f containers/pgbackrestPlugin.containers .
 
 images: sidecar controller
 
