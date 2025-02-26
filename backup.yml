@@ -1,0 +1,11 @@
+---
+apiVersion: postgresql.cnpg.io/v1
+kind: Backup
+metadata:
+  name: backup-example
+spec:
+  method: plugin
+  cluster:
+    name: cluster-pgbackrest
+  pluginConfiguration:
+    name: cnpg-i-pgbackrest.dalibo.com
