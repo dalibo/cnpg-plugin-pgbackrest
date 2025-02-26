@@ -57,19 +57,10 @@ func ensureStanzaExists(ctx context.Context, stanza string) error {
 	}
 
 	cmd := exec.Command("pgbackrest", "stanza-create", "--stanza="+stanza)
-	cmd.Env = os.Environ()
-	// inject some var to ensure pgbackrest can run and log on the console
-	// instead of a logfile
 
-	//TODO: retreive that from already set configuration or global config
-	cmd.Env = append(cmd.Env,
-		"PGBACKREST_pg1-path=/var/lib/postgresql/data/pgdata/",
-		"PGHOST=/controller/run/",
-		"PGUSER=postgres",
-	)
 	output, err := cmd.CombinedOutput()
 	if err != nil {
-		contextLogger.Error(err, "can't create stanza", output)
+		contextLogger.Error(err, "can't create stanza", "output", string(output))
 		return fmt.Errorf("can't create stanza: %v, error : %s", err, output)
 	}
 
@@ -97,8 +88,8 @@ func Backup(ctx context.Context) error {
 	)
 	output, err := cmd.CombinedOutput()
 	if err != nil {
-		return fmt.Errorf("can't create stanza: %v, error : %s", err, output)
+		return fmt.Errorf("can't create stanza: %v, error : %s", err, string(output))
 	}
-	contextLogger.Info("Backup done!", "backup command output", output)
+	contextLogger.Info("Backup done!", "backup command output: %s", string(output))
 	return nil
 }

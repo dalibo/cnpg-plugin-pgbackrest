@@ -84,33 +84,57 @@ func (impl LifecycleImplementation) LifecycleHook(
 		return nil, fmt.Errorf("unsupported kind: %s", kind)
 	}
 }
+func staticEnVarConfig() []corev1.EnvVar {
+	return []corev1.EnvVar{
+		{Name: "PGBACKREST_delta", Value: "y"},
+		{Name: "PGBACKREST_pg1-path", Value: "/var/lib/postgresql/data/pgdata"},
+		{Name: "PGBACKREST_process-max", Value: "2"},
+		{Name: "PGBACKREST_start-fast", Value: "y"},
+		{Name: "PGBACKREST_log-level-console", Value: "info"},
+		{Name: "PGBACKREST_log-level-file", Value: "off"},
+		{Name: "PGHOST", Value: "/controller/run/"},
+		{Name: "PGUSER", Value: "postgres"},
+	}
+
+}
 func consolidateEnvVar(cluster *cnpgv1.Cluster, plugin_config *PluginConfiguration) ([]corev1.EnvVar, error) {
 	envs := []corev1.EnvVar{
-		{
-			Name:  "NAMESPACE",
-			Value: cluster.Namespace,
-		},
-		{
-			Name:  "CLUSTER_NAME",
-			Value: cluster.Name,
-		},
-		{
-			Name:  "PGBACKREST_stanza",
-			Value: plugin_config.Stanza,
-		},
-		{
-			Name:  "PGBACKREST_repo1-path",
-			Value: plugin_config.RepoPath,
-		},
-		{
-			Name:  "PGBACKREST_log-level-console",
-			Value: "info",
-		},
-		{
-			Name:  "PGBACKREST_log-level-file",
-			Value: "off",
-		},
+		{Name: "NAMESPACE", Value: cluster.Namespace},
+		{Name: "CLUSTER_NAME", Value: cluster.Name}}
+	env_pgbackrest := []corev1.EnvVar{
+		{Name: "PGBACKREST_repo1-path", Value: plugin_config.S3RepoPath},
+		{Name: "PGBACKREST_repo1-s3-bucket", Value: plugin_config.S3Bucket},
+		{Name: "PGBACKREST_repo1-s3-endpoint", Value: plugin_config.S3Endpoint},
+		{Name: "PGBACKREST_repo1-s3-region", Value: plugin_config.S3Region},
+		{Name: "PGBACKREST_repo1-type", Value: "s3"},
+		{Name: "PGBACKREST_stanza", Value: plugin_config.S3Stanza},
 	}
+	envs = append(envs, staticEnVarConfig()...)
+	envs = append(envs, env_pgbackrest...)
+	envs = append(envs,
+		corev1.EnvVar{
+			Name: "PGBACKREST_repo1-s3-key",
+			ValueFrom: &corev1.EnvVarSource{
+				SecretKeyRef: &corev1.SecretKeySelector{
+					LocalObjectReference: corev1.LocalObjectReference{
+						Name: "pgbackrest-s3-secret",
+					},
+					Key: "key",
+				},
+			},
+		},
+		corev1.EnvVar{
+			Name: "PGBACKREST_repo1-s3-key-secret",
+			ValueFrom: &corev1.EnvVarSource{
+				SecretKeyRef: &corev1.SecretKeySelector{
+					LocalObjectReference: corev1.LocalObjectReference{
+						Name: "pgbackrest-s3-secret",
+					},
+					Key: "key-secret",
+				},
+			},
+		},
+	)
 	return envs, nil
 
 }
@@ -118,7 +142,7 @@ func (impl LifecycleImplementation) reconcilePod(
 	ctx context.Context,
 	//cluster *cnpgv1.Cluster, not used right now
 	request *lifecycle.OperatorLifecycleRequest,
-	env []corev1.EnvVar,
+	env_vars []corev1.EnvVar,
 ) (*lifecycle.OperatorLifecycleResponse, error) {
 	// TODO: probably get data from env to configure our new pod
 	// get current pod definition
@@ -139,7 +163,7 @@ func (impl LifecycleImplementation) reconcilePod(
 		// TODO: change pull policy or make it configurable thourgh envvar
 		ImagePullPolicy: "Never", //cluster.Spec.ImagePullPolicy,
 		// TODO: more env var needed ?
-		Env: env,
+		Env: env_vars,
 	}
 	// Currently this is not really a sidecar regarding the kubernetes documentation
 	// the injected container is added as a container and not as InitContainer

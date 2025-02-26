@@ -1,4 +1,13 @@
 ---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: pgbackrest-s3-secret
+type: Opaque
+stringData:
+  key: xxx
+  key-secret: xxx
+---
 apiVersion: postgresql.cnpg.io/v1
 kind: Cluster
 metadata:
@@ -8,7 +17,10 @@ spec:
   plugins:
     - name: cnpg-i-pgbackrest.dalibo.com
       parameters:
-        repo-path: /tmp/stz
-        stanza: main
+        s3-bucket: demo-pgbackrest
+        s3-endpoint: xxx
+        s3-region: xxx
+        s3-repo-path: /demo-pgbackrest-4/cluster-pgbackrest
+        stanza: pgbackrest
   storage:
     size: 1Gi

@@ -8,9 +8,11 @@ import (
 type PluginConfiguration struct {
 	Cluster    *cnpgv1.Cluster
 	ServerName string
-	RepoPath   string
 	S3Bucket   string
-	Stanza     string
+	S3Endpoint string
+	S3Region   string
+	S3RepoPath string
+	S3Stanza   string
 }
 
 type Plugin struct {
@@ -44,9 +46,11 @@ func NewFromCluster(cluster *cnpgv1.Cluster) *PluginConfiguration {
 	result := &PluginConfiguration{
 		Cluster:    cluster,
 		ServerName: serverName,
-		RepoPath:   helper.Parameters["repo-path"],
-		S3Bucket:   helper.Parameters["s3Bucket"],
-		Stanza:     helper.Parameters["stanza"],
+		S3Bucket:   helper.Parameters["s3-bucket"],
+		S3Endpoint: helper.Parameters["s3-endpoint"],
+		S3Region:   helper.Parameters["s3-region"],
+		S3RepoPath: helper.Parameters["s3-repo-path"],
+		S3Stanza:   helper.Parameters["stanza"],
 	}
 
 	return result
