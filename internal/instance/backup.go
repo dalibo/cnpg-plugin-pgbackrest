@@ -40,9 +40,19 @@ func (b BackupServiceImplementation) Backup(
 	contextLogger := log.FromContext(ctx)
 
 	contextLogger.Info("Starting backup")
-	wal_pgbackrest.Backup(ctx)
+	r, err := wal_pgbackrest.Backup(ctx)
+	if err != nil {
+		return nil, err
+	}
 	return &backup.BackupResult{
-		Online: true,
+		BackupName: r.Label,
+		BeginLsn:   r.Lsn.Start,
+		BeginWal:   r.Archive.Start,
+		EndLsn:     r.Lsn.Stop,
+		EndWal:     r.Archive.Stop,
+		Online:     true,
+		StartedAt:  r.Timestamp.Start,
+		StoppedAt:  r.Timestamp.Stop,
 		Metadata: map[string]string{
 			"version":     metadata.Data.Version,
 			"name":        metadata.Data.Name,

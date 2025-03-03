@@ -10,6 +10,34 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/log"
 )
 
+type Timestamp struct {
+	Start int64 `json:"start"`
+	Stop  int64 `json:"stop"`
+}
+
+type Lsn struct {
+	Start string `json:"start"`
+	Stop  string `json:"stop"`
+}
+
+type Archive struct {
+	Start string `json:"start"`
+	Stop  string `json:"stop"`
+}
+
+type BackupInfo struct {
+	Archive   Archive   `json:"archive"`
+	Label     string    `json:"label"`
+	Lsn       Lsn       `json:"lsn"`
+	Prior     string    `json:"prior"`
+	Timestamp Timestamp `json:"timestamp"`
+	Type      string    `json:"type"`
+}
+
+type BackupData struct {
+	Backup []BackupInfo `json:"backup"`
+}
+
 type RepoStatus struct {
 	Code    int    `json:"code"`
 	Message string `json:"message"`
@@ -79,7 +107,7 @@ func pushWal(ctx context.Context, walName string) error {
 	return nil
 }
 
-func Backup(ctx context.Context) error {
+func Backup(ctx context.Context) (*BackupInfo, error) {
 	contextLogger := log.FromContext(ctx)
 	cmd := exec.Command("pgbackrest", "backup")
 	cmd.Env = os.Environ()
@@ -88,8 +116,38 @@ func Backup(ctx context.Context) error {
 	)
 	output, err := cmd.CombinedOutput()
 	if err != nil {
-		return fmt.Errorf("can't create stanza: %v, error : %s", err, string(output))
+		return nil, fmt.Errorf("can't create stanza: %v, error : %s", err, string(output))
 	}
+	backups, err := GetBackupInfo()
+	if err != nil {
+		return nil, err
+	}
+	latestBackup := LatestBackup(backups)
 	contextLogger.Info("Backup done!", "backup command output: %s", string(output))
-	return nil
+	return latestBackup, nil
+}
+
+func GetBackupInfo() ([]BackupInfo, error) {
+	cmd := exec.Command("pgbackrest", "info", "--output", "json")
+	o, err := cmd.CombinedOutput()
+	if err != nil {
+		return nil, err
+	}
+	var pgbackrestInfo []BackupData
+	err = json.Unmarshal(o, &pgbackrestInfo)
+	if err != nil {
+		return nil, err
+	}
+	return pgbackrestInfo[0].Backup, nil
+
+}
+
+func LatestBackup(backups []BackupInfo) *BackupInfo {
+	found := backups[0]
+	for _, backup := range backups {
+		if backup.Timestamp.Stop > found.Timestamp.Stop {
+			found = backup
+		}
+	}
+	return &found
 }
