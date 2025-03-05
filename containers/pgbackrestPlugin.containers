@@ -8,7 +8,7 @@ COPY . ./
 RUN CGO_ENABLED=0 go build -o bin/cnpg-i-pgbackrest main.go
 
 ### pgbackrest controller only
-FROM golang:1-alpine AS pgbackrest-plugin
+FROM golang:1-alpine AS pgbackrest-controller
 USER 10001:10001
 COPY --from=builder /app/bin/cnpg-i-pgbackrest /app/bin/cnpg-i-pgbackrest
 ENTRYPOINT ["/app/bin/cnpg-i-pgbackrest"]

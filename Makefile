@@ -4,7 +4,7 @@ run: image
 
 .PHONY: image
 controller:
-	docker build --tag pgbackrest-plugin:latest --target pgbackrest-plugin \
+	docker build --tag pgbackrest-controller:latest --target pgbackrest-controller \
 		-f containers/pgbackrestPlugin.containers .
 
 sidecar:
@@ -14,7 +14,7 @@ sidecar:
 images: sidecar controller
 
 images-upload-kind: images
-	kind load docker-image pgbackrest-plugin:latest --name pg-operator-e2e-v1-31-2
+	kind load docker-image pgbackrest-controller:latest --name pg-operator-e2e-v1-31-2
 	kind load docker-image pgbackrest-sidecar:latest --name pg-operator-e2e-v1-31-2
 
 deploy:

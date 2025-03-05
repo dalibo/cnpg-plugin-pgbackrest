@@ -15,7 +15,7 @@ metadata:
 spec:
   instances: 1
   plugins:
-    - name: cnpg-i-pgbackrest.dalibo.com
+    - name: pgbackrest.dalibo.com
       parameters:
         s3-bucket: demo-pgbackrest
         s3-endpoint: xxx

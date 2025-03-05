@@ -9,4 +9,4 @@ spec:
   cluster:
     name: cluster-pgbackrest
   pluginConfiguration:
-    name: cnpg-i-pgbackrest.dalibo.com
+    name: pgbackrest.dalibo.com

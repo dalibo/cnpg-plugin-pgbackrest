@@ -2,10 +2,10 @@
 apiVersion: cert-manager.io/v1
 kind: Certificate
 metadata:
-  name: pgbackrest-client
+  name: pgbackrest-controller-client
   namespace: cnpg-system
 spec:
-  commonName: pgbackrest-client
+  commonName: pgbackrest-controller-client
   duration: 2160h
   isCA: false
   issuerRef:
@@ -13,14 +13,14 @@ spec:
     kind: Issuer
     name: selfsigned-issuer
   renewBefore: 360h
-  secretName: pgbackrest-client-tls
+  secretName: pgbackrest-controller-client-tls
   usages:
     - client auth
 ---
 apiVersion: cert-manager.io/v1
 kind: Certificate
 metadata:
-  name: pgbackrest-server
+  name: pgbackrest-controller-server
   namespace: cnpg-system
 spec:
   commonName: pgbackrest
@@ -33,7 +33,7 @@ spec:
     kind: Issuer
     name: selfsigned-issuer
   renewBefore: 360h
-  secretName: pgbackrest-server-tls
+  secretName: pgbackrest-controller-server-tls
   usages:
     - server auth
 ---

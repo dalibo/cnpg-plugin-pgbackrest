@@ -3,20 +3,20 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   labels:
-    app: pgbackrest
-  name: pgbackrest
+    app: pgbackrest-controller
+  name: pgbackrest-controller
   namespace: cnpg-system
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app: pgbackrest
+      app: pgbackrest-controller
   strategy:
     type: Recreate
   template:
     metadata:
       labels:
-        app: pgbackrest
+        app: pgbackrest-controller
     spec:
       containers:
         - args:
@@ -34,9 +34,9 @@ spec:
 #                secretKeyRef:
 #                  key: SIDECAR_IMAGE
 #                  name: pgbackrest-8tfddg42gf
-          image: pgbackrest-plugin
+          image: pgbackrest-controller
           imagePullPolicy: Never
-          name: pgbackrest
+          name: pgbackrest-controller
           ports:
             - containerPort: 9090
               protocol: TCP
@@ -51,11 +51,11 @@ spec:
               name: server
             - mountPath: /client
               name: client
-      serviceAccountName: plugin-pgbackrest
+      serviceAccountName: pgbackrest-controller
       volumes:
         - name: server
           secret:
-            secretName: pgbackrest-server-tls
+            secretName: pgbackrest-controller-server-tls
         - name: client
           secret:
-            secretName: pgbackrest-client-tls
+            secretName: pgbackrest-controller-client-tls

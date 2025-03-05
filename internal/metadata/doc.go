@@ -3,7 +3,7 @@ package metadata
 import "github.com/cloudnative-pg/cnpg-i/pkg/identity"
 
 // PluginName is the name of the plugin
-const PluginName = "cnpg-i-pgbackrest.dalibo.com"
+const PluginName = "pgbackrest.dalibo.com"
 
 // Data is the metadata of this plugin
 var Data = identity.GetPluginMetadataResponse{

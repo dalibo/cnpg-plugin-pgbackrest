@@ -159,7 +159,7 @@ func (impl LifecycleImplementation) reconcilePod(
 	//let's define our sidecar by hand and brutally
 	sidecar := corev1.Container{
 		Args:    []string{"instance"}, // first arg of our container
-		Name:    "plugin-pgbackrest",
+		Name:    "pgbackrest-plugin",
 		Image:   "pgbackrest-sidecar",
 		Command: []string{"/app/bin/cnpg-i-pgbackrest"},
 		// TODO: change pull policy or make it configurable thourgh envvar
