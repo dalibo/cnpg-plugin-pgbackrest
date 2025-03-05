@@ -84,6 +84,7 @@ func (impl LifecycleImplementation) LifecycleHook(
 		return nil, fmt.Errorf("unsupported kind: %s", kind)
 	}
 }
+
 func staticEnVarConfig() []corev1.EnvVar {
 	return []corev1.EnvVar{
 		{Name: "PGBACKREST_delta", Value: "y"},
@@ -95,8 +96,8 @@ func staticEnVarConfig() []corev1.EnvVar {
 		{Name: "PGHOST", Value: "/controller/run/"},
 		{Name: "PGUSER", Value: "postgres"},
 	}
-
 }
+
 func consolidateEnvVar(cluster *cnpgv1.Cluster, plugin_config *PluginConfiguration) ([]corev1.EnvVar, error) {
 	envs := []corev1.EnvVar{
 		{Name: "NAMESPACE", Value: cluster.Namespace},
@@ -138,6 +139,7 @@ func consolidateEnvVar(cluster *cnpgv1.Cluster, plugin_config *PluginConfigurati
 	return envs, nil
 
 }
+
 func (impl LifecycleImplementation) reconcilePod(
 	ctx context.Context,
 	//cluster *cnpgv1.Cluster, not used right now

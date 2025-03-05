@@ -8,7 +8,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/dalibo/cnpg-i-pgbackrest/internal/metadata"
-	wal_pgbackrest "github.com/dalibo/cnpg-i-pgbackrest/internal/wal"
+	"github.com/dalibo/cnpg-i-pgbackrest/internal/pgbackrest"
 )
 
 type BackupServiceImplementation struct {
@@ -40,10 +40,11 @@ func (b BackupServiceImplementation) Backup(
 	contextLogger := log.FromContext(ctx)
 
 	contextLogger.Info("Starting backup")
-	r, err := wal_pgbackrest.Backup(ctx)
+	r, err := pgbackrest.Backup()
 	if err != nil {
 		return nil, err
 	}
+	contextLogger.Info("Backup done!")
 	return &backup.BackupResult{
 		BackupName: r.Label,
 		BeginLsn:   r.Lsn.Start,

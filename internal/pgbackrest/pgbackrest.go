@@ -1,13 +1,10 @@
-package wal
+package pgbackrest
 
 import (
-	"context"
 	"encoding/json"
 	"fmt"
 	"os"
 	"os/exec"
-
-	"sigs.k8s.io/controller-runtime/pkg/log"
 )
 
 type Timestamp struct {
@@ -51,15 +48,15 @@ type PgBackRestInfo struct {
 	Repo []Repo `json:"repo"`
 }
 
-func stanzaExists(stanza string) (bool, error) {
+func StanzaExists(stanza string) (bool, error) {
 	cmd := exec.Command("pgbackrest", "info", "--stanza="+stanza, "--output=json")
 	stdout, err := cmd.CombinedOutput()
 	if err != nil {
-		return false, fmt.Errorf("can't execute pgbackrest info command: %v", err)
+		return false, fmt.Errorf("can't execute pgbackrest info command: %w", err)
 	}
 	var info []PgBackRestInfo
 	if err := json.Unmarshal(stdout, &info); err != nil {
-		return false, fmt.Errorf("Error parsing pgbackrest JSON: %v", err)
+		return false, fmt.Errorf("Error parsing pgbackrest JSON: %w", err)
 	}
 	for _, entry := range info {
 		for _, repo := range entry.Repo {
@@ -71,44 +68,32 @@ func stanzaExists(stanza string) (bool, error) {
 	return false, nil
 }
 
-func ensureStanzaExists(ctx context.Context, stanza string) error {
-	contextLogger := log.FromContext(ctx)
-	stanzaExist, err := stanzaExists(stanza)
+func EnsureStanzaExists(stanza string) (bool, error) {
+	stanzaExist, err := StanzaExists(stanza)
 	if err != nil {
-		contextLogger.Info("pgBackRest stanza verification fails", "error", string(err.Error()))
-		return err
+		return false, fmt.Errorf("can't determine if stanza: %s exists, error %w", stanza, err)
 	}
-
 	if stanzaExist {
-		contextLogger.Info("pgBackRest stanza already exists", "stanza", stanza)
-		return nil
+		return false, nil
 	}
-
 	cmd := exec.Command("pgbackrest", "stanza-create", "--stanza="+stanza)
-
 	output, err := cmd.CombinedOutput()
 	if err != nil {
-		contextLogger.Error(err, "can't create stanza", "output", string(output))
-		return fmt.Errorf("can't create stanza: %v, error : %s", err, output)
+		return false, fmt.Errorf("can't create stanza: %s, stdout: %s, error : %s", stanza, output, err)
 	}
-
-	return nil
+	return true, nil
 }
 
-func pushWal(ctx context.Context, walName string) error {
-	contextLogger := log.FromContext(ctx)
+func PushWal(walName string) error {
 	cmd := exec.Command("pgbackrest", "archive-push", walName)
-	// add envvar here
 	output, err := cmd.CombinedOutput()
 	if err != nil {
-		contextLogger.Error(err, "pgBackRest archive-push failed", "output", string(output))
-		return fmt.Errorf("pgBackRest archive-push failed: %w", err)
+		return fmt.Errorf("pgBackRest archive-push failed, output: %s %w", string(output), err)
 	}
 	return nil
 }
 
-func Backup(ctx context.Context) (*BackupInfo, error) {
-	contextLogger := log.FromContext(ctx)
+func Backup() (*BackupInfo, error) {
 	cmd := exec.Command("pgbackrest", "backup")
 	cmd.Env = os.Environ()
 	cmd.Env = append(cmd.Env,
@@ -116,25 +101,24 @@ func Backup(ctx context.Context) (*BackupInfo, error) {
 	)
 	output, err := cmd.CombinedOutput()
 	if err != nil {
-		return nil, fmt.Errorf("can't create stanza: %v, error : %s", err, string(output))
+		return nil, fmt.Errorf("can't backup: %s, error : %w", string(output), err)
 	}
 	backups, err := GetBackupInfo()
 	if err != nil {
 		return nil, err
 	}
 	latestBackup := LatestBackup(backups)
-	contextLogger.Info("Backup done!", "backup command output: %s", string(output))
 	return latestBackup, nil
 }
 
 func GetBackupInfo() ([]BackupInfo, error) {
 	cmd := exec.Command("pgbackrest", "info", "--output", "json")
-	o, err := cmd.CombinedOutput()
+	cmdOutput, err := cmd.CombinedOutput()
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("can't get pgbackrest info: %s, %w", string(cmdOutput), err)
 	}
 	var pgbackrestInfo []BackupData
-	err = json.Unmarshal(o, &pgbackrestInfo)
+	err = json.Unmarshal(cmdOutput, &pgbackrestInfo)
 	if err != nil {
 		return nil, err
 	}

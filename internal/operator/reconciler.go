@@ -41,10 +41,12 @@ func (r ReconcilerImplementation) Pre(
 ) (*reconciler.ReconcilerHooksResult, error) {
 	contextLogger := log.FromContext(ctx)
 	contextLogger.Info("Pre hook reconciliation start")
+
 	reconciledKind, err := object.GetKind(request.GetResourceDefinition())
 	if err != nil {
 		return nil, err
 	}
+
 	if reconciledKind != "Cluster" {
 		return &reconciler.ReconcilerHooksResult{
 			Behavior: reconciler.ReconcilerHooksResult_BEHAVIOR_CONTINUE,
