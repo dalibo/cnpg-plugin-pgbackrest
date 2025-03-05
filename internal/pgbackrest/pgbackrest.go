@@ -48,8 +48,8 @@ type PgBackRestInfo struct {
 	Repo []Repo `json:"repo"`
 }
 
-func StanzaExists(stanza string) (bool, error) {
-	cmd := exec.Command("pgbackrest", "info", "--stanza="+stanza, "--output=json")
+func StanzaExists(stanzaName string) (bool, error) {
+	cmd := exec.Command("pgbackrest", "info", "--stanza="+stanzaName, "--output=json")
 	stdout, err := cmd.CombinedOutput()
 	if err != nil {
 		return false, fmt.Errorf("can't execute pgbackrest info command: %w", err)
@@ -68,18 +68,18 @@ func StanzaExists(stanza string) (bool, error) {
 	return false, nil
 }
 
-func EnsureStanzaExists(stanza string) (bool, error) {
-	stanzaExist, err := StanzaExists(stanza)
+func EnsureStanzaExists(stanzaName string) (bool, error) {
+	stanzaExist, err := StanzaExists(stanzaName)
 	if err != nil {
-		return false, fmt.Errorf("can't determine if stanza: %s exists, error %w", stanza, err)
+		return false, fmt.Errorf("can't determine if stanza: %s exists, error %w", stanzaName, err)
 	}
 	if stanzaExist {
 		return false, nil
 	}
-	cmd := exec.Command("pgbackrest", "stanza-create", "--stanza="+stanza)
+	cmd := exec.Command("pgbackrest", "stanza-create", "--stanza="+stanzaName)
 	output, err := cmd.CombinedOutput()
 	if err != nil {
-		return false, fmt.Errorf("can't create stanza: %s, stdout: %s, error : %s", stanza, output, err)
+		return false, fmt.Errorf("can't create stanza: %s, stdout: %s, error : %w", stanzaName, string(output), err)
 	}
 	return true, nil
 }
