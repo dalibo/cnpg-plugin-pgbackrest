@@ -1,6 +1,8 @@
 package pgbackrest
 
 import (
+	"encoding/json"
+	"fmt"
 	"testing"
 )
 
@@ -43,6 +45,34 @@ func TestLatestBackup(t *testing.T) {
 				t.Errorf("error %v\n%v", got, tc.data)
 			}
 
+		}
+		t.Run(tc.desc, f)
+	}
+}
+
+func TestParseDataForStanzaStatusCode(t *testing.T) {
+	type TestCase struct {
+		desc string
+		data string
+		want bool
+	}
+	testCases := []TestCase{
+		{"code ok", `[{"repo": [{"status": {"code": 0, "message": "OK" }}]}]`, true},
+		{"code missing", `[{"repo": [{"status": {"message": "Machin" }}]}]`, false},
+		{"code error", `[{"repo": [{"status": {"code": 2, "message": "BLA" }}]}]`, false},
+	}
+	for _, tc := range testCases {
+		f := func(t *testing.T) {
+			var pgbackrestInfo []PgBackRestInfo
+			err := json.Unmarshal([]byte(tc.data), &pgbackrestInfo)
+			if err != nil {
+				fmt.Println(err)
+				panic("should not happen")
+			}
+			got := parseDataForStatusCode(pgbackrestInfo)
+			if got != tc.want {
+				t.Errorf("error want: %v, got %v", tc.want, got)
+			}
 		}
 		t.Run(tc.desc, f)
 	}

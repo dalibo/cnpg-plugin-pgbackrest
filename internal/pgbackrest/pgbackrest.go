@@ -36,7 +36,7 @@ type BackupData struct {
 }
 
 type RepoStatus struct {
-	Code    int    `json:"code"`
+	Code    *int   `json:"code,omitempty"` // currently on that field is important
 	Message string `json:"message"`
 }
 
@@ -58,14 +58,18 @@ func StanzaExists(stanzaName string) (bool, error) {
 	if err := json.Unmarshal(stdout, &info); err != nil {
 		return false, fmt.Errorf("Error parsing pgbackrest JSON: %w", err)
 	}
-	for _, entry := range info {
+	return parseDataForStatusCode(info), nil
+}
+
+func parseDataForStatusCode(pgbackrestInfo []PgBackRestInfo) bool {
+	for _, entry := range pgbackrestInfo {
 		for _, repo := range entry.Repo {
-			if repo.Status.Code == 0 {
-				return true, nil
+			if repo.Status.Code != nil && *(repo.Status.Code) == 0 {
+				return true
 			}
 		}
 	}
-	return false, nil
+	return false
 }
 
 func EnsureStanzaExists(stanzaName string) (bool, error) {
