@@ -127,6 +127,9 @@ func GetBackupInfo() ([]BackupInfo, error) {
 }
 
 func LatestBackup(backups []BackupInfo) *BackupInfo {
+	if len(backups) < 1 {
+		return nil
+	}
 	found := backups[0]
 	for _, backup := range backups {
 		if backup.Timestamp.Stop > found.Timestamp.Stop {
