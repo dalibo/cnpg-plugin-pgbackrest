@@ -24,7 +24,6 @@ RUN curl --output /etc/apt/trusted.gpg.d/pgdg.asc https://www.postgresql.org/med
 RUN apt-get update && apt-get -y install --no-install-recommends  \
     gnupg \
     pgbackrest \
-    postgresql-common \
     && rm -rf /var/lib/apt/lists/*
 RUN chmod 0744 /etc/pgbackrest.conf
 ENTRYPOINT ["/bin/sh"]
