@@ -9,6 +9,7 @@ import (
 
 	"github.com/dalibo/cnpg-i-pgbackrest/internal/metadata"
 	"github.com/dalibo/cnpg-i-pgbackrest/internal/pgbackrest"
+	"github.com/dalibo/cnpg-i-pgbackrest/internal/utils"
 )
 
 type BackupServiceImplementation struct {
@@ -40,7 +41,7 @@ func (b BackupServiceImplementation) Backup(
 	contextLogger := log.FromContext(ctx)
 
 	contextLogger.Info("Starting backup")
-	r, err := pgbackrest.Backup()
+	r, err := pgbackrest.Backup(utils.RealCmdRunner)
 	if err != nil {
 		return nil, err
 	}

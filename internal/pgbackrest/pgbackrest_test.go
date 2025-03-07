@@ -3,6 +3,8 @@ package pgbackrest
 import (
 	"encoding/json"
 	"fmt"
+	"os/exec"
+	"reflect"
 	"testing"
 )
 
@@ -57,9 +59,11 @@ func TestParseDataForStanzaStatusCode(t *testing.T) {
 		want bool
 	}
 	testCases := []TestCase{
-		{"code ok", `[{"repo": [{"status": {"code": 0, "message": "OK" }}]}]`, true},
-		{"code missing", `[{"repo": [{"status": {"message": "Machin" }}]}]`, false},
 		{"code error", `[{"repo": [{"status": {"code": 2, "message": "BLA" }}]}]`, false},
+		{"code missing", `[{"repo": [{"status": {"message": "Machin" }}]}]`, false},
+		{"code ok", `[{"repo": [{"status": {"code": 0, "message": "OK" }}]}]`, true},
+		{"empty repo", `[{"repo": []}]`, false},
+		{"empty list", `[]`, false},
 	}
 	for _, tc := range testCases {
 		f := func(t *testing.T) {
@@ -72,6 +76,51 @@ func TestParseDataForStanzaStatusCode(t *testing.T) {
 			got := parseDataForStatusCode(pgbackrestInfo)
 			if got != tc.want {
 				t.Errorf("error want: %v, got %v", tc.want, got)
+			}
+		}
+		t.Run(tc.desc, f)
+	}
+}
+
+type fakeExec struct {
+	cmdName string
+	args    []string
+}
+
+func (f *fakeExec) fakeCmdRunner(output string, err error) CmdRunner {
+	return func(name string, args ...string) *exec.Cmd {
+		f.cmdName = name
+		f.args = args
+		// Fake the command execution by returning a function that provides predefined output
+		cmd := exec.Command("echo", output) // Fake command that outputs JSON
+		if err != nil {
+			return exec.Command("false") // Simulate failure
+		}
+		return cmd
+	}
+}
+
+func TestPushWal(t *testing.T) {
+	type TestCase struct {
+		desc     string
+		walPath  string
+		wantCmd  string
+		wantArgs []string
+	}
+	testCases := []TestCase{
+		{"push wal", "/machin", "pgbackrest", []string{"archive-push", "/machin"}},
+	}
+
+	fakeCmd := &fakeExec{}
+	backup := "" // we don't care about output here
+	for _, tc := range testCases {
+		f := func(t *testing.T) {
+			PushWal("/machin", fakeCmd.fakeCmdRunner(backup, nil))
+			if fakeCmd.cmdName != tc.wantCmd {
+				t.Errorf("error want %v, got %v", tc.wantCmd, fakeCmd.cmdName)
+			}
+			if !reflect.DeepEqual(tc.wantArgs, fakeCmd.args) {
+				t.Errorf("error want %v, got %v", tc.wantArgs, fakeCmd.args)
 			}
 		}
 		t.Run(tc.desc, f)

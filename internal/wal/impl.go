@@ -7,6 +7,7 @@ import (
 
 	"github.com/cloudnative-pg/cnpg-i/pkg/wal"
 	"github.com/dalibo/cnpg-i-pgbackrest/internal/pgbackrest"
+	"github.com/dalibo/cnpg-i-pgbackrest/internal/utils"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/log"
 )
@@ -60,14 +61,14 @@ func (w_impl WALSrvImplementation) Archive(
 	if !stanzaEnvVarDefined {
 		return nil, fmt.Errorf("stanza env var not found")
 	}
-	created, err := pgbackrest.EnsureStanzaExists(stanzaName)
+	created, err := pgbackrest.EnsureStanzaExists(stanzaName, utils.RealCmdRunner)
 	if err != nil {
 		return nil, fmt.Errorf("stanza verification failed stanza: %s error: %w", stanzaName, err)
 	}
 	if created {
 		contextLogger.Info("stanza created while archiving", "WAL", walName, "stanza", stanzaName)
 	}
-	err = pgbackrest.PushWal(walName)
+	_, err = pgbackrest.PushWal(walName, utils.RealCmdRunner)
 	if err != nil {
 		return nil, fmt.Errorf("pgBackRest archive-push failed: %w", err)
 	}
