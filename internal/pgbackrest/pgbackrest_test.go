@@ -130,3 +130,36 @@ func TestPushWal(t *testing.T) {
 		t.Run(tc.desc, f)
 	}
 }
+
+func TestBackup(t *testing.T) {
+	type TestCase struct {
+		desc     string
+		lockFile *string
+		want     execCalls
+	}
+	lockFile := "/tmp/test.lock"
+	testCases := []TestCase{
+		{
+			desc:     "run backup",
+			lockFile: &lockFile,
+			want: execCalls{
+				execCalls: []fakeExec{
+					{cmdName: "pgbackrest", args: []string{"backup"}},
+					{cmdName: "pgbackrest", args: []string{"info", "--output", "json"}},
+				},
+			},
+		},
+	}
+
+	fakeExecCalls := execCalls{}
+	backup := "" // we don't care about output here
+	for _, tc := range testCases {
+		f := func(t *testing.T) {
+			Backup(tc.lockFile, fakeExecCalls.fakeCmdRunner(backup, nil))
+			if !reflect.DeepEqual(fakeExecCalls, tc.want) {
+				t.Errorf("error want %v, got %v", fakeExecCalls, tc.want)
+			}
+		}
+		t.Run(tc.desc, f)
+	}
+}
