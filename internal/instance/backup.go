@@ -41,7 +41,8 @@ func (b BackupServiceImplementation) Backup(
 	contextLogger := log.FromContext(ctx)
 
 	contextLogger.Info("Starting backup")
-	r, err := pgbackrest.Backup(utils.RealCmdRunner)
+	lockFile := "/tmp/pgbackrest-cnpg-plugin.lock"
+	r, err := pgbackrest.Backup(&lockFile, utils.RealCmdRunner)
 	if err != nil {
 		return nil, err
 	}

@@ -99,12 +99,15 @@ func PushWal(walName string, cmdRunner CmdRunner) (string, error) {
 	return string(output), nil
 }
 
-func Backup(cmdRunner CmdRunner) (*BackupInfo, error) {
+func Backup(lockFile *string, cmdRunner CmdRunner) (*BackupInfo, error) {
 	cmd := cmdRunner("pgbackrest", "backup")
 	cmd.Env = os.Environ()
 	cmd.Env = append(cmd.Env,
 		"PGBACKREST_archive-check=n",
 	)
+	if lockFile != nil && (*lockFile) != "" {
+		cmd.Env = append(cmd.Env, "PGBACKREST_lock-path="+(*lockFile))
+	}
 	output, err := cmd.CombinedOutput()
 	if err != nil {
 		return nil, fmt.Errorf("can't backup: %s, error : %w", string(output), err)
