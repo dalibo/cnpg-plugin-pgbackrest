@@ -15,6 +15,10 @@ ENTRYPOINT ["/app/bin/cnpg-i-pgbackrest"]
 
 ### sidecar definition
 FROM debian:bookworm-slim AS pgbackrest-sidecar
+ARG USERNAME=postgres
+ARG USER_UID=26
+ARG USER_GID=$USER_UID
+RUN useradd --uid $USER_UID --gid $USER_GID -m $USERNAME
 COPY --from=builder /app/bin/cnpg-i-pgbackrest /app/bin/cnpg-i-pgbackrest
 RUN apt-get -qq update && \
     apt-get -y install --no-install-recommends lsb-release curl ca-certificates
@@ -25,5 +29,7 @@ RUN apt-get update && apt-get -y install --no-install-recommends  \
     gnupg \
     pgbackrest \
     && rm -rf /var/lib/apt/lists/*
+
 RUN chmod 0744 /etc/pgbackrest.conf
+USER $USERNAME
 ENTRYPOINT ["/bin/sh"]
