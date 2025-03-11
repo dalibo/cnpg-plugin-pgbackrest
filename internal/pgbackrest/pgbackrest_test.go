@@ -87,10 +87,13 @@ type fakeExec struct {
 	args    []string
 }
 
-func (f *fakeExec) fakeCmdRunner(output string, err error) CmdRunner {
+type execCalls struct {
+	execCalls []fakeExec
+}
+
+func (e *execCalls) fakeCmdRunner(output string, err error) CmdRunner {
 	return func(name string, args ...string) *exec.Cmd {
-		f.cmdName = name
-		f.args = args
+		e.execCalls = append(e.execCalls, fakeExec{cmdName: name, args: args})
 		// Fake the command execution by returning a function that provides predefined output
 		cmd := exec.Command("echo", output) // Fake command that outputs JSON
 		if err != nil {
@@ -102,25 +105,26 @@ func (f *fakeExec) fakeCmdRunner(output string, err error) CmdRunner {
 
 func TestPushWal(t *testing.T) {
 	type TestCase struct {
-		desc     string
-		walPath  string
-		wantCmd  string
-		wantArgs []string
+		desc    string
+		walPath string
+		want    execCalls
 	}
 	testCases := []TestCase{
-		{"push wal", "/machin", "pgbackrest", []string{"archive-push", "/machin"}},
+		{
+			desc: "push wal", walPath: "/machin",
+			want: execCalls{
+				execCalls: []fakeExec{{cmdName: "pgbackrest", args: []string{"archive-push", "/machin"}}},
+			},
+		},
 	}
 
-	fakeCmd := &fakeExec{}
+	fakeExecCalls := execCalls{}
 	backup := "" // we don't care about output here
 	for _, tc := range testCases {
 		f := func(t *testing.T) {
-			PushWal("/machin", fakeCmd.fakeCmdRunner(backup, nil))
-			if fakeCmd.cmdName != tc.wantCmd {
-				t.Errorf("error want %v, got %v", tc.wantCmd, fakeCmd.cmdName)
-			}
-			if !reflect.DeepEqual(tc.wantArgs, fakeCmd.args) {
-				t.Errorf("error want %v, got %v", tc.wantArgs, fakeCmd.args)
+			PushWal(tc.walPath, fakeExecCalls.fakeCmdRunner(backup, nil))
+			if !reflect.DeepEqual(fakeExecCalls, tc.want) {
+				t.Errorf("error want %v, got %v", fakeExecCalls, tc.want)
 			}
 		}
 		t.Run(tc.desc, f)
