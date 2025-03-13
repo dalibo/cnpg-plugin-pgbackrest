@@ -178,7 +178,7 @@ func (impl LifecycleImplementation) reconcilePod(
 	ctx context.Context,
 	cluster *cnpgv1.Cluster,
 	request *lifecycle.OperatorLifecycleRequest,
-	env_vars []corev1.EnvVar,
+	envVars []corev1.EnvVar,
 ) (*lifecycle.OperatorLifecycleResponse, error) {
 	contextLogger := log.FromContext(ctx).WithName("lifecycle")
 	contextLogger.Info("we are on reconcile pod func")
@@ -190,14 +190,12 @@ func (impl LifecycleImplementation) reconcilePod(
 
 	//let's define our sidecar by hand and brutally
 	sidecar := corev1.Container{
-		Args:    []string{"instance"}, // first arg of our container
-		Name:    "pgbackrest-plugin",
-		Image:   "pgbackrest-sidecar",
-		Command: []string{"/app/bin/cnpg-i-pgbackrest"},
-		// TODO: change pull policy or make it configurable thourgh envvar
+		Args:            []string{"instance"}, // first arg of our container
+		Name:            "pgbackrest-plugin",
+		Image:           "pgbackrest-sidecar",
+		Command:         []string{"/app/bin/cnpg-i-pgbackrest"},
 		ImagePullPolicy: cluster.Spec.ImagePullPolicy,
-		// TODO: more env var needed ?
-		Env: env_vars,
+		Env:             envVars,
 	}
 	// Currently this is not really a sidecar regarding the kubernetes documentation
 	// the injected container is added as a container and not as InitContainer
