@@ -5,7 +5,7 @@ metadata:
   name: backup-example
 spec:
   method: plugin
-  cluster:
-    name: cluster-demo
   pluginConfiguration:
     name: pgbackrest.dalibo.com
+  cluster:
+    name: cluster-demo

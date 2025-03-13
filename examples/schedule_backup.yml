@@ -4,9 +4,9 @@ kind: ScheduledBackup
 metadata:
   name: backup-example
 spec:
-  schedule: "0 15 * * * *"
   method: plugin
-  cluster:
-    name: cluster-demo
   pluginConfiguration:
     name: pgbackrest.dalibo.com
+  cluster:
+    name: cluster-demo
+  schedule: "0 15 * * * *"
