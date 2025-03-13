@@ -137,6 +137,11 @@ TODO: give some hint about how to install our plugin
 
 ## How to use the plugin
 
+The `examples` directory contains a few manifests, those examples are
+pre-configured to work with **kind** (Eg; the pull policy is defined to
+`Never`). Those files probably need some modification to run on other
+type of Kubernetes cluster.
+
 ### Initiate an instance
 
 To use this plugin, a CNPG user must:
