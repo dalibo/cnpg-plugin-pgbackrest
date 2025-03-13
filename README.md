@@ -146,13 +146,13 @@ type of Kubernetes cluster.
 
 To use this plugin, a CNPG user must:
 
--   Build the docker images and load them to a (public ?) registry.
-    Those images can be built by simply running `make images`, which
-    will execute the required `docker build` commands.
+-   Build the docker images and load them to a (public ?) registry. It's
+    possible to built them with the `make images` command, it will
+    execute the appropriate `docker build` commands.
 
 -   Create a secret named `pgbackrest-s3-secret` on the namespace of the
-    CNPG cluster, this secret contains the `key` and `secret-key` for
-    the `S3` bucket.
+    PostgreSQL Cluster, this secret contains the `key` and `secret-key`
+    for the `S3` bucket.
 
     Example:
 
@@ -168,12 +168,10 @@ To use this plugin, a CNPG user must:
       key-secret: <secret_to_replace>
     ```
 
--   Adapt the cluster definition with:
+-   Adapt the PostgreSQL Cluster definition with:
 
-    -   the plugin `cnpg-i-pgbackrest.dalibo.com` (under the plugins
-        entry)
-
-    -   the `s3` parameters directly bellow the plugin usage declaration
+    -   the plugin `pgbackrest.dalibo.com` (under the plugins entry)
+    -   the `s3` parameters directly bellow the plugin declaration
 
     Example:
 
@@ -199,24 +197,24 @@ To use this plugin, a CNPG user must:
 
 -   Then apply the cluster definition (`kubectl apply -f instance.yml`)
 
-If everything work as excepted, the Pod dedicated to the `Cluster`
-should run 2 containers. One for postgres (this is the usual situation)
-and a second container for our plugin (named `plugin-pgbackrest`). The
-container dedicated to pgbackrest is now responsible of archiving the
-WAL and initiate the backup when requested.
+If it works without error, the Pod dedicated to the PostgreSQL Cluster
+should run 2 containers. One for `postgres` (this is the usual
+situation) and a second container for our plugin (named
+`plugin-pgbackrest`). The container dedicated to pgbackrest is now
+responsible of archiving the WAL and initiate the backup when requested.
 
 ### Backup an instance
 
-There are two ways to backup a PostgreSQL instance managed by the
-CloudNativePG operator :
+There are two ways to backup a PostgreSQL Cluster managed by the
+CloudNativePG operator:
 
--   one shot backup, equivalent to running it by hand but through a
-    Backup object defintion
+-   One shot backup, equivalent to running it by hand but through a
+    Backup object definition
 -   Scheduled backup, equivalent to defining a crontab entries to run a
     backup periodically
 
-Whatever the kind of backup, the user can list and see them with the
-appriopriate kubectl command:
+Whatever the kind of backup, users can list and see them with the
+appropriate kubectl command:
 
 ``` console
 $ kubectl get backups.postgresql.cnpg.io
@@ -227,8 +225,8 @@ $ kubectl get backups.postgresql.cnpg.io
 Backup can be requested through a Backup object, using the default CNPG
 CRD backup definition. The pgbackrest plugin can be specified when
 declaring the backup object, for that the `method` should be set to
-`plugin` and the `pluginConfiguration` field to
-`cnpg-i-pgbackrest.dalibo.com`.
+`plugin` and the `pluginConfiguration.name` field to
+`pgbackrest.dalibo.com`.
 
 Here is a full example of a backup definition using the pgbackrest
 plugin:
@@ -251,11 +249,11 @@ spec:
 
 A scheduled backup use almost the same definition as a "simple" backup,
 only the kind should be adapted (to `ScheduledBackup`). When using that
-kind of object, the schedule (with a `crontab` annotation) should also
-be defined under the specification.
+kind of object, the schedule field (with a `crontab` annotation) should
+also be defined under the specification.
 
-Here is a full example of a backup definition using the pgbackrest
-plugin:
+Here is a full example of a scheduled backup definition using the
+pgbackrest plugin:
 
 ``` yaml
 ---
