@@ -7,6 +7,6 @@ spec:
   schedule: "0 15 * * * *"
   method: plugin
   cluster:
-    name: cluster-pgbackrest
+    name: cluster-demo
   pluginConfiguration:
     name: pgbackrest.dalibo.com

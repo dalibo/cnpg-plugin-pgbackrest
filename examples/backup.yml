@@ -6,6 +6,6 @@ metadata:
 spec:
   method: plugin
   cluster:
-    name: cluster-pgbackrest
+    name: cluster-demo
   pluginConfiguration:
     name: pgbackrest.dalibo.com

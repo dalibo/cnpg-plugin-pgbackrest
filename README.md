@@ -177,7 +177,7 @@ To use this plugin, a CNPG user must:
     apiVersion: postgresql.cnpg.io/v1
     kind: Cluster
     metadata:
-      name: cluster-pgbackrest
+      name: cluster-demo
     spec:
       instances: 1
       plugins:
@@ -186,7 +186,7 @@ To use this plugin, a CNPG user must:
             s3-bucket: demo-pgbackrest
             s3-endpoint: s3.fr-par.scw.cloud
             s3-region: fr-par
-            s3-repo-path: /demo-pgbackrest-5/cluster-pgbackrest
+            s3-repo-path: /demo-pgbackrest-5/cluster-demo
             stanza: pgbackrest
       storage:
         size: 1Gi
@@ -237,7 +237,7 @@ metadata:
 spec:
   method: plugin
   cluster:
-    name: cluster-pgbackrest
+    name: cluster-demo
   pluginConfiguration:
     name: cnpg-i-pgbackrest.dalibo.com
 ```
@@ -262,7 +262,7 @@ spec:
   schedule: "0 30 * * * *"
   method: plugin
   cluster:
-    name: cluster-pgbackrest
+    name: cluster-demo
   pluginConfiguration:
     name: cnpg-i-pgbackrest.dalibo.com
 ```

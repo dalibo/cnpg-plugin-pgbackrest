@@ -11,8 +11,11 @@ stringData:
 apiVersion: postgresql.cnpg.io/v1
 kind: Cluster
 metadata:
-  name: cluster-pgbackrest
+  name: cluster-demo
 spec:
+  # set to Never, because we use kind and image should be loaded on
+  # the Kubernetes cluster and not pulled from an external registry.
+  imagePullPolicy: Never
   instances: 1
   plugins:
     - name: pgbackrest.dalibo.com
@@ -20,7 +23,7 @@ spec:
         s3-bucket: demo-pgbackrest
         s3-endpoint: xxx
         s3-region: xxx
-        s3-repo-path: /demo-pgbackrest-4/cluster-pgbackrest
+        s3-repo-path: /demo-pgbackrest-4/cluster-demo
         stanza: pgbackrest
   storage:
     size: 1Gi
