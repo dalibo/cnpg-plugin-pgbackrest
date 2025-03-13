@@ -195,7 +195,7 @@ func (impl LifecycleImplementation) reconcilePod(
 		Image:   "pgbackrest-sidecar",
 		Command: []string{"/app/bin/cnpg-i-pgbackrest"},
 		// TODO: change pull policy or make it configurable thourgh envvar
-		ImagePullPolicy: "Never", //cluster.Spec.ImagePullPolicy,
+		ImagePullPolicy: cluster.Spec.ImagePullPolicy,
 		// TODO: more env var needed ?
 		Env: env_vars,
 	}
