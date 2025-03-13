@@ -63,11 +63,7 @@ func (impl LifecycleImplementation) LifecycleHook(
 	}
 
 	var cluster cnpgv1.Cluster
-	if err := decoder.DecodeObject(
-		request.GetClusterDefinition(),
-		&cluster,
-		cnpgv1.GroupVersion.WithKind("Cluster"),
-	); err != nil {
+	if err := decoder.DecodeObjectLenient(request.GetClusterDefinition(), &cluster); err != nil {
 		return nil, err
 	}
 	pluginConfig := NewFromCluster(&cluster)
