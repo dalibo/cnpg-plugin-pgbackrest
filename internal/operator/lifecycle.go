@@ -70,16 +70,17 @@ func (impl LifecycleImplementation) LifecycleHook(
 	); err != nil {
 		return nil, err
 	}
-	plugin_config := NewFromCluster(&cluster)
-	contextLogger.Info("Known plugin config: %v", plugin_config)
+	pluginConfig := NewFromCluster(&cluster)
+	contextLogger.Info("Known plugin config: %v", pluginConfig)
 	// TODO: add reconcilier stuff here
 	switch kind {
 	case "Pod":
 		// TODO: inject the side conainter and decide what to to here
 		contextLogger.Info("Reconciling pod")
 		// TODO: find plugin configuration here or on reconcilePod ?
-		env, _ := consolidateEnvVar(&cluster, plugin_config)
-		return impl.reconcilePod(ctx, request, env)
+		podName := "postgres"
+		env, _ := consolidateEnvVar(&cluster, request, podName, pluginConfig)
+		return impl.reconcilePod(ctx, &cluster, request, env)
 	default:
 		return nil, fmt.Errorf("unsupported kind: %s", kind)
 	}
@@ -88,30 +89,43 @@ func (impl LifecycleImplementation) LifecycleHook(
 func staticEnVarConfig() []corev1.EnvVar {
 	return []corev1.EnvVar{
 		{Name: "PGBACKREST_delta", Value: "y"},
-		{Name: "PGBACKREST_pg1-path", Value: "/var/lib/postgresql/data/pgdata"},
-		{Name: "PGBACKREST_process-max", Value: "2"},
-		{Name: "PGBACKREST_start-fast", Value: "y"},
 		{Name: "PGBACKREST_log-level-console", Value: "info"},
 		{Name: "PGBACKREST_log-level-file", Value: "off"},
-		{Name: "PGHOST", Value: "/controller/run/"},
-		{Name: "PGUSER", Value: "postgres"},
+		{Name: "PGBACKREST_pg1-path", Value: "/var/lib/postgresql/data/pgdata"},
+		{Name: "PGBACKREST_process-max", Value: "2"},
+		{Name: "PGBACKREST_repo1-type", Value: "s3"},
+		{Name: "PGBACKREST_start-fast", Value: "y"},
 	}
 }
 
-func consolidateEnvVar(cluster *cnpgv1.Cluster, plugin_config *PluginConfiguration) ([]corev1.EnvVar, error) {
+func consolidateEnvVar(cluster *cnpgv1.Cluster, request *lifecycle.OperatorLifecycleRequest,
+	srcContainerName string, pluginConfig *PluginConfiguration) ([]corev1.EnvVar, error) {
+
+	// get pod definition, we will use it to retrieve environment variables set on a specific (srcContainerName)
+	// container)
+	pod, err := decoder.DecodePodJSON(request.GetObjectDefinition())
+	if err != nil {
+		return nil, err
+	}
+
 	envs := []corev1.EnvVar{
 		{Name: "NAMESPACE", Value: cluster.Namespace},
 		{Name: "CLUSTER_NAME", Value: cluster.Name}}
-	env_pgbackrest := []corev1.EnvVar{
-		{Name: "PGBACKREST_repo1-path", Value: plugin_config.S3RepoPath},
-		{Name: "PGBACKREST_repo1-s3-bucket", Value: plugin_config.S3Bucket},
-		{Name: "PGBACKREST_repo1-s3-endpoint", Value: plugin_config.S3Endpoint},
-		{Name: "PGBACKREST_repo1-s3-region", Value: plugin_config.S3Region},
-		{Name: "PGBACKREST_repo1-type", Value: "s3"},
-		{Name: "PGBACKREST_stanza", Value: plugin_config.S3Stanza},
+
+	envs = envFromContainer(srcContainerName, *pod, envs)
+
+	// set env var from plugin parameter
+	envPgbackrest := []corev1.EnvVar{
+		{Name: "PGBACKREST_repo1-path", Value: pluginConfig.S3RepoPath},
+		{Name: "PGBACKREST_repo1-s3-bucket", Value: pluginConfig.S3Bucket},
+		{Name: "PGBACKREST_repo1-s3-endpoint", Value: pluginConfig.S3Endpoint},
+		{Name: "PGBACKREST_repo1-s3-region", Value: pluginConfig.S3Region},
+		{Name: "PGBACKREST_stanza", Value: pluginConfig.S3Stanza},
 	}
 	envs = append(envs, staticEnVarConfig()...)
-	envs = append(envs, env_pgbackrest...)
+	envs = append(envs, envPgbackrest...)
+
+	// use Kubernetes pre-defined secret for key and secret
 	envs = append(envs,
 		corev1.EnvVar{
 			Name: "PGBACKREST_repo1-s3-key",
@@ -140,14 +154,32 @@ func consolidateEnvVar(cluster *cnpgv1.Cluster, plugin_config *PluginConfigurati
 
 }
 
+func envFromContainer(containerName string, srcPod corev1.Pod, destEnvVars []corev1.EnvVar) []corev1.EnvVar {
+	for _, container := range srcPod.Spec.Containers {
+		if container.Name == containerName {
+			for _, containerEnv := range container.Env {
+				f := false
+				for _, env := range destEnvVars {
+					if containerEnv.Name == env.Name {
+						f = true
+						break
+					}
+				}
+				if !f {
+					destEnvVars = append(destEnvVars, containerEnv)
+				}
+			}
+		}
+	}
+	return destEnvVars
+}
+
 func (impl LifecycleImplementation) reconcilePod(
 	ctx context.Context,
-	//cluster *cnpgv1.Cluster, not used right now
+	cluster *cnpgv1.Cluster,
 	request *lifecycle.OperatorLifecycleRequest,
 	env_vars []corev1.EnvVar,
 ) (*lifecycle.OperatorLifecycleResponse, error) {
-	// TODO: probably get data from env to configure our new pod
-	// get current pod definition
 	contextLogger := log.FromContext(ctx).WithName("lifecycle")
 	contextLogger.Info("we are on reconcile pod func")
 	pod, err := decoder.DecodePodJSON(request.GetObjectDefinition())

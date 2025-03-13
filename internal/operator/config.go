@@ -22,7 +22,6 @@ type Plugin struct {
 	PluginIndex int
 }
 
-// NewPlugin creates a new Plugin instance for the given cluster and plugin name.
 func NewPlugin(cluster cnpgv1.Cluster, pluginName string) *Plugin {
 	result := &Plugin{Cluster: &cluster}
 
@@ -36,6 +35,7 @@ func NewPlugin(cluster cnpgv1.Cluster, pluginName string) *Plugin {
 
 	return result
 }
+
 func NewFromCluster(cluster *cnpgv1.Cluster) *PluginConfiguration {
 	helper := NewPlugin(
 		*cluster,
