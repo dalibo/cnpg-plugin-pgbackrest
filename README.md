@@ -6,13 +6,14 @@ pgBackRest.
 ## plugin anatomy
 
 CNPG plugins are mainly specific pods / services / ... running on the
-same namespace as the CNPG Operator (`cnpg-system` by default). They run
+same namespace as the CNPG Operator (`cnpg-system`, `cnpg-controller-manager` or
+`cnpg-cloudnative-pg` depending on the way you installed the operator). They run
 some kind of (small) specific "operator" dedicated to one task (eg:
 adding and configuring backup to a PostgreSQL `Clusters` managed by
 CNPG). Currently they are designed to run alongside the "main" CNPG
 operator.
 
-Once a plugin deployed, the CNPG operator register it (in realty it's
+Once a plugin is deployed, the CNPG operator register it (in reality it's
 done when a service with some specific annotation is created). The
 plugin operator should give some information about their
 **capabilities** to the CNPG operator. The "main" operator keeps track
@@ -37,10 +38,10 @@ CNPG manager, more information
 Let's imagine a plugin to archive the WAL with pgBackrest. That plugin
 will be split into 2 main components:
 
--   A minimalist (or nano controller) to inject some configuration (Eg:
+-   A minimalist (or nano controller) container to inject some configuration (Eg:
     sidecar container) when initializing an instance. That component is
     visible when listing the Pods and Deployments on the `cnpg-system`
-    namespace
+    namespace for example.
 
 -   A pgBackRest manager container (a sidecar container injected by the
     previous component) bound to a PostgreSQL / CNPG instance and
@@ -101,7 +102,7 @@ then try our custom plugin on it:
     `kubectl apply -f https://github.com/cert-manager/cert-manager/releases/download/v1.16.2/cert-manager.yaml`
 
 Then we can deploy our plugin on our Kubernetes cluster with the running
-CloudNative PG operator:
+CloudNativePG operator:
 
 -   Go back to the plugin directory `$ cd -`
 
@@ -111,7 +112,7 @@ CloudNative PG operator:
 
 -   Load the resulting image to the Kubernetes cluster dedicated to the
     development environment:
-    `kind load docker-image pgbackrest-plugin:latest  --name pg-operator-e2e-v1-31-2`
+    `kind load docker-image pgbackrest-plugin:latest --name pg-operator-e2e-v1-31-2`
 
     The name of the cluster can be found by running:
     `$ kind get clusters`
@@ -210,7 +211,7 @@ CloudNativePG operator:
 
 -   One shot backup, equivalent to running it by hand but through a
     Backup object definition
--   Scheduled backup, equivalent to defining a crontab entries to run a
+-   Scheduled backup, equivalent to defining a crontab entry to run a
     backup periodically
 
 Whatever the kind of backup, users can list and see them with the
@@ -247,7 +248,7 @@ spec:
 
 #### Scheduled backup
 
-A scheduled backup use almost the same definition as a "simple" backup,
+A scheduled backup uses almost the same definition as a "simple" backup,
 only the kind should be adapted (to `ScheduledBackup`). When using that
 kind of object, the schedule field (with a `crontab` annotation) should
 also be defined under the specification.
