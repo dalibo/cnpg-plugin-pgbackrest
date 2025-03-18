@@ -3,157 +3,61 @@
 Experimental CNPG operator plugin to backup PostgreSQL instances with
 pgBackRest.
 
-## plugin anatomy
+## Features
 
-CNPG plugins are mainly specific pods / services / ... running on the
-same namespace as the CNPG Operator (`cnpg-system`, `cnpg-controller-manager` or
-`cnpg-cloudnative-pg` depending on the way you installed the operator). They run
-some kind of (small) specific "operator" dedicated to one task (eg:
-adding and configuring backup to a PostgreSQL `Clusters` managed by
-CNPG). Currently they are designed to run alongside the "main" CNPG
-operator.
+-   Data Directory Backup
+-   WALs archiving
 
-Once a plugin is deployed, the CNPG operator register it (in reality it's
-done when a service with some specific annotation is created). The
-plugin operator should give some information about their
-**capabilities** to the CNPG operator. The "main" operator keeps track
-of plugins capabilities and calls (through a gRPC based protocol) them
-when required.
+This plugin is currently only compatible with `s3` storage and have been
+tested with:
 
-More information about the architecture:
+-   [minIO](https://min.io)
+-   [Scaleway Object
+    Storage](https://www.scaleway.com/en/object-storage/)
 
--   <https://github.com/cloudnative-pg/cnpg-i/blob/main/docs/protocol.md>
--   <https://github.com/cloudnative-pg/cnpg-i>
+## Dependencies
 
-A plugin should define what **capabilities** are supported and
-implements the logic behind. By example a developer can use the
-`wal.WALCapability_RPC_TYPE_ARCHIVE_WAL` capability to build a specific
-WAL plugin archiver and write the logic of what should be done when the
-PostgreSQL archive command is executed (a specific hook is called by the
-CNPG manager, more information
-[here](https://github.com/cloudnative-pg/cloudnative-pg/blob/main/internal/cnpi/plugin/client/wal.go#L31)).
+To use this plugin, these dependencies should be installed on the target
+Kubernetes cluster:
 
-## plugin anatomy - pgBackRest example
+-   [CloudNativePG](https://cloudnative-pg.io/) 1.25 or newer (those
+    versions add the cnpg-i support).
+-   [Cert-Manager](https://cert-manager.io/)
 
-Let's imagine a plugin to archive the WAL with pgBackrest. That plugin
-will be split into 2 main components:
+## How install and use the pgbackrest plugin
 
--   A minimalist (or nano controller) container to inject some configuration (Eg:
-    sidecar container) when initializing an instance. That component is
-    visible when listing the Pods and Deployments on the `cnpg-system`
-    namespace for example.
+### Install
 
--   A pgBackRest manager container (a sidecar container injected by the
-    previous component) bound to a PostgreSQL / CNPG instance and
-    initialized by the "nano" controller. This sidecar-container can be
-    seen when observing the Pods dedicated to a PostgreSQL instance.
+To install and use this plugin, Kubernetes and CNPG users should:
 
-Here are more information about how this plugin should work:
+-   Build the Docker images and load them to a registry that is
+    accessible by the target Kubernetes cluster. You can build them with
+    the `make images` command, which will execute the appropriate docker
+    build commands.
 
--   When installing the plugin, a new deployment is created to run a Pod
-    for the controller of our plugin on the same namespace as the CNPG
-    operator.
+-   Install the plugin by applying the manifest located in the
+    `kubernetes` directory
 
--   The CNPG operator can detect the plugin when a dedicated Kubernetes
-    Service (with some specific annotation) is created.
+    ``` console
+    $ kubectl apply -f ./kubernetes
+    ```
 
--   Our specialized operator / plugin can expose the supported
-    capabilities (at least those required to manage the
-    [lifecycle](https://pkg.go.dev/github.com/cloudnative-pg/cnpg-i@v0.0.0-20250113133225-d0f454f240a2/pkg/lifecycle)
-    of our CNPG instances) to the CNPG operator.
+-   The installation can be verified by inspecting the presence and
+    status of the `pgbackrest-controller` deployment in the namespace
+    dedicated to the CloudNativePG operator (Eg: `cnpg-system`).
 
--   When initializing a new CNPG / PostgreSQL instance, our specialized
-    operator will be called by the CNPG operator (through gRPC) based on
-    the plugin capabilities.
+### Initiate an instance with pgBackRest
 
--   In some case, the plugin can alter the resources (Deployment / Pods
-    / Jobs) requested by the CNPG operator (this is done before
-    requesting the Kubernetes API).
+The `examples` directory contains several pre-configured manifests
+designed to work with kind (Eg: the pull policy is set to `Never`).
+These files may require modifications to run on other types of
+Kubernetes clusters.
 
-    In our pgbackrest plugin example, the plugin will inject a sidecar
-    container for `pgBackRest` within the PostgreSQL Pods. This sidecar
-    will execute a manager dedicated to `pgBackRest` (which expose the
-    required capabilities to backup the PostgreSQL instance).
+To use this plugin with a **Cluster**, CNPG users must:
 
--   Our newly created PostgreSQL instance will call the dedicated
-    `pgBackRest` manager (on the side container) when the archive
-    command is triggered.
-
-<https://github.com/cloudnative-pg/cnpg-i/blob/main/docs/protocol.md#cnpgi-wal-v1-WALCapability-RPC>
-
-## Dev
-
-We start by configuring (and execute) a CNPG development environment,
-then try our custom plugin on it:
-
--   Clone the main CNPG operator repository :
-    `$ git clone https://github.com/cloudnative-pg/cloudnative-pg`
-
--   Move to the newly created directory: `$ cd cloudenative-pg`
-
--   Install the required dependencies (please follow the instruction
-    within the README.md file)
-
--   Run a Kubernetes cluster with the development version of CNPG:
-    `$ make deploy-locally`
-
--   Then install cert-manager, CNPG operator and the plugin will use
-    certificates to communicate securely:
-    `kubectl apply -f https://github.com/cert-manager/cert-manager/releases/download/v1.16.2/cert-manager.yaml`
-
-Then we can deploy our plugin on our Kubernetes cluster with the running
-CloudNativePG operator:
-
--   Go back to the plugin directory `$ cd -`
-
--   Build the container image (with the cnpg-i-pgbackrest plugin
-    embedded):
-    `$ docker build -t pgbackrest-plugin:latest -f containers/Operator.container  .`
-
--   Load the resulting image to the Kubernetes cluster dedicated to the
-    development environment:
-    `kind load docker-image pgbackrest-plugin:latest --name pg-operator-e2e-v1-31-2`
-
-    The name of the cluster can be found by running:
-    `$ kind get clusters`
-
--   The new plugin can now be deployed within the `cnpg-system`
-    namespace, the manifest under the `kubernetes` directory can be
-    applied: `kubectl apply -f ./kubernetes/`
-
--   The deployment of this plugin can be verified by checking the
-    objects (Deployments, Pods,...) on the `cnpg-system`namespace
-
-Now the plugin should run on a dedicated Pods alongside the CNPG
-operator pod. The logs of both Pods can be inspected when creating a new
-PostgreSQL instance managed by the CNPG operator.
-
-## Implementation
-
-TODO: document how we implement our plugin
-
-## Install
-
-TODO: give some hint about how to install our plugin
-
-## How to use the plugin
-
-The `examples` directory contains a few manifests, those examples are
-pre-configured to work with **kind** (Eg; the pull policy is defined to
-`Never`). Those files probably need some modification to run on other
-type of Kubernetes cluster.
-
-### Initiate an instance
-
-To use this plugin, a CNPG user must:
-
--   Build the docker images and load them to a (public ?) registry. It's
-    possible to built them with the `make images` command, it will
-    execute the appropriate `docker build` commands.
-
--   Create a secret named `pgbackrest-s3-secret` on the namespace of the
-    PostgreSQL Cluster, this secret contains the `key` and `secret-key`
-    for the `S3` bucket.
+-   Create a secret named `pgbackrest-s3-secret` in the namespace of the
+    PostgreSQL Cluster, this secret must contain the `key` and
+    `secret-key` for the `S3` bucket.
 
     Example:
 
@@ -169,10 +73,12 @@ To use this plugin, a CNPG user must:
       key-secret: <secret_to_replace>
     ```
 
--   Adapt the PostgreSQL Cluster definition with:
+-   Adapt the PostgreSQL Cluster manifest by:
 
-    -   the plugin `pgbackrest.dalibo.com` (under the plugins entry)
-    -   the `s3` parameters directly bellow the plugin declaration
+    -   Adding the plugin definition `pgbackrest.dalibo.com` under the
+        `plugins` entry.
+    -   Specifying the `s3` parameters directly below the plugin
+        declaration
 
     Example:
 
@@ -196,13 +102,14 @@ To use this plugin, a CNPG user must:
         size: 1Gi
     ```
 
--   Then apply the cluster definition (`kubectl apply -f instance.yml`)
+-   Then apply the manifest (`kubectl apply -f instance.yml`)
 
-If it works without error, the Pod dedicated to the PostgreSQL Cluster
-should run 2 containers. One for `postgres` (this is the usual
-situation) and a second container for our plugin (named
-`plugin-pgbackrest`). The container dedicated to pgbackrest is now
-responsible of archiving the WAL and initiate the backup when requested.
+If it runs without errors, the Pod dedicated to the PostgreSQL Cluster
+should have now two containers. One for the `postgres` service (which is
+the default setup), an other one for the pgbackrest plugin, named
+`pgbackrest-plugin`. The injected container now holds the responsibility
+for archiving the WALs and triggering backups when a backup request is
+made.
 
 ### Backup an instance
 
@@ -251,7 +158,7 @@ spec:
 A scheduled backup uses almost the same definition as a "simple" backup,
 only the kind should be adapted (to `ScheduledBackup`). When using that
 kind of object, the schedule field (with a `crontab` annotation) should
-also be defined under the specification.
+also be defined under the specification (`spec`).
 
 Here is a full example of a scheduled backup definition using the
 pgbackrest plugin:
@@ -270,6 +177,108 @@ spec:
   pluginConfiguration:
     name: cnpg-i-pgbackrest.dalibo.com
 ```
+
+## How it works
+
+Here are some basic informations about how this plugin should work:
+
+-   When installing the plugin, a new deployment is created to run a Pod
+    for the controller (`pgbackrest-controller`) of our plugin in the
+    same namespace as the CNPG operator.
+
+-   The CNPG operator detects the plugin when a dedicated Kubernetes
+    Service (with some specific annotations) is created.
+
+-   Our specialized controller exposes the supported capabilities (at
+    least those required to manage the
+    [lifecycle](https://pkg.go.dev/github.com/cloudnative-pg/cnpg-i@v0.1.0/pkg/lifecycle)
+    of our CNPG instances) to the CNPG operator.
+
+-   When initializing a new Cluster configured with our plugin, the pgBackRest
+    controller will be called by the CloudNativePG operator.
+
+-   The plugin controller modifies the resources (Deployment / Pods /
+    Jobs) requested by the CNPG operator (this is done before requesting
+    the Kubernetes API), and inject some configuration if needed.
+
+    For our pgbackrest plugin, the controller inject a sidecar container
+    for `pgBackRest` within the PostgreSQL Pods. This sidecar container
+    executes a manager dedicated to `pgBackRest` (which expose the
+    required capabilities archive the WAL and backup the PostgreSQL
+    instance).
+
+-   Our newly created PostgreSQL instance will call the dedicated
+    `pgBackRest` manager (on the side container) when the archive
+    command is triggered.
+
+<https://github.com/cloudnative-pg/cnpg-i/blob/main/docs/protocol.md#cnpgi-wal-v1-WALCapability-RPC>
+
+## Dev
+
+To contribute and test the pgbackrest plugin a dedicated Kubernetes
+cluster with the CNPG operator is required. Contributors can use the dev
+version of the CNPG operator and follow those steps to prepare the
+required environment.
+
+-   Clone the main CNPG operator repository :
+    `$ git clone https://github.com/cloudnative-pg/cloudnative-pg`
+
+-   Move to the newly created directory: `$ cd cloudenative-pg`
+
+-   Install the required dependencies (please follow the instruction
+    within the README.md file, at least you will need
+    [**kind**](https://kind.sigs.k8s.io/))
+
+-   Run a Kubernetes cluster with the development version of CNPG:
+    `$ ./hack/setup-cluster.sh create load deploy`
+
+-   Then install cert-manager, CNPG operator and the plugin will use
+    certificates to communicate securely:
+    `kubectl apply -f https://github.com/cert-manager/cert-manager/releases/download/v1.16.2/cert-manager.yaml`
+
+Contributors and users can also refer to the CNPG documentation for more
+details on how it works and how to run the operator on
+[**Kind**](https://kind.sigs.k8s.io/).
+
+The plugin can now be deployed on that Kubernetes cluster:
+
+-   Go back to the plugin directory `$ cd -`
+
+-   Build the container images for the plugin (One for the controller
+    and another one for the sidecar container):
+
+    ``` console
+    $ docker build --tag pgbackrest-controller:latest --target pgbackrest-controller  -f containers/pgbackrestPlugin.containers .
+    $ docker build --tag pgbackrest-sidecar:latest --target pgbackrest-sidecar -f containers/pgbackrestPlugin.containers .
+    ```
+
+-   The images should now be loaded into the registry dedicated the
+    development environment:
+
+    ``` console
+    $ kind load docker-image pgbackrest-{controller,sidecar}:latest --name pg-operator-e2e-v1-31-2
+    ```
+
+    If needed, it's possible to retrieve the name of the cluster by
+    running:
+
+    ``` console
+    $ kind get clusters
+    ```
+
+-   The plugin controller can now be deployed within the `cnpg-system`
+    namespace. For that the manifests on the `kubernetes` should be
+    applied:
+
+    ``` console
+    $ kubectl apply -f ./kubernetes/
+    ```
+
+-   Then the deployment can be verified by inspecting the objects
+    (Deployments, Pods,...) on the `cnpg-system` namespace. A
+    `pgbackrest-controller` deployment must be present. The plugin
+    controller should run on a dedicated Pod alongside the CNPG operator
+    Pod.
 
 <!--
     vim: spelllang=en spell
