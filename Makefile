@@ -13,20 +13,22 @@ sidecar:
 
 images: sidecar controller
 
-images-upload-kind: images
-	kind load docker-image pgbackrest-controller:latest --name pg-operator-e2e-v1-31-2
-	kind load docker-image pgbackrest-sidecar:latest --name pg-operator-e2e-v1-31-2
+.PHONY: create-kind-e2e-cluster
+create-kind-e2e-cluster:
+	kind create cluster --name e2e-cnpg-pgbackrest
 
-deploy:
-	kubectl apply -f ./kubernetes
+.PHONY: images-upload-kind-e2e-cluster
+images-upload-kind-e2e-cluster: images
+	kind load docker-image pgbackrest-controller:latest --name e2e-cnpg-pgbackrest
+	kind load docker-image pgbackrest-sidecar:latest --name e2e-cnpg-pgbackrest
 
-test: deploy
-	kubectl apply -f instance.yml
+.PHONY: test-e2e-run-tests
+test-e2e-run-tests:
+	go test -v test/e2e/e2e_test.go
 
-deploy-kind: images-upload-kind deploy
+.PHONY: test-e2e
+test-e2e: create-kind-e2e-cluster images-upload-kind-e2e-cluster test-e2e-run-tests
 
-clean:
-	kubectl delete -f instance.yml
-	sleep 3
-	kubectl delete -f ./kubernetes
-
+.PHONY: clean-kind-e2e-cluster
+clean-kind-e2e-cluster:
+	kind delete cluster --name e2e-cnpg-pgbackrest
