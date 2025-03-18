@@ -194,8 +194,8 @@ Here are some basic informations about how this plugin should work:
     [lifecycle](https://pkg.go.dev/github.com/cloudnative-pg/cnpg-i@v0.1.0/pkg/lifecycle)
     of our CNPG instances) to the CNPG operator.
 
--   When initializing a new Cluster configured with our plugin, the pgBackRest
-    controller will be called by the CloudNativePG operator.
+-   When initializing a new Cluster configured with our plugin, the
+    pgBackRest controller will be called by the CloudNativePG operator.
 
 -   The plugin controller modifies the resources (Deployment / Pods /
     Jobs) requested by the CNPG operator (this is done before requesting
@@ -279,6 +279,32 @@ The plugin can now be deployed on that Kubernetes cluster:
     `pgbackrest-controller` deployment must be present. The plugin
     controller should run on a dedicated Pod alongside the CNPG operator
     Pod.
+
+### Executing E2E tests
+
+E2E Tests can be run automatically, for that the easiest approach is to
+use [**kind**](https://kind.sigs.k8s.io/) and the appropriate make
+target:
+
+``` console
+$ make test-e2e
+```
+
+That command will:
+
+-   Create a dedicated Kubernetes cluster (managed by **kind** and named
+    `e2e-cnpg-pgbackrest`)
+-   Build the container images for the pgbackrest plugin
+-   Load them on the Kubernetes Cluster
+-   Run the tests defined on `test/e2e/e2e_test.go`, which also install
+    the dependencies and our plugin.
+
+To only run the tests (`test/e2e/e2e_test.go`), the `test-e2e-run-tests`
+target can be used:
+
+``` console
+$ make test-e2e-run-tests
+```
 
 <!--
     vim: spelllang=en spell

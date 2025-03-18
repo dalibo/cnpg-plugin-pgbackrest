@@ -5,8 +5,8 @@ metadata:
   name: pgbackrest-s3-secret
 type: Opaque
 stringData:
-  key: xxx
-  key-secret: xxx
+  key: minioKey
+  key-secret: minioSecret
 ---
 apiVersion: postgresql.cnpg.io/v1
 kind: Cluster
@@ -15,15 +15,17 @@ metadata:
 spec:
   # set to Never, because we use kind and image should be loaded on
   # the Kubernetes cluster and not pulled from an external registry.
-  imagePullPolicy: Never
+  imagePullPolicy: IfNotPresent
   instances: 1
   plugins:
     - name: pgbackrest.dalibo.com
       parameters:
-        s3-bucket: demo-pgbackrest
-        s3-endpoint: xxx
-        s3-region: xxx
-        s3-repo-path: /demo-pgbackrest-4/cluster-demo
+        s3-bucket: demo
+        s3-endpoint: s3.minio.svc.cluster.local
+        s3-region: us-east-1
+        s3-repo-path: /cluster-demo
+        s3-verify-tls: "false"
+        s3-uri-style: path
         stanza: pgbackrest
   storage:
     size: 1Gi

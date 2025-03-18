@@ -66,7 +66,10 @@ func (impl LifecycleImplementation) LifecycleHook(
 	if err := decoder.DecodeObjectLenient(request.GetClusterDefinition(), &cluster); err != nil {
 		return nil, err
 	}
-	pluginConfig := NewFromCluster(&cluster)
+	pluginConfig, err := NewFromCluster(&cluster)
+	if err != nil {
+		return nil, fmt.Errorf("Can't parse user parameters: %w", err)
+	}
 	contextLogger.Info("Known plugin config: %v", pluginConfig)
 	// TODO: add reconcilier stuff here
 	switch kind {
@@ -117,6 +120,12 @@ func consolidateEnvVar(cluster *cnpgv1.Cluster, request *lifecycle.OperatorLifec
 		{Name: "PGBACKREST_repo1-s3-endpoint", Value: pluginConfig.S3Endpoint},
 		{Name: "PGBACKREST_repo1-s3-region", Value: pluginConfig.S3Region},
 		{Name: "PGBACKREST_stanza", Value: pluginConfig.S3Stanza},
+	}
+	if val := pluginConfig.S3UriStyle; val != "" {
+		envPgbackrest = append(envPgbackrest, corev1.EnvVar{Name: "PGBACKREST_repo1-s3-uri-style", Value: val})
+	}
+	if !pluginConfig.S3VerifyTls {
+		envPgbackrest = append(envPgbackrest, corev1.EnvVar{Name: "PGBACKREST_repo1-s3-verify-tls", Value: "n"})
 	}
 	envs = append(envs, staticEnVarConfig()...)
 	envs = append(envs, envPgbackrest...)
