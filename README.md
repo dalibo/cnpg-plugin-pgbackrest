@@ -312,6 +312,13 @@ target can be used:
 $ make test-e2e-run-tests
 ```
 
+## Resources
+
+This plugin is inspired by the:
+
+- [Barman Cloud plugin](https://github.com/cloudnative-pg/plugin-barman-cloud)
+- [Hello World plugin](https://github.com/cloudnative-pg/cnpg-i-hello-world)
+
 <!--
     vim: spelllang=en spell
   -->
