@@ -1,3 +1,7 @@
+# SPDX-FileCopyrightText: 2025 Dalibo
+#
+# SPDX-License-Identifier: Apache-2.0
+
 .PHONY: build-controller-image
 build-controller-image:
 	docker build --tag pgbackrest-controller:latest --target pgbackrest-controller \

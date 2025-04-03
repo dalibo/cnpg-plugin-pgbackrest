@@ -1,3 +1,9 @@
+<!--
+SPDX-FileCopyrightText: 2025 Dalibo
+
+SPDX-License-Identifier: Apache-2.0
+-->
+
 # pgBackRest CNPG plugin
 
 Experimental CNPG operator plugin to backup PostgreSQL instances with

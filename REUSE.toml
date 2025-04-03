@@ -1,0 +1,11 @@
+# SPDX-FileCopyrightText: 2025 Dalibo
+#
+# SPDX-License-Identifier: Apache-2.0
+
+version = 1
+
+[[annotations]]
+path = ["examples/**", "kubernetes/**", "go.sum", "go.mod"]
+SPDX-FileCopyrightText = "2025 Dalibo"
+SPDX-License-Identifier = "Apache-2.0"
+precedence = "override"

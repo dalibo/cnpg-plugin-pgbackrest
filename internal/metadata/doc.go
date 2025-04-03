@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2025 Dalibo <contact@dalibo.com>
+//
+// SPDX-License-Identifier: Apache-2.0
+
 package metadata
 
 import "github.com/cloudnative-pg/cnpg-i/pkg/identity"
