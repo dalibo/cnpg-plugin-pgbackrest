@@ -10,6 +10,7 @@ import (
 	"os"
 	"reflect"
 	"testing"
+	"time"
 
 	"github.com/dalibo/cnpg-i-pgbackrest/test/e2e/internal/certmanager"
 	"github.com/dalibo/cnpg-i-pgbackrest/test/e2e/internal/cluster"
@@ -146,9 +147,21 @@ func TestDeployInstance(t *testing.T) {
 	} else if !ready {
 		t.Error("pod not ready")
 	}
-	// more verification can be done here (before deleting the cluster)
+
+	// Verify we can backup our cluster
+	backupName := types.NamespacedName{Name: "backup-01", Namespace: ns}
+	backup, err := cluster.Backup(k8sClient, clusterName, backupName)
+	if err != nil {
+		t.Error(err)
+	}
+	ctx, cancel := context.WithTimeout(context.TODO(), time.Minute*2)
+	defer cancel()
+	if err := cluster.BackupCompleted(ctx, k8sClient, backupName, time.Second*2); err != nil {
+		t.Error(err)
+	}
 
 	// delete created ressources
+	k8sClient.Delete(ctx, backup)
 	k8sClient.Delete(ctx, c)
 	k8sClient.Delete(ctx, secret)
 }
