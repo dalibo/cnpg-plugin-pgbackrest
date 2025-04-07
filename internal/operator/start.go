@@ -14,8 +14,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
-// CNPGI is the implementation of the CNPG-i server
-type CNPGI struct {
+type PgbackresControllerServer struct {
 	Client         client.Client
 	PluginPath     string
 	ServerCertPath string
@@ -24,9 +23,7 @@ type CNPGI struct {
 	ServerAddress  string
 }
 
-// Start starts the GRPC server
-// of the operator plugin
-func (c *CNPGI) Start(ctx context.Context) error {
+func (c *PgbackresControllerServer) Start(ctx context.Context) error {
 	enrich := func(server *grpc.Server) error {
 		reconciler.RegisterReconcilerHooksServer(server, ReconcilerImplementation{
 			Client: c.Client,

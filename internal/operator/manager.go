@@ -63,7 +63,7 @@ func Start(ctx context.Context) error {
 		return err
 	}
 
-	if err := mgr.Add(&CNPGI{
+	if err := mgr.Add(&PgbackresControllerServer{
 		Client:         mgr.GetClient(),
 		PluginPath:     viper.GetString("plugin-path"),
 		ServerCertPath: viper.GetString("server-cert"),
@@ -71,7 +71,7 @@ func Start(ctx context.Context) error {
 		ClientCertPath: viper.GetString("client-cert"),
 		ServerAddress:  viper.GetString("server-address"),
 	}); err != nil {
-		setupLog.Error(err, "unable to create CNPGI runnable")
+		setupLog.Error(err, "unable to create the pgbackrest runnable controller")
 		return err
 	}
 
