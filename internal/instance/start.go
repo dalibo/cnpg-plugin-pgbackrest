@@ -15,8 +15,8 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
-// CNPGI is the implementation of the PostgreSQL sidecar
-type CNPGI struct {
+// PgbackrestPlugin is the implementation of the PostgreSQL sidecar
+type PgbackrestPluginServer struct {
 	Client         client.Client
 	PGDataPath     string
 	PGWALPath      string
@@ -27,7 +27,7 @@ type CNPGI struct {
 }
 
 // Start starts the GRPC service
-func (c *CNPGI) Start(ctx context.Context) error {
+func (c *PgbackrestPluginServer) Start(ctx context.Context) error {
 	enrich := func(server *grpc.Server) error {
 		wal.RegisterWALServer(server, wal_pgbackrest.WALSrvImplementation{
 			InstanceName:   c.InstanceName,
