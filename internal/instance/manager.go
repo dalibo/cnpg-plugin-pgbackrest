@@ -26,7 +26,8 @@ func init() {
 	utilruntime.Must(clientgoscheme.AddToScheme(scheme))
 }
 
-// Start starts the sidecar informers and CNPG-i server
+// Start starts the sidecar informers and pgbackrest plugin
+// server. This is the part running on the sidecar container.
 func Start(ctx context.Context) error {
 	setupLog := log.FromContext(ctx)
 	setupLog.Info("Starting pgbackrest instance plugin")
@@ -50,7 +51,7 @@ func Start(ctx context.Context) error {
 		return err
 	}
 
-	if err := mgr.Add(&CNPGI{
+	if err := mgr.Add(&PgbackrestPluginServer{
 		Client:       mgr.GetClient(),
 		InstanceName: podName,
 		// TODO: improve
@@ -59,7 +60,7 @@ func Start(ctx context.Context) error {
 		SpoolDirectory: viper.GetString("spool-directory"),
 		PluginPath:     viper.GetString("plugin-path"),
 	}); err != nil {
-		setupLog.Error(err, "unable to create CNPGI runnable")
+		setupLog.Error(err, "unable to create pbacrest plugin runnable/server")
 		return err
 	}
 
