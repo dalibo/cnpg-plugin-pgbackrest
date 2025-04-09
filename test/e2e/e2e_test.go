@@ -27,34 +27,37 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
 )
 
+var cl *kubernetes.K8sClient
+
 // Deploy CNGP operator, certmanager, minio and our plugins
 func setup() error {
-	k8sClient, err := kubernetes.Client()
+	var err error
+	cl, err = kubernetes.Client()
 	if err != nil {
 		panic("can't init kubernetes client")
 	}
 	s := kubernetes.InstallSpec{ManifestUrl: "https://raw.githubusercontent.com/cloudnative-pg/cloudnative-pg/release-1.25/releases/cnpg-1.25.1.yaml"}
-	if err := cnpg.Install(*k8sClient, s); err != nil {
+	if err := cnpg.Install(*cl, s); err != nil {
 		panic("can't install CNPG")
 	}
 	s = kubernetes.InstallSpec{ManifestUrl: "https://github.com/cert-manager/cert-manager/releases/download/v1.16.2/cert-manager.yaml"}
-	if err := certmanager.Install(*k8sClient, s); err != nil {
+	if err := certmanager.Install(*cl, s); err != nil {
 		panic("can't install certmanager")
 	}
-	if err = minio.Install(*k8sClient); err != nil {
+	if err = minio.Install(*cl); err != nil {
 		panic("can't install minio")
 	}
 	// install our pgbackrest plugin from kubernetes directory at the root
 	// of the repository
 	path, err := os.Getwd()
 	s = kubernetes.InstallSpec{ManifestUrl: path + "/../../kubernetes"}
-	if err := pgbackrest.Install(*k8sClient, s); err != nil {
+	if err := pgbackrest.Install(*cl, s); err != nil {
 		panic("can't deploy plugin")
 	}
 	return nil
 }
 
-func createSecret(ctx context.Context, k8sClient *kubernetes.K8sClient, namespace string) (*v1.Secret, error) {
+func createSecret(ctx context.Context, cl *kubernetes.K8sClient, namespace string) (*v1.Secret, error) {
 	// TODO: move that ?
 	secret := &v1.Secret{
 		TypeMeta: metav1.TypeMeta{
@@ -71,7 +74,7 @@ func createSecret(ctx context.Context, k8sClient *kubernetes.K8sClient, namespac
 			"key-secret": minio.SECRET_KEY,
 		},
 	}
-	return secret, k8sClient.Create(ctx, secret)
+	return secret, cl.Create(ctx, secret)
 }
 
 func teardown() {
@@ -87,15 +90,9 @@ func TestMain(m *testing.M) {
 
 func TestInstall(t *testing.T) {
 	logcr.SetLogger(zap.New(zap.WriteTo(os.Stdout), zap.UseDevMode(true)))
-	// basic verification to ensure our plugin is present
-	k8sClient, err := kubernetes.Client()
-	if k8sClient == nil || err != nil {
-		t.Errorf("error kubernetes client not initialized")
-	}
-	// basic check for deployment
 	fqdn := types.NamespacedName{Name: "pgbackrest-controller", Namespace: "cnpg-system"}
 	obj := &appsv1.Deployment{}
-	k8sClient.Get(context.TODO(), fqdn, obj)
+	cl.Get(context.TODO(), fqdn, obj)
 	var want int32 = 1
 	got := obj.Status.ReadyReplicas
 	if got != want {
@@ -105,7 +102,7 @@ func TestInstall(t *testing.T) {
 	// verify service creation
 	fqdn = types.NamespacedName{Name: "pgbackrest", Namespace: "cnpg-system"}
 	svc := &corev1.Service{}
-	err = k8sClient.Get(context.TODO(), fqdn, svc)
+	err := cl.Get(context.TODO(), fqdn, svc)
 	if err != nil {
 		t.Errorf("error no service for pgbackrest found %s", err.Error())
 	}
@@ -116,20 +113,16 @@ func TestInstall(t *testing.T) {
 	if !reflect.DeepEqual(svc.Labels, want_labels) {
 		t.Errorf("error labels not valid  %v", svc.Labels)
 	}
-	k8sClient.Get(context.TODO(), fqdn, obj)
+	cl.Get(context.TODO(), fqdn, obj)
 }
 
 // basic verification to ensure we can use our plugin with a cluster
 func TestDeployInstance(t *testing.T) {
 	logcr.SetLogger(zap.New(zap.WriteTo(os.Stdout), zap.UseDevMode(true)))
-	k8sClient, err := kubernetes.Client()
-	if k8sClient == nil || err != nil {
-		t.Errorf("error kubernetes client not initialized")
-	}
 	ns := "default"
 	ctx := context.TODO()
 	// first create a secret
-	secret, err := createSecret(ctx, k8sClient, ns)
+	secret, err := createSecret(ctx, cl, ns)
 	if err != nil {
 		t.Error(err.Error())
 	}
@@ -138,11 +131,11 @@ func TestDeployInstance(t *testing.T) {
 	clusterName := "cluster-demo"
 	p := maps.Clone(cluster.DefaultParamater)
 	p["s3-repo-path"] = "/" + clusterName
-	c, err := cluster.Create(k8sClient, ns, clusterName, 1, "100M", p)
+	c, err := cluster.Create(cl, ns, clusterName, 1, "100M", p)
 	if err != nil {
 		t.Error(err.Error())
 	}
-	if ready, err := k8sClient.PodsIsReady(ns, clusterName+"-1", 30, 2); err != nil {
+	if ready, err := cl.PodsIsReady(ns, clusterName+"-1", 30, 2); err != nil {
 		t.Errorf("error when requesting pod status, %s", err.Error())
 	} else if !ready {
 		t.Error("pod not ready")
@@ -150,18 +143,18 @@ func TestDeployInstance(t *testing.T) {
 
 	// Verify we can backup our cluster
 	backupName := types.NamespacedName{Name: "backup-01", Namespace: ns}
-	backup, err := cluster.Backup(k8sClient, clusterName, backupName)
+	backup, err := cluster.Backup(cl, clusterName, backupName)
 	if err != nil {
 		t.Error(err)
 	}
-	ctx, cancel := context.WithTimeout(context.TODO(), time.Minute*2)
+	ctxTimeout, cancel := context.WithTimeout(context.TODO(), time.Minute*2)
 	defer cancel()
-	if err := cluster.BackupCompleted(ctx, k8sClient, backupName, time.Second*2); err != nil {
+	if err := cluster.BackupCompleted(ctxTimeout, cl, backupName, time.Second*2); err != nil {
 		t.Error(err)
 	}
 
 	// delete created ressources
-	k8sClient.Delete(ctx, backup)
-	k8sClient.Delete(ctx, c)
-	k8sClient.Delete(ctx, secret)
+	cl.Delete(ctx, backup)
+	cl.Delete(ctx, c)
+	cl.Delete(ctx, secret)
 }
