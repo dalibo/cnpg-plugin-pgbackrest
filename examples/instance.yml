@@ -6,7 +6,7 @@ metadata:
 type: Opaque
 stringData:
   key: minioKey
-  key-secret: minioSecret
+  key-secret: minioKey
 ---
 apiVersion: postgresql.cnpg.io/v1
 kind: Cluster
