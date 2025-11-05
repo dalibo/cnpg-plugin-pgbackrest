@@ -36,4 +36,4 @@ RUN apt-get update && apt-get -y install --no-install-recommends  \
 
 RUN chmod 0744 /etc/pgbackrest.conf
 USER $USERNAME
-ENTRYPOINT ["/bin/sh"]
+ENTRYPOINT ["/app/bin/cnpg-i-pgbackrest"]
