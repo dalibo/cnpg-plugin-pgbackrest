@@ -41,14 +41,14 @@ func (WALSrvImplementation) GetCapabilities(
 					},
 				},
 			},
-			// archive first, then we will see how to restore
-			//			{
-			//				Type: &wal.WALCapability_Rpc{
-			//					Rpc: &wal.WALCapability_RPC{
-			//						Type: wal.WALCapability_RPC_TYPE_RESTORE_WAL,
-			//					},
-			//				},
-			//			},
+			///archive first, then we will see how to restore
+			{
+				Type: &wal.WALCapability_Rpc{
+					Rpc: &wal.WALCapability_RPC{
+						Type: wal.WALCapability_RPC_TYPE_RESTORE_WAL,
+					},
+				},
+			},
 		},
 	}, nil
 }
@@ -80,15 +80,32 @@ func (w_impl WALSrvImplementation) Archive(
 	return &wal.WALArchiveResult{}, nil
 }
 
-// Not yet implemented
-func (WALSrvImplementation) Restore(
+func (w WALSrvImplementation) Restore(
 	ctx context.Context,
 	request *wal.WALRestoreRequest,
 ) (*wal.WALRestoreResult, error) {
+	logger := log.FromContext(ctx)
 
-	contextLogger := log.FromContext(ctx)
-	contextLogger.Info("Restoring WAL...")
-	panic("implement me")
+	walName := request.GetSourceWalName()
+	destinationPath := request.GetDestinationFileName()
+
+	logger.Info("Starting WAL restore via pgBackRest",
+		"walName", walName,
+		"destinationPath", destinationPath,
+	)
+
+	_, err := pgbackrest.GetWAL(walName, destinationPath, utils.RealCmdRunner)
+	if err != nil {
+		return nil, fmt.Errorf("getting archive failed: %w", err)
+	}
+
+	logger.Info("Successfully restored WAL via pgBackRest",
+		"walName",
+		walName,
+		"destinationPath",
+		destinationPath)
+
+	return &wal.WALRestoreResult{}, nil
 }
 
 func (WALSrvImplementation) SetFirstRequired(

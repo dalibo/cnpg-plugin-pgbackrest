@@ -43,9 +43,12 @@ func Start(ctx context.Context) error {
 	})
 
 	mgr, err := ctrl.NewManager(ctrl.GetConfigOrDie(), ctrl.Options{
-		Scheme:                 scheme,
-		WebhookServer:          webhookServer,
-		HealthProbeBindAddress: viper.GetString("health-probe-bind-address"),
+		Scheme:                        scheme,
+		WebhookServer:                 webhookServer,
+		HealthProbeBindAddress:        viper.GetString("health-probe-bind-address"),
+		LeaderElection:                true,
+		LeaderElectionID:              "822e3f5c.cnpg.io",
+		LeaderElectionReleaseOnCancel: true,
 	})
 	if err != nil {
 		setupLog.Error(err, "unable to start manager")
