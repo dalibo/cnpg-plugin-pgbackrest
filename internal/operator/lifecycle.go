@@ -337,8 +337,7 @@ func reconcilePodSpec(
 	}
 	containerConfig.Name = "plugin-pgbackrest"
 	containerConfig.ImagePullPolicy = cluster.Spec.ImagePullPolicy
-	containerConfig.Env = mergeEnvs(containerConfig.Env, mainEnv)
-	containerConfig.Env = mergeEnvs(containerConfig.Env, defaultEnv)
+	containerConfig.Env = mergeEnvs(containerConfig.Env, mainEnv, defaultEnv)
 	containerConfig.StartupProbe = baseProbe.DeepCopy()
 	containerConfig.RestartPolicy = ptr.To(corev1.ContainerRestartPolicyAlways)
 	InjectPluginVolumePodSpec(spec, mainContainerName)
@@ -423,19 +422,19 @@ func ensureVolumeMount(mounts []corev1.VolumeMount, volumeMounts ...corev1.Volum
 }
 
 // mergeEnvs merges environment variables, skipping duplicates by name
-func mergeEnvs(base, overrides []corev1.EnvVar) []corev1.EnvVar {
+func mergeEnvs(envSlices ...[]corev1.EnvVar) []corev1.EnvVar {
 	envMap := make(map[string]corev1.EnvVar)
 
-	for _, env := range base {
-		envMap[env.Name] = env
-	}
-
-	for _, env := range overrides {
-		if _, exists := envMap[env.Name]; !exists {
-			envMap[env.Name] = env
+	// Iterate through all provided slices
+	for _, slice := range envSlices {
+		for _, env := range slice {
+			if _, exists := envMap[env.Name]; !exists {
+				envMap[env.Name] = env
+			}
 		}
 	}
 
+	// Convert map back to slice
 	merged := make([]corev1.EnvVar, 0, len(envMap))
 	for _, env := range envMap {
 		merged = append(merged, env)
