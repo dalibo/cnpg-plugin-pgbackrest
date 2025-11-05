@@ -5,10 +5,14 @@
 package pgbackrest
 
 import (
+	"bytes"
+	"context"
 	"encoding/json"
 	"fmt"
 	"os"
 	"os/exec"
+
+	"sigs.k8s.io/controller-runtime/pkg/log"
 )
 
 type Timestamp struct {
@@ -102,6 +106,14 @@ func PushWal(walName string, cmdRunner CmdRunner) (string, error) {
 	}
 	return string(output), nil
 }
+func GetWAL(walName string, destinationPath string, cmdRunner CmdRunner) (string, error) {
+	cmd := cmdRunner("pgbackrest", "archive-get", walName, destinationPath)
+	output, err := cmd.CombinedOutput()
+	if err != nil {
+		return "", fmt.Errorf("pgBackRest archive-get failed, output: %s %w", string(output), err)
+	}
+	return string(output), nil
+}
 
 func Backup(lockFile *string, cmdRunner CmdRunner) (*BackupInfo, error) {
 	cmd := cmdRunner("pgbackrest", "backup")
@@ -150,4 +162,25 @@ func LatestBackup(backups []BackupInfo) *BackupInfo {
 		}
 	}
 	return &found
+}
+
+func Restore(ctx context.Context, lockFile *string, cmdRunner CmdRunner) error {
+	contextLogger := log.FromContext(ctx)
+	cmd := cmdRunner("pgbackrest", "restore")
+	cmd.Env = os.Environ()
+	cmd.Env = append(cmd.Env,
+		"PGBACKREST_archive-check=n",
+	)
+	var stdout, stderr bytes.Buffer
+	cmd.Stdout = &stdout
+	cmd.Stderr = &stderr
+	if lockFile != nil && (*lockFile) != "" {
+		cmd.Env = append(cmd.Env, "PGBACKREST_lock-path="+(*lockFile))
+	}
+	err := cmd.Run()
+	if err != nil {
+		contextLogger.Info("pgbackrest restore error", "stdout", stdout.String(), "stderr", stderr.String())
+		return fmt.Errorf("can't restore: %s, error : %w", stderr.String(), err)
+	}
+	return nil
 }

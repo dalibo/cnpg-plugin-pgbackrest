@@ -69,9 +69,7 @@ func (r ReconcilerImplementation) Pre(
 	ctx = log.IntoContext(ctx, contextLogger)
 
 	contextLogger.Info("Pre hook reconciliation completed")
-	return &reconciler.ReconcilerHooksResult{
-		Behavior: reconciler.ReconcilerHooksResult_BEHAVIOR_CONTINUE,
-	}, nil
+	return &reconciler.ReconcilerHooksResult{Behavior: reconciler.ReconcilerHooksResult_BEHAVIOR_CONTINUE}, nil
 }
 
 // Post implements the reconciler interface
@@ -79,7 +77,5 @@ func (r ReconcilerImplementation) Post(
 	_ context.Context,
 	_ *reconciler.ReconcilerHooksRequest,
 ) (*reconciler.ReconcilerHooksResult, error) {
-	return &reconciler.ReconcilerHooksResult{
-		Behavior: reconciler.ReconcilerHooksResult_BEHAVIOR_CONTINUE,
-	}, nil
+	return &reconciler.ReconcilerHooksResult{Behavior: reconciler.ReconcilerHooksResult_BEHAVIOR_CONTINUE}, nil
 }

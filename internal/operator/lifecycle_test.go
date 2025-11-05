@@ -20,26 +20,24 @@ func envVarSliceToMap(envVars []corev1.EnvVar) map[string]string {
 	return envMap
 }
 func TestEnvFromContainer(t *testing.T) {
-	srcPod := corev1.Pod{
-		Spec: corev1.PodSpec{
-			Containers: []corev1.Container{
-				{
-					Name: "test-container-with-var",
-					Env: []corev1.EnvVar{
-						{Name: "V1", Value: "va1"},
-						{Name: "V2", Value: "va2"},
-						{Name: "V28", Value: "va99"},
-					},
+	srcPod := corev1.PodSpec{
+		Containers: []corev1.Container{
+			{
+				Name: "test-container-with-var",
+				Env: []corev1.EnvVar{
+					{Name: "V1", Value: "va1"},
+					{Name: "V2", Value: "va2"},
+					{Name: "V28", Value: "va99"},
 				},
-				{
-					Name: "test-container-without-shared-var",
-					Env: []corev1.EnvVar{
-						{Name: "V3ContainerOnly", Value: "va3"},
-					},
+			},
+			{
+				Name: "test-container-without-shared-var",
+				Env: []corev1.EnvVar{
+					{Name: "V3ContainerOnly", Value: "va3"},
 				},
-				{
-					Name: "container-without-env",
-				},
+			},
+			{
+				Name: "container-without-env",
 			},
 		},
 	}
@@ -57,9 +55,7 @@ func TestEnvFromContainer(t *testing.T) {
 				{Name: "V1", Value: "va1"},
 				{Name: "V28", Value: "Va128"}},
 			[]corev1.EnvVar{
-				{Name: "V1", Value: "va1"},    // this should not be updated, it exists on srcData
-				{Name: "V2", Value: "va2"},    // this should be added from the container
-				{Name: "V28", Value: "Va128"}, // this should not be updated, since it exists on the srcData
+				{Name: "V2", Value: "va2"}, // this should be added from the container
 			},
 		},
 		{
@@ -70,8 +66,6 @@ func TestEnvFromContainer(t *testing.T) {
 				{Name: "V29", Value: "va29"},
 			},
 			[]corev1.EnvVar{
-				{Name: "V17", Value: "va19"}, // V17 & V29 directly from data src (not in container def)
-				{Name: "V29", Value: "va29"},
 				{Name: "V3ContainerOnly", Value: "va3"}, // this should be addeded (does not exist on srcData, but exists on container def)
 			},
 		},
@@ -82,11 +76,7 @@ func TestEnvFromContainer(t *testing.T) {
 				{Name: "V1", Value: "va1"},
 				{Name: "V2", Value: "va2"},
 				{Name: "V28", Value: "Va128"}},
-			[]corev1.EnvVar{
-				{Name: "V1", Value: "va1"},
-				{Name: "V2", Value: "va2"},
-				{Name: "V28", Value: "Va128"},
-			},
+			[]corev1.EnvVar{},
 		},
 	}
 

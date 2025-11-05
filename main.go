@@ -16,6 +16,7 @@ import (
 
 	"github.com/dalibo/cnpg-i-pgbackrest/cmd/instance"
 	"github.com/dalibo/cnpg-i-pgbackrest/cmd/operator"
+	"github.com/dalibo/cnpg-i-pgbackrest/cmd/restore"
 )
 
 func main() {
@@ -34,6 +35,7 @@ func main() {
 
 	rootCmd.AddCommand(operator.NewCmd())
 	rootCmd.AddCommand(instance.NewCmd())
+	rootCmd.AddCommand(restore.NewCmd())
 
 	if err := rootCmd.ExecuteContext(ctrl.SetupSignalHandler()); err != nil {
 		if !errors.Is(err, context.Canceled) {
