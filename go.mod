@@ -1,6 +1,6 @@
 module github.com/dalibo/cnpg-i-pgbackrest
 
-go 1.24.2
+go 1.25.0
 
 require (
 	github.com/cert-manager/cert-manager v1.17.1
