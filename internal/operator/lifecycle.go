@@ -229,26 +229,25 @@ func (impl LifecycleImplementation) reconcileJob(
 	request *lifecycle.OperatorLifecycleRequest,
 	env []corev1.EnvVar,
 ) (*lifecycle.OperatorLifecycleResponse, error) {
-	contextLogger := log.FromContext(ctx).WithName("lifecycle")
+	logger := log.FromContext(ctx).WithName("lifecycle")
 
-	pluginSrcInfo := cluster.GetRecoverySourcePlugin()
-	if pluginSrcInfo == nil || pluginSrcInfo.Name != metadata.PluginName {
-		contextLogger.Debug("cluster does not use the this plugin for recovery, skipping")
+	if p := cluster.GetRecoverySourcePlugin(); p == nil || p.Name != metadata.PluginName {
+		logger.Debug("cluster does not use the this plugin for recovery, skipping")
 		return nil, nil
 	}
 
-	contextLogger.Info("we are on reconcile job func")
+	logger.Info("we are on reconcile job func")
 
 	var job batchv1.Job
 	err := decoder.DecodeObjectStrict(request.GetObjectDefinition(), &job, batchv1.SchemeGroupVersion.WithKind("Job"))
 	if err != nil {
-		contextLogger.Error(err, "failed to decode job")
+		logger.Error(err, "failed to decode job")
 		return nil, err
 	}
 
-	jobRole := getCNPGJobRole(&job)
-	if jobRole != "full-recovery" {
-		contextLogger.Debug("job is not a recovery job, skipping")
+	role := getCNPGJobRole(&job)
+	if role != "full-recovery" {
+		logger.Debug("job is not a recovery job, skipping")
 		return nil, nil
 	}
 
@@ -257,14 +256,14 @@ func (impl LifecycleImplementation) reconcileJob(
 
 	sidecarContainer := &corev1.Container{Env: env, Args: []string{"restore"}}
 
-	if err := reconcilePodSpec(cluster, podSpec, jobRole, sidecarContainer); err != nil {
+	if err := reconcilePodSpec(cluster, podSpec, role, sidecarContainer); err != nil {
 		return nil, fmt.Errorf("can't reconcile job: %w", err)
 	}
 
 	// Inject plugin-specific volume mounts
 	// only needed here, for postgres container, it's done by the CNPG machenery
-	injectPluginVolumeMount(podSpec, jobRole)
-	if err := addVolumeMountsFromContainer(sidecarContainer, jobRole, podSpec.Containers); err != nil {
+	injectPluginVolumeMount(podSpec, role)
+	if err := addVolumeMountsFromContainer(sidecarContainer, role, podSpec.Containers); err != nil {
 		return nil, err
 	}
 
@@ -287,7 +286,7 @@ func (impl LifecycleImplementation) reconcileJob(
 		return nil, err
 	}
 
-	contextLogger.Debug("Patched Job", "content", string(patch))
+	logger.Debug("Patched Job", "content", string(patch))
 	return &lifecycle.OperatorLifecycleResponse{JsonPatch: patch}, nil
 }
 
