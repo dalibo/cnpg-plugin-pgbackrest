@@ -230,8 +230,8 @@ func (impl LifecycleImplementation) reconcileJob(
 	env []corev1.EnvVar,
 ) (*lifecycle.OperatorLifecycleResponse, error) {
 	contextLogger := log.FromContext(ctx).WithName("lifecycle")
-	pluginSrcInfo := cluster.GetRecoverySourcePlugin()
 
+	pluginSrcInfo := cluster.GetRecoverySourcePlugin()
 	if pluginSrcInfo == nil || pluginSrcInfo.Name != metadata.PluginName {
 		contextLogger.Debug("cluster does not use the this plugin for recovery, skipping")
 		return nil, nil
@@ -245,6 +245,7 @@ func (impl LifecycleImplementation) reconcileJob(
 		contextLogger.Error(err, "failed to decode job")
 		return nil, err
 	}
+
 	jobRole := getCNPGJobRole(&job)
 	if jobRole != "full-recovery" {
 		contextLogger.Debug("job is not a recovery job, skipping")
@@ -252,45 +253,34 @@ func (impl LifecycleImplementation) reconcileJob(
 	}
 
 	mutatedJob := job.DeepCopy()
-	sidecarContainer := &corev1.Container{
-		Env:  env,
-		Args: []string{"restore"}}
-	if err := reconcilePodSpec(
-		cluster,
-		&mutatedJob.Spec.Template.Spec,
-		jobRole,
-		sidecarContainer,
-	); err != nil {
+	var podSpec *corev1.PodSpec = &mutatedJob.Spec.Template.Spec
+
+	sidecarContainer := &corev1.Container{Env: env, Args: []string{"restore"}}
+
+	if err := reconcilePodSpec(cluster, podSpec, jobRole, sidecarContainer); err != nil {
 		return nil, fmt.Errorf("can't reconcile job: %w", err)
 	}
 
-	// get volume from the full-recovery container and add them to our own container
-	found := false
-	for i := range mutatedJob.Spec.Template.Spec.Containers {
-		if mutatedJob.Spec.Template.Spec.Containers[i].Name == "full-recovery" {
-			found = true
-			sidecarContainer.VolumeMounts = ensureVolumeMount(sidecarContainer.VolumeMounts, mutatedJob.Spec.Template.Spec.Containers[i].VolumeMounts...)
-			break
-		}
-	}
-	if !found {
-		return nil, errors.New("main container not found")
+	// Inject plugin-specific volume mounts
+	// only needed here, for postgres container, it's done by the CNPG machenery
+	injectPluginVolumeMount(podSpec, jobRole)
+	if err := addVolumeMountsFromContainer(sidecarContainer, jobRole, podSpec.Containers); err != nil {
+		return nil, err
 	}
 
 	// update sidecar container with our own container
-	found = false
-	for i := range mutatedJob.Spec.Template.Spec.InitContainers {
-		if mutatedJob.Spec.Template.Spec.InitContainers[i].Name == sidecarContainer.Name {
+	found := false
+	for i := range podSpec.InitContainers {
+		if podSpec.InitContainers[i].Name == sidecarContainer.Name {
+			podSpec.InitContainers[i] = *sidecarContainer
 			found = true
-			mutatedJob.Spec.Template.Spec.InitContainers[i] = *sidecarContainer
 			break
 		}
 	}
 	// if our sidecar does not exist, let's add it
 	if !found {
-		mutatedJob.Spec.Template.Spec.InitContainers = append(mutatedJob.Spec.Template.Spec.InitContainers, *sidecarContainer)
+		podSpec.InitContainers = append(podSpec.InitContainers, *sidecarContainer)
 	}
-	InjectPluginVolumePodSpec(&mutatedJob.Spec.Template.Spec, jobRole)
 
 	patch, err := object.CreatePatch(mutatedJob, &job)
 	if err != nil {
@@ -340,28 +330,16 @@ func reconcilePodSpec(
 	containerConfig.Env = mergeEnvs(containerConfig.Env, mainEnv, defaultEnv)
 	containerConfig.StartupProbe = baseProbe.DeepCopy()
 	containerConfig.RestartPolicy = ptr.To(corev1.ContainerRestartPolicyAlways)
-	InjectPluginVolumePodSpec(spec, mainContainerName)
+	object.InjectPluginVolumeSpec(spec)
 	return nil
 }
 
-// InjectPluginVolumePodSpec injects the plugin volume into a CNPG Pod spec.
-func InjectPluginVolumePodSpec(spec *corev1.PodSpec, mainContainerName string) {
+// injects the plugin volume (/plugin) into a CNPG Pod spec.
+func injectPluginVolumeMount(spec *corev1.PodSpec, mainContainerName string) {
 	const (
 		pluginVolumeName = "plugins"
 		pluginMountPath  = "/plugins"
 	)
-
-	foundPluginVolume := false
-	for i := range spec.Volumes {
-		if spec.Volumes[i].Name == pluginVolumeName {
-			foundPluginVolume = true
-		}
-	}
-
-	if foundPluginVolume {
-		return
-	}
-
 	spec.Volumes = ensureVolume(spec.Volumes, corev1.Volume{
 		Name: pluginVolumeName,
 		VolumeSource: corev1.VolumeSource{
@@ -419,6 +397,16 @@ func ensureVolumeMount(mounts []corev1.VolumeMount, volumeMounts ...corev1.Volum
 	}
 
 	return mounts
+}
+
+func addVolumeMountsFromContainer(target *corev1.Container, sourceName string, containers []corev1.Container) error {
+	for i := range containers {
+		if containers[i].Name == sourceName {
+			target.VolumeMounts = ensureVolumeMount(target.VolumeMounts, containers[i].VolumeMounts...)
+			return nil
+		}
+	}
+	return fmt.Errorf("container %q not found", sourceName)
 }
 
 // mergeEnvs merges environment variables, skipping duplicates by name
