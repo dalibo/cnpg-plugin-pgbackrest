@@ -14,6 +14,7 @@ import (
 	"github.com/dalibo/cnpg-i-pgbackrest/test/e2e/internal/certmanager"
 	"github.com/dalibo/cnpg-i-pgbackrest/test/e2e/internal/cluster"
 	"github.com/dalibo/cnpg-i-pgbackrest/test/e2e/internal/cnpg"
+	"github.com/dalibo/cnpg-i-pgbackrest/test/e2e/internal/common"
 	"github.com/dalibo/cnpg-i-pgbackrest/test/e2e/internal/kubernetes"
 	"github.com/dalibo/cnpg-i-pgbackrest/test/e2e/internal/minio"
 	"github.com/dalibo/cnpg-i-pgbackrest/test/e2e/internal/pgbackrest"
@@ -141,14 +142,31 @@ func TestDeployInstance(t *testing.T) {
 	if err != nil {
 		t.Error(err.Error())
 	}
-	if ready, err := k8sClient.PodsIsReady(ns, clusterName+"-1", 30, 2); err != nil {
+	if ready, err := k8sClient.PodsIsReady(ns, clusterName+"-1", 80, 3); err != nil {
 		t.Errorf("error when requesting pod status, %s", err.Error())
 	} else if !ready {
 		t.Error("pod not ready")
 	}
+	bi := cluster.BackupInfo{
+		Cluster:   clusterName,
+		Namespace: ns,
+		Params:    p,
+		Name:      "backup-01",
+	}
 	// more verification can be done here (before deleting the cluster)
+	b, err := bi.Backup(k8sClient)
+	if err != nil {
+		t.Errorf("Error when executing backup %v", err.Error())
+
+	}
+	retrier, err := common.NewRetrier(80)
+	_, err = bi.IsDone(k8sClient, retrier)
+	if err != nil {
+		t.Errorf("Error when retriving info for backup %v", err.Error())
+	}
 
 	// delete created ressources
+	k8sClient.Delete(ctx, b)
 	k8sClient.Delete(ctx, c)
 	k8sClient.Delete(ctx, secret)
 }

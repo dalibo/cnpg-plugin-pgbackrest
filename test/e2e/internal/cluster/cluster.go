@@ -6,12 +6,16 @@ package cluster
 
 import (
 	"context"
+	"fmt"
 
 	cloudnativepgv1 "github.com/cloudnative-pg/api/pkg/api/v1"
+	"github.com/dalibo/cnpg-i-pgbackrest/test/e2e/internal/common"
 	"github.com/dalibo/cnpg-i-pgbackrest/test/e2e/internal/kubernetes"
 	"github.com/dalibo/cnpg-i-pgbackrest/test/e2e/internal/minio"
 	corev1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/types"
 )
 
 var DefaultParamater map[string]string = map[string]string{
@@ -59,4 +63,56 @@ func Create(k8sClient *kubernetes.K8sClient, namespace string, name string, nbrI
 		return nil, err
 	}
 	return m, nil
+}
+
+type BackupInfo struct {
+	Cluster   string
+	Name      string
+	Namespace string
+	Params    map[string]string
+}
+
+func (b BackupInfo) Backup(kClient *kubernetes.K8sClient) (*cloudnativepgv1.Backup, error) {
+	backup := &cloudnativepgv1.Backup{
+		TypeMeta: metav1.TypeMeta{
+			Kind:       "Backup",
+			APIVersion: "postgresql.cnpg.io/v1",
+		},
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      b.Name,
+			Namespace: b.Namespace,
+		},
+		Spec: cloudnativepgv1.BackupSpec{
+			Cluster: cloudnativepgv1.LocalObjectReference{
+				Name: b.Cluster,
+			},
+			Method: "plugin",
+			PluginConfiguration: &cloudnativepgv1.BackupPluginConfiguration{
+				Name:       "pgbackrest.dalibo.com",
+				Parameters: b.Params,
+			},
+		},
+	}
+	if err := kClient.Create(context.TODO(), backup); err != nil {
+		return nil, err
+	}
+	return backup, nil
+}
+
+func (b BackupInfo) IsDone(kClient *kubernetes.K8sClient, r *common.Retrier) (bool, error) {
+	waitedRessource := &cloudnativepgv1.Backup{}
+	fqdn := types.NamespacedName{Name: b.Name, Namespace: b.Namespace}
+	for range r.MaxRetry {
+		err := kClient.Get(context.TODO(), fqdn, waitedRessource)
+		if errors.IsNotFound(err) {
+			r.Wait()
+			continue
+		} else if err != nil {
+			return false, err
+		} else if waitedRessource.Status.Phase == "completed" {
+			return true, nil
+		}
+		r.Wait()
+	}
+	return false, fmt.Errorf("%s", waitedRessource.Status.Phase)
 }
