@@ -64,7 +64,7 @@ func Install(k8sClient kubernetes.K8sClient) error {
 	if err := k8sClient.CreateDeployment(d); err != nil {
 		return err
 	}
-	if _, err := k8sClient.DeploymentIsReady(ns, spec.name, 15, 2); err != nil {
+	if _, err := k8sClient.DeploymentIsReady(ns, spec.name, 20, 2); err != nil {
 		return err
 	}
 	if err := k8sClient.CreateService(ns, "s3", label, 443, intstr.FromInt32(9000)); err != nil {
