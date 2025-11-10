@@ -8,10 +8,11 @@ import (
 	"context"
 
 	"github.com/cloudnative-pg/cnpg-i/pkg/backup"
-	"github.com/cloudnative-pg/machinery/pkg/log"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/log"
 
 	"github.com/dalibo/cnpg-i-pgbackrest/internal/metadata"
+	"github.com/dalibo/cnpg-i-pgbackrest/internal/operator"
 	"github.com/dalibo/cnpg-i-pgbackrest/internal/pgbackrest"
 	"github.com/dalibo/cnpg-i-pgbackrest/internal/utils"
 )
@@ -43,11 +44,25 @@ func (b BackupServiceImplementation) Backup(
 	request *backup.BackupRequest,
 ) (*backup.BackupResult, error) {
 	contextLogger := log.FromContext(ctx)
-
+	repo, err := operator.GetRepo(
+		ctx,
+		request,
+		b.Client,
+		(*operator.PluginConfiguration).GetRepositoryRef,
+	)
+	if err != nil {
+		return nil, err
+	}
+	env, err := operator.GetEnvVarConfig(ctx, *repo, b.Client)
+	if err != nil {
+		contextLogger.Error(err, "can't get envvar")
+		return nil, err
+	}
 	contextLogger.Info("Starting backup")
 	lockFile := "/tmp/pgbackrest-cnpg-plugin.lock"
-	r, err := pgbackrest.Backup(&lockFile, utils.RealCmdRunner)
+	r, err := pgbackrest.Backup(&lockFile, env, utils.RealCmdRunner)
 	if err != nil {
+		contextLogger.Error(err, "can't backup")
 		return nil, err
 	}
 	contextLogger.Info("Backup done!")

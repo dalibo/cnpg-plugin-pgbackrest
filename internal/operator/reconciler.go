@@ -12,6 +12,11 @@ import (
 	"github.com/cloudnative-pg/cnpg-i-machinery/pkg/pluginhelper/object"
 	"github.com/cloudnative-pg/cnpg-i/pkg/reconciler"
 	"github.com/cloudnative-pg/machinery/pkg/log"
+	apipgbackrest "github.com/dalibo/cnpg-i-pgbackrest/api/v1"
+	"github.com/dalibo/cnpg-i-pgbackrest/internal/utils"
+	rbacv1 "k8s.io/api/rbac/v1"
+	"k8s.io/apimachinery/pkg/api/equality"
+	apierrs "k8s.io/apimachinery/pkg/api/errors"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
@@ -67,7 +72,32 @@ func (r ReconcilerImplementation) Pre(
 
 	contextLogger = contextLogger.WithValues("name", cluster.Name, "namespace", cluster.Namespace)
 	ctx = log.IntoContext(ctx, contextLogger)
-
+	conf, err := NewFromCluster(&cluster)
+	if err != nil {
+		return nil, err
+	}
+	refPgBackrestObj := conf.GetReferredPgBackrestObjectKey()
+	repositories := make([]apipgbackrest.Repository, 0, len(refPgBackrestObj))
+	for _, rpb := range refPgBackrestObj {
+		var repo apipgbackrest.Repository
+		contextLogger.Debug("parsing cluster definition", "pgbackrestObjectKey", rpb)
+		if err := r.Client.Get(ctx, rpb, &repo); err != nil {
+			if apierrs.IsNotFound(err) {
+				contextLogger.Debug("error enforcing requeue", "error", err)
+				return &reconciler.ReconcilerHooksResult{
+					Behavior: reconciler.ReconcilerHooksResult_BEHAVIOR_REQUEUE,
+				}, nil
+			}
+			return nil, err
+		}
+		repositories = append(repositories, repo)
+	}
+	if err := r.ensureRole(ctx, &cluster, repositories); err != nil {
+		return nil, err
+	}
+	if err := r.ensureRoleBinding(ctx, &cluster); err != nil {
+		return nil, err
+	}
 	contextLogger.Info("Pre hook reconciliation completed")
 	return &reconciler.ReconcilerHooksResult{Behavior: reconciler.ReconcilerHooksResult_BEHAVIOR_CONTINUE}, nil
 }
@@ -78,4 +108,86 @@ func (r ReconcilerImplementation) Post(
 	_ *reconciler.ReconcilerHooksRequest,
 ) (*reconciler.ReconcilerHooksResult, error) {
 	return &reconciler.ReconcilerHooksResult{Behavior: reconciler.ReconcilerHooksResult_BEHAVIOR_CONTINUE}, nil
+}
+
+func (r ReconcilerImplementation) ensureRole(
+	ctx context.Context,
+	cluster *cnpgv1.Cluster,
+	pgbackrestRepositories []apipgbackrest.Repository,
+) error {
+	contextLogger := log.FromContext(ctx)
+	newRole := utils.BuildK8SRole(cluster, pgbackrestRepositories)
+
+	var role rbacv1.Role
+	if err := r.Client.Get(ctx, client.ObjectKey{
+		Namespace: newRole.Namespace,
+		Name:      newRole.Name,
+	}, &role); err != nil {
+		if !apierrs.IsNotFound(err) {
+			return err
+		}
+
+		contextLogger.Info(
+			"Creating role",
+			"name", newRole.Name,
+			"namespace", newRole.Namespace,
+		)
+
+		if err := setOwnerReference(cluster, newRole); err != nil {
+			return err
+		}
+
+		return r.Client.Create(ctx, newRole)
+	}
+
+	if equality.Semantic.DeepEqual(newRole.Rules, role.Rules) {
+		// There's no need to hit the API server again
+		return nil
+	}
+
+	contextLogger.Info(
+		"Patching role",
+		"name", newRole.Name,
+		"namespace", newRole.Namespace,
+		"rules", newRole.Rules,
+	)
+
+	oldRole := role.DeepCopy()
+
+	// Apply to the role the new rules
+	role.Rules = newRole.Rules
+
+	// Push it back to the API server
+	return r.Client.Patch(ctx, &role, client.MergeFrom(oldRole))
+}
+
+func (r ReconcilerImplementation) ensureRoleBinding(
+	ctx context.Context,
+	cluster *cnpgv1.Cluster,
+) error {
+	var role rbacv1.RoleBinding
+	if err := r.Client.Get(ctx, client.ObjectKey{
+		Namespace: cluster.Namespace,
+		Name:      utils.GetRBACName(cluster.Name),
+	}, &role); err != nil {
+		if apierrs.IsNotFound(err) {
+			return r.createRoleBinding(ctx, cluster)
+		}
+		return err
+	}
+
+	// TODO: this assumes role bindings never change.
+	// Is that true? Should we relax this assumption?
+	return nil
+}
+
+func (r ReconcilerImplementation) createRoleBinding(
+	ctx context.Context,
+	cluster *cnpgv1.Cluster,
+) error {
+	roleBinding := utils.BindingK8SRole(cluster)
+	if err := setOwnerReference(cluster, roleBinding); err != nil {
+		return err
+	}
+	return r.Client.Create(ctx, roleBinding)
 }

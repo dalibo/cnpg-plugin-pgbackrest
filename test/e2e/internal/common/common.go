@@ -1,13 +1,12 @@
+// SPDX-FileCopyrightText: 2025 Dalibo <contact@dalibo.com>
+//
+// SPDX-License-Identifier: Apache-2.0
 package common
 
 import (
 	"fmt"
 	"time"
 )
-
-func main() {
-	fmt.Println("vim-go")
-}
 
 type Retrier struct {
 	MaxRetry      uint

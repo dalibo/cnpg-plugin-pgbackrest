@@ -6,7 +6,10 @@ jobs:
   unit:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - name: Clone the code
+        uses: actions/checkout@v4
+      - name: List file
+        run: find .
       - name: Setup Go 1.25.x
         uses: actions/setup-go@v5
         with:
@@ -14,8 +17,8 @@ jobs:
       - name: Display Go version
         run: go version
       - name: Install dependencies
-        run: go get .
+        run: go mod tidy
       - name: Try to build
-        run: go build -v .
+        run:  go build -o /tmp/cnpgi-pgbackrest -v ./cmd
       - name: Run unit tests
         run: go test ./internal/...

@@ -122,13 +122,15 @@ func TestPushWal(t *testing.T) {
 		},
 	}
 
-	fakeExecCalls := execCalls{}
 	backup := "" // we don't care about output here
 	for _, tc := range testCases {
+		fExec := execCalls{}
 		f := func(t *testing.T) {
-			PushWal(tc.walPath, fakeExecCalls.fakeCmdRunner(backup, nil))
-			if !reflect.DeepEqual(fakeExecCalls, tc.want) {
-				t.Errorf("error want %v, got %v", fakeExecCalls, tc.want)
+			if _, err := PushWal(tc.walPath, nil, fExec.fakeCmdRunner(backup, nil)); err != nil {
+				t.Errorf("can't simulate push WAL, %v", err)
+			}
+			if !reflect.DeepEqual(fExec, tc.want) {
+				t.Errorf("error want %v, got %v", fExec, tc.want)
 			}
 		}
 		t.Run(tc.desc, f)
@@ -136,13 +138,12 @@ func TestPushWal(t *testing.T) {
 }
 
 func TestBackup(t *testing.T) {
-	type TestCase struct {
+	lockFile := "/tmp/test.lock"
+	testCases := []struct {
 		desc     string
 		lockFile *string
 		want     execCalls
-	}
-	lockFile := "/tmp/test.lock"
-	testCases := []TestCase{
+	}{
 		{
 			desc:     "run backup",
 			lockFile: &lockFile,
@@ -155,15 +156,14 @@ func TestBackup(t *testing.T) {
 		},
 	}
 
-	fakeExecCalls := execCalls{}
 	backup := "" // we don't care about output here
 	for _, tc := range testCases {
-		f := func(t *testing.T) {
-			Backup(tc.lockFile, fakeExecCalls.fakeCmdRunner(backup, nil))
-			if !reflect.DeepEqual(fakeExecCalls, tc.want) {
-				t.Errorf("error want %v, got %v", fakeExecCalls, tc.want)
+		fExec := execCalls{}
+		t.Run(tc.desc, func(t *testing.T) {
+			Backup(tc.lockFile, nil, fExec.fakeCmdRunner(backup, nil)) //nolint:errcheck
+			if !reflect.DeepEqual(fExec, tc.want) {
+				t.Errorf("error want %v, got %v", fExec, tc.want)
 			}
-		}
-		t.Run(tc.desc, f)
+		})
 	}
 }

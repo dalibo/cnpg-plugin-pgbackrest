@@ -5,7 +5,19 @@
 version = 1
 
 [[annotations]]
-path = ["examples/**", "kubernetes/**", ".github/workflows/**", "go.sum", "go.mod"]
+path = [
+    ".devcontainer/**",
+    ".dockerignore",
+    ".golangci.yml",
+    "PROJECT",
+    "manifest.yaml",
+    "config/**",
+    "examples/**",
+    "kubernetes/**",
+    ".github/workflows/**",
+    "go.sum",
+    "go.mod"
+]
 SPDX-FileCopyrightText = "2025 Dalibo"
 SPDX-License-Identifier = "Apache-2.0"
 precedence = "override"

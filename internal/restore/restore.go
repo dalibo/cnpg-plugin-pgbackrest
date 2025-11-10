@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: 2025 Dalibo <contact@dalibo.com>
+//
+// SPDX-License-Identifier: Apache-2.0
 package restore
 
 import (
@@ -6,6 +9,7 @@ import (
 
 	"github.com/cloudnative-pg/cloudnative-pg/pkg/postgres"
 	restore "github.com/cloudnative-pg/cnpg-i/pkg/restore/job"
+	"github.com/dalibo/cnpg-i-pgbackrest/internal/operator"
 	"github.com/dalibo/cnpg-i-pgbackrest/internal/pgbackrest"
 	"github.com/dalibo/cnpg-i-pgbackrest/internal/utils"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -43,7 +47,19 @@ func (impl JobHookImpl) Restore(
 	contextLogger := log.FromContext(ctx)
 	contextLogger.Info("Start restoring backup")
 	lockFile := "/tmp/pgbackrest-cnpg-plugin.lock"
-	if err := pgbackrest.Restore(ctx, &lockFile, utils.RealCmdRunner); err != nil {
+	r, err := operator.GetRepo(ctx,
+		req,
+		impl.Client,
+		(*operator.PluginConfiguration).GetRecoveryRepositoryRef,
+	)
+	if err != nil {
+		return nil, err
+	}
+	env, err := operator.GetEnvVarConfig(ctx, *r, impl.Client)
+	if err != nil {
+		return nil, err
+	}
+	if err := pgbackrest.Restore(ctx, env, &lockFile, utils.RealCmdRunner); err != nil {
 		return nil, err
 	}
 	restoreCmd := fmt.Sprintf(
