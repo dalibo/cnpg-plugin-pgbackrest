@@ -26,16 +26,8 @@ spec:
             - --client-cert=/client/tls.crt
             - --server-address=:9090
             - --log-level=debug  # not yet implemented
-#         TODO add a way to build a pgbackrest dedicated image an change that ref
-#         or even better find a way to avoid the name with an ID
-#          env:
-#            - name: SIDECAR_IMAGE
-#              valueFrom:
-#                secretKeyRef:
-#                  key: SIDECAR_IMAGE
-#                  name: pgbackrest-8tfddg42gf
           image: pgbackrest-controller
-          imagePullPolicy: Never
+          imagePullPolicy: IfNotPresent
           name: pgbackrest-controller
           ports:
             - containerPort: 9090

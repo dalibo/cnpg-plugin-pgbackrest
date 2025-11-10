@@ -1,0 +1,4 @@
+## Append samples of your project ##
+resources:
+- pgbackrest_v1_repository.yaml
+# +kubebuilder:scaffold:manifestskustomizesamples

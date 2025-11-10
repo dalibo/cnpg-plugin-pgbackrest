@@ -58,8 +58,10 @@ type PgBackRestInfo struct {
 
 type CmdRunner func(name string, arg ...string) *exec.Cmd
 
-func StanzaExists(stanzaName string, cmdRunner CmdRunner) (bool, error) {
-	cmd := cmdRunner("pgbackrest", "info", "--stanza="+stanzaName, "--output=json")
+func StanzaExists(env []string, cmdRunner CmdRunner) (bool, error) {
+	cmd := cmdRunner("pgbackrest", "info", "--output=json")
+	cmd.Env = os.Environ()
+	cmd.Env = append(cmd.Env, env...)
 	stdout, err := cmd.CombinedOutput()
 	if err != nil {
 		return false, fmt.Errorf("can't execute pgbackrest info command: %w", err)
@@ -82,32 +84,38 @@ func parseDataForStatusCode(pgbackrestInfo []PgBackRestInfo) bool {
 	return false
 }
 
-func EnsureStanzaExists(stanzaName string, cmdRunner CmdRunner) (bool, error) {
-	stanzaExist, err := StanzaExists(stanzaName, cmdRunner)
+func EnsureStanzaExists(stanza string, env []string, cmdRunner CmdRunner) (bool, error) {
+	stanzaExist, err := StanzaExists(env, cmdRunner)
 	if err != nil {
-		return false, fmt.Errorf("can't determine if stanza: %s exists, error %w", stanzaName, err)
+		return false, fmt.Errorf("can't determine if stanza exists, error %w", err)
 	}
 	if stanzaExist {
 		return false, nil
 	}
-	cmd := cmdRunner("pgbackrest", "stanza-create", "--stanza="+stanzaName)
+	cmd := cmdRunner("pgbackrest", "stanza-create", "--stanza="+stanza)
+	cmd.Env = os.Environ()
+	cmd.Env = append(cmd.Env, env...)
 	output, err := cmd.CombinedOutput()
 	if err != nil {
-		return false, fmt.Errorf("can't create stanza: %s, stdout: %s, error : %w", stanzaName, string(output), err)
+		return false, fmt.Errorf("can't create stanza, stdout: %s, error : %w", string(output), err)
 	}
 	return true, nil
 }
 
-func PushWal(walName string, cmdRunner CmdRunner) (string, error) {
+func PushWal(walName string, env []string, cmdRunner CmdRunner) (string, error) {
 	cmd := cmdRunner("pgbackrest", "archive-push", walName)
+	cmd.Env = os.Environ()
+	cmd.Env = append(cmd.Env, env...)
 	output, err := cmd.CombinedOutput()
 	if err != nil {
 		return "", fmt.Errorf("pgBackRest archive-push failed, output: %s %w", string(output), err)
 	}
 	return string(output), nil
 }
-func GetWAL(walName string, destinationPath string, cmdRunner CmdRunner) (string, error) {
+func GetWAL(env []string, walName string, destinationPath string, cmdRunner CmdRunner) (string, error) {
 	cmd := cmdRunner("pgbackrest", "archive-get", walName, destinationPath)
+	cmd.Env = os.Environ()
+	cmd.Env = append(cmd.Env, env...)
 	output, err := cmd.CombinedOutput()
 	if err != nil {
 		return "", fmt.Errorf("pgBackRest archive-get failed, output: %s %w", string(output), err)
@@ -115,20 +123,19 @@ func GetWAL(walName string, destinationPath string, cmdRunner CmdRunner) (string
 	return string(output), nil
 }
 
-func Backup(lockFile *string, cmdRunner CmdRunner) (*BackupInfo, error) {
+func Backup(lockFile *string, env []string, cmdRunner CmdRunner) (*BackupInfo, error) {
 	cmd := cmdRunner("pgbackrest", "backup")
 	cmd.Env = os.Environ()
-	cmd.Env = append(cmd.Env,
-		"PGBACKREST_archive-check=n",
-	)
+	cmd.Env = append(cmd.Env, "PGBACKREST_archive-check=n")
 	if lockFile != nil && (*lockFile) != "" {
 		cmd.Env = append(cmd.Env, "PGBACKREST_lock-path="+(*lockFile))
 	}
+	cmd.Env = append(cmd.Env, env...)
 	output, err := cmd.CombinedOutput()
 	if err != nil {
 		return nil, fmt.Errorf("can't backup: %s, error : %w", string(output), err)
 	}
-	backups, err := GetBackupInfo(cmdRunner)
+	backups, err := GetBackupInfo(env, cmdRunner)
 	if err != nil {
 		return nil, err
 	}
@@ -136,8 +143,10 @@ func Backup(lockFile *string, cmdRunner CmdRunner) (*BackupInfo, error) {
 	return latestBackup, nil
 }
 
-func GetBackupInfo(cmdRunner CmdRunner) ([]BackupInfo, error) {
+func GetBackupInfo(env []string, cmdRunner CmdRunner) ([]BackupInfo, error) {
 	cmd := cmdRunner("pgbackrest", "info", "--output", "json")
+	cmd.Env = os.Environ()
+	cmd.Env = append(cmd.Env, env...)
 	cmdOutput, err := cmd.CombinedOutput()
 	if err != nil {
 		return nil, fmt.Errorf("can't get pgbackrest info: %s, %w", string(cmdOutput), err)
@@ -164,13 +173,14 @@ func LatestBackup(backups []BackupInfo) *BackupInfo {
 	return &found
 }
 
-func Restore(ctx context.Context, lockFile *string, cmdRunner CmdRunner) error {
+func Restore(ctx context.Context, env []string, lockFile *string, cmdRunner CmdRunner) error {
 	contextLogger := log.FromContext(ctx)
 	cmd := cmdRunner("pgbackrest", "restore")
 	cmd.Env = os.Environ()
 	cmd.Env = append(cmd.Env,
 		"PGBACKREST_archive-check=n",
 	)
+	cmd.Env = append(cmd.Env, env...)
 	var stdout, stderr bytes.Buffer
 	cmd.Stdout = &stdout
 	cmd.Stderr = &stderr

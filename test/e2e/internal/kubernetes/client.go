@@ -12,6 +12,7 @@ import (
 	certmanagerv1 "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
 	cmmeta "github.com/cert-manager/cert-manager/pkg/apis/meta/v1"
 	cloudnativepgv1 "github.com/cloudnative-pg/api/pkg/api/v1"
+	apipgbackrest "github.com/dalibo/cnpg-i-pgbackrest/api/v1"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
@@ -32,6 +33,7 @@ type K8sClient struct {
 func init() {
 	_ = certmanagerv1.AddToScheme(scheme.Scheme)
 	_ = cloudnativepgv1.AddToScheme(scheme.Scheme)
+	_ = apipgbackrest.AddToScheme(scheme.Scheme)
 }
 
 // Client helps to create a Kubernetes client

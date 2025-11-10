@@ -19,4 +19,4 @@ jobs:
         run: kind version
       - uses: actions/checkout@v4
       - name: Run e2e tests
-        run: make clean-kind-e2e-cluster test-e2e
+        run: make test-e2e

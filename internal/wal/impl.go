@@ -7,9 +7,9 @@ package wal
 import (
 	"context"
 	"fmt"
-	"os"
 
 	"github.com/cloudnative-pg/cnpg-i/pkg/wal"
+	"github.com/dalibo/cnpg-i-pgbackrest/internal/operator"
 	"github.com/dalibo/cnpg-i-pgbackrest/internal/pgbackrest"
 	"github.com/dalibo/cnpg-i-pgbackrest/internal/utils"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -60,19 +60,26 @@ func (w_impl WALSrvImplementation) Archive(
 ) (*wal.WALArchiveResult, error) {
 	contextLogger := log.FromContext(ctx)
 	walName := request.GetSourceFileName()
-
-	stanzaName, stanzaEnvVarDefined := os.LookupEnv("PGBACKREST_stanza")
-	if !stanzaEnvVarDefined {
-		return nil, fmt.Errorf("stanza env var not found")
-	}
-	created, err := pgbackrest.EnsureStanzaExists(stanzaName, utils.RealCmdRunner)
+	repo, err := operator.GetRepo(ctx,
+		request,
+		w_impl.Client,
+		(*operator.PluginConfiguration).GetRepositoryRef,
+	)
 	if err != nil {
-		return nil, fmt.Errorf("stanza verification failed stanza: %s error: %w", stanzaName, err)
+		return nil, err
+	}
+	env, err := operator.GetEnvVarConfig(ctx, *repo, w_impl.Client)
+	if err != nil {
+		return nil, err
+	}
+	created, err := pgbackrest.EnsureStanzaExists(repo.Spec.Configuration.Stanza, env, utils.RealCmdRunner)
+	if err != nil {
+		return nil, fmt.Errorf("stanza verification failed stanza, error: %w", err)
 	}
 	if created {
-		contextLogger.Info("stanza created while archiving", "WAL", walName, "stanza", stanzaName)
+		contextLogger.Info("stanza created while archiving", "WAL", walName)
 	}
-	_, err = pgbackrest.PushWal(walName, utils.RealCmdRunner)
+	_, err = pgbackrest.PushWal(walName, env, utils.RealCmdRunner)
 	if err != nil {
 		return nil, fmt.Errorf("pgBackRest archive-push failed: %w", err)
 	}
@@ -89,12 +96,24 @@ func (w WALSrvImplementation) Restore(
 	walName := request.GetSourceWalName()
 	destinationPath := request.GetDestinationFileName()
 
+	repo, err := operator.GetRepo(ctx,
+		request,
+		w.Client,
+		(*operator.PluginConfiguration).GetRecoveryRepositoryRef,
+	)
+	if err != nil {
+		return nil, err
+	}
+	env, err := operator.GetEnvVarConfig(ctx, *repo, w.Client)
+	if err != nil {
+		return nil, err
+	}
 	logger.Info("Starting WAL restore via pgBackRest",
 		"walName", walName,
 		"destinationPath", destinationPath,
 	)
 
-	_, err := pgbackrest.GetWAL(walName, destinationPath, utils.RealCmdRunner)
+	_, err = pgbackrest.GetWAL(env, walName, destinationPath, utils.RealCmdRunner)
 	if err != nil {
 		return nil, fmt.Errorf("getting archive failed: %w", err)
 	}

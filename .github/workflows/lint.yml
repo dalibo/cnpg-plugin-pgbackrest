@@ -1,11 +1,27 @@
 ---
-name: lint
+name: Lint
+
 on:
-  - push
+  push:
+  pull_request:
+
 jobs:
   lint:
+    name: Run on Ubuntu
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - name: Clone the code
+        uses: actions/checkout@v4
+      
       - name: REUSE Compliance Check
         uses: fsfe/reuse-action@v5
+
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+
+      - name: Run linter
+        uses: golangci/golangci-lint-action@v8
+        with:
+          version: v2.4.0

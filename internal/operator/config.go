@@ -5,23 +5,25 @@
 package operator
 
 import (
+	"context"
 	"fmt"
-	"strconv"
 
 	cnpgv1 "github.com/cloudnative-pg/cloudnative-pg/api/v1"
+	"github.com/cloudnative-pg/cnpg-i-machinery/pkg/pluginhelper/decoder"
+	machineryapi "github.com/cloudnative-pg/machinery/pkg/api"
+	"github.com/cloudnative-pg/machinery/pkg/stringset"
+	apipgbackrest "github.com/dalibo/cnpg-i-pgbackrest/api/v1"
 	"github.com/dalibo/cnpg-i-pgbackrest/internal/metadata"
+	"github.com/dalibo/cnpg-i-pgbackrest/internal/utils"
+	"k8s.io/apimachinery/pkg/types"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
 type PluginConfiguration struct {
-	Cluster     *cnpgv1.Cluster
-	ServerName  string
-	S3Bucket    string
-	S3Endpoint  string
-	S3Region    string
-	S3RepoPath  string
-	S3Stanza    string
-	S3UriStyle  string
-	S3VerifyTls bool
+	Cluster               *cnpgv1.Cluster
+	ServerName            string
+	RepositoryRef         string
+	RecoveryRepositoryRef string
 }
 
 type Plugin struct {
@@ -44,34 +46,152 @@ func NewPlugin(cluster cnpgv1.Cluster, pluginName string) *Plugin {
 
 	return result
 }
+func getRecovParams(cluster *cnpgv1.Cluster) map[string]string {
+	if cluster.Spec.Bootstrap == nil || cluster.Spec.Bootstrap.Recovery == nil {
+		return nil
+	}
+
+	recoveryConfig := cluster.Spec.Bootstrap.Recovery
+	if len(recoveryConfig.Source) == 0 {
+		// Plugin-based recovery is supported only with
+		// An external cluster definition
+		return nil
+	}
+
+	recoveryExternalCluster, found := cluster.ExternalCluster(recoveryConfig.Source)
+	if !found {
+		// This error should have already been detected
+		// by the validating webhook.
+		return nil
+	}
+
+	return recoveryExternalCluster.PluginConfiguration.Parameters
+}
+
+func NewFromClusterJSON(clusterJSON []byte) (*PluginConfiguration, error) {
+	var res cnpgv1.Cluster
+	if err := decoder.DecodeObjectLenient(clusterJSON, &res); err != nil {
+		return nil, fmt.Errorf("cluster not found")
+	}
+	return NewFromCluster(&res)
+}
 
 func NewFromCluster(cluster *cnpgv1.Cluster) (*PluginConfiguration, error) {
 	helper := NewPlugin(
 		*cluster,
 		metadata.PluginName,
 	)
-
 	serverName := cluster.Name
+	recovObjName := ""
+	if rParams := getRecovParams(cluster); rParams != nil {
+		recovObjName = rParams["repositoryRef"]
+	}
 	result := &PluginConfiguration{
-		Cluster:    cluster,
-		ServerName: serverName,
-		S3Bucket:   helper.Parameters["s3-bucket"],
-		S3Endpoint: helper.Parameters["s3-endpoint"],
-		S3Region:   helper.Parameters["s3-region"],
-		S3RepoPath: helper.Parameters["s3-repo-path"],
-		S3Stanza:   helper.Parameters["stanza"],
-	}
-	if val, ok := helper.Parameters["s3-uri-style"]; ok {
-		result.S3UriStyle = val
-	}
-	if val, ok := helper.Parameters["s3-verify-tls"]; ok {
-		r, err := strconv.ParseBool(val)
-		if err != nil {
-			return nil, fmt.Errorf("can't convert user input for s3-verify-tls field: %w", err)
-		}
-		result.S3VerifyTls = r
-	} else {
-		result.S3VerifyTls = true
+		Cluster:               cluster,
+		ServerName:            serverName,
+		RepositoryRef:         helper.Parameters["repositoryRef"],
+		RecoveryRepositoryRef: recovObjName,
 	}
 	return result, nil
+}
+
+func (c *PluginConfiguration) GetRepositoryRef() (*types.NamespacedName, error) {
+	if len(c.RepositoryRef) > 0 {
+		return &types.NamespacedName{
+			Name: c.RepositoryRef, Namespace: c.Cluster.Namespace,
+		}, nil
+	}
+	return nil, fmt.Errorf("Repository not configured")
+}
+func (c *PluginConfiguration) GetRecoveryRepositoryRef() (*types.NamespacedName, error) {
+	if len(c.RecoveryRepositoryRef) > 0 {
+		return &types.NamespacedName{
+			Name: c.RecoveryRepositoryRef, Namespace: c.Cluster.Namespace,
+		}, nil
+	}
+	return nil, fmt.Errorf("Recovery repository not configured")
+}
+
+// GetReferredPgBackrestObjectKey the list of pgbackrest objects referred by this
+// plugin configuration
+func (c *PluginConfiguration) GetReferredPgBackrestObjectKey() []types.NamespacedName {
+	objectNames := stringset.New()
+	if len(c.RepositoryRef) > 0 {
+		objectNames.Put(c.RepositoryRef)
+	}
+	if len(c.RecoveryRepositoryRef) > 0 {
+		objectNames.Put(c.RecoveryRepositoryRef)
+	}
+	res := make([]types.NamespacedName, 0, 2)
+	for _, name := range objectNames.ToSortedList() {
+		res = append(
+			res, types.NamespacedName{
+				Name:      name,
+				Namespace: c.Cluster.Namespace,
+			},
+		)
+	}
+	return res
+}
+
+func GetEnvVarConfig(ctx context.Context, r apipgbackrest.Repository, c client.Client) ([]string, error) {
+	conf := r.Spec.Configuration
+	prefix := "PGBACKREST_"
+	env, err := utils.StructToEnvVars(conf, prefix)
+	if err != nil {
+		return nil, err
+	}
+	// helper to fetch secret values
+	secretVal := func(ref *machineryapi.SecretKeySelector) (string, error) {
+		raw, err := utils.GetValueFromSecret(ctx, c, r.Namespace, ref)
+		if err != nil {
+			return "", err
+		}
+		return string(raw), nil
+	}
+	for i, r := range conf.S3Repositories {
+		sRef := r.SecretRef
+		aKey, err := secretVal(sRef.AccessKeyIDReference)
+		if err != nil {
+			return nil, err
+		}
+		sKey, err := secretVal(sRef.SecretAccessKeyReference)
+		if err != nil {
+			return nil, err
+		}
+		// build env var names
+		env = append(env,
+			fmt.Sprintf("%s=%s", fmt.Sprintf("%sREPO%d_S3_KEY", prefix, i+1), aKey),
+			fmt.Sprintf("%s=%s", fmt.Sprintf("%sREPO%d_S3_KEY_SECRET", prefix, i+1), sKey),
+			fmt.Sprintf("%s=%s", fmt.Sprintf("%sREPO%d_TYPE", prefix, i+1), "s3"),
+		)
+	}
+	return env, nil
+}
+
+type ClusterDefinitionGetter interface {
+	GetClusterDefinition() []byte
+}
+
+type RepoRefGetter func(*PluginConfiguration) (*client.ObjectKey, error)
+
+func GetRepo(ctx context.Context,
+	c ClusterDefinitionGetter,
+	cl client.Client,
+	getRef RepoRefGetter,
+) (*apipgbackrest.Repository, error) {
+	cDef := c.GetClusterDefinition()
+	pluginConf, err := NewFromClusterJSON(cDef)
+	if err != nil {
+		return nil, err
+	}
+	repositoryFQDN, err := getRef(pluginConf)
+	if err != nil {
+		return nil, err
+	}
+	var repo apipgbackrest.Repository
+	if err := cl.Get(ctx, *repositoryFQDN, &repo); err != nil {
+		return nil, err
+	}
+	return &repo, nil
 }

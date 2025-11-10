@@ -87,15 +87,13 @@ func (impl LifecycleImplementation) LifecycleHook(
 	if err != nil {
 		return nil, fmt.Errorf("Can't parse user parameters: %w", err)
 	}
-	contextLogger.Info("Known plugin config", "configuration", pluginConfig)
-	// TODO: add reconcilier stuff here
 	switch kind {
 	case "Pod":
 		podName := "postgres"
-		env, _ := consolidateEnvVar(&cluster, request, podName, pluginConfig)
+		env, _ := consolidateEnvVar(&cluster, request, podName)
 		return impl.reconcilePod(ctx, &cluster, request, env, pluginConfig)
 	case "Job":
-		env := buildEnvVarFromConfig(pluginConfig)
+		env := staticEnvVarConfig()
 		return impl.reconcileJob(ctx, &cluster, request, env)
 	default:
 		return nil, fmt.Errorf("unsupported kind: %s", kind)
@@ -109,61 +107,15 @@ func staticEnvVarConfig() []corev1.EnvVar {
 		{Name: "PGBACKREST_log-level-file", Value: "off"},
 		{Name: "PGBACKREST_pg1-path", Value: "/var/lib/postgresql/data/pgdata"},
 		{Name: "PGBACKREST_process-max", Value: "2"},
-		{Name: "PGBACKREST_repo1-type", Value: "s3"},
 		{Name: "PGBACKREST_start-fast", Value: "y"},
 	}
-}
-
-func buildEnvVarFromConfig(pluginConfig *PluginConfiguration) []corev1.EnvVar {
-
-	envs := []corev1.EnvVar{
-		{Name: "PGBACKREST_repo1-path", Value: pluginConfig.S3RepoPath},
-		{Name: "PGBACKREST_repo1-s3-bucket", Value: pluginConfig.S3Bucket},
-		{Name: "PGBACKREST_repo1-s3-endpoint", Value: pluginConfig.S3Endpoint},
-		{Name: "PGBACKREST_repo1-s3-region", Value: pluginConfig.S3Region},
-		{Name: "PGBACKREST_stanza", Value: pluginConfig.S3Stanza},
-	}
-	if val := pluginConfig.S3UriStyle; val != "" {
-		envs = append(envs, corev1.EnvVar{Name: "PGBACKREST_repo1-s3-uri-style", Value: val})
-	}
-	if !pluginConfig.S3VerifyTls {
-		envs = append(envs, corev1.EnvVar{Name: "PGBACKREST_repo1-s3-verify-tls", Value: "n"})
-	}
-	envs = append(envs, staticEnvVarConfig()...)
-
-	// use Kubernetes pre-defined secret for key and secret
-	envs = append(envs,
-		corev1.EnvVar{
-			Name: "PGBACKREST_repo1-s3-key",
-			ValueFrom: &corev1.EnvVarSource{
-				SecretKeyRef: &corev1.SecretKeySelector{
-					LocalObjectReference: corev1.LocalObjectReference{
-						Name: "pgbackrest-s3-secret",
-					},
-					Key: "key",
-				},
-			},
-		},
-		corev1.EnvVar{
-			Name: "PGBACKREST_repo1-s3-key-secret",
-			ValueFrom: &corev1.EnvVarSource{
-				SecretKeyRef: &corev1.SecretKeySelector{
-					LocalObjectReference: corev1.LocalObjectReference{
-						Name: "pgbackrest-s3-secret",
-					},
-					Key: "key-secret",
-				},
-			},
-		},
-	)
-	return envs
 }
 
 func consolidateEnvVar(
 	cluster *cnpgv1.Cluster,
 	request *lifecycle.OperatorLifecycleRequest,
 	srcContainerName string,
-	pluginConfig *PluginConfiguration) ([]corev1.EnvVar, error) {
+) ([]corev1.EnvVar, error) {
 
 	// get pod definition, we will use it to retrieve environment variables set on a specific (srcContainerName)
 	// container)
@@ -171,16 +123,11 @@ func consolidateEnvVar(
 	if err != nil {
 		return nil, err
 	}
-
 	envs := []corev1.EnvVar{
-		{Name: "NAMESPACE", Value: cluster.Namespace},
 		{Name: "CLUSTER_NAME", Value: cluster.Name},
+		{Name: "NAMESPACE", Value: cluster.Namespace},
 	}
-	envs = append(envs, buildEnvVarFromConfig(pluginConfig)...)
-	if srcContainerName == "" {
-		return envs, nil
-	}
-
+	envs = append(envs, staticEnvVarConfig()...)
 	envs = append(envs, envFromContainer(srcContainerName, pod.Spec, envs)...)
 	return envs, nil
 }
@@ -239,9 +186,11 @@ func (impl LifecycleImplementation) reconcileJob(
 	logger.Info("we are on reconcile job func")
 
 	var job batchv1.Job
-	err := decoder.DecodeObjectStrict(request.GetObjectDefinition(), &job, batchv1.SchemeGroupVersion.WithKind("Job"))
-	if err != nil {
-		logger.Error(err, "failed to decode job")
+	if err := decoder.DecodeObjectStrict(
+		request.GetObjectDefinition(),
+		&job,
+		batchv1.SchemeGroupVersion.WithKind("Job"),
+	); err != nil {
 		return nil, err
 	}
 
@@ -263,7 +212,10 @@ func (impl LifecycleImplementation) reconcileJob(
 	// Inject plugin-specific volume mounts
 	// only needed here, for postgres container, it's done by the CNPG machenery
 	injectPluginVolumeMount(podSpec, role)
-	if err := addVolumeMountsFromContainer(sidecarContainer, role, podSpec.Containers); err != nil {
+	if err := addVolumeMountsFromContainer(sidecarContainer,
+		role,
+		podSpec.Containers,
+	); err != nil {
 		return nil, err
 	}
 
@@ -411,7 +363,6 @@ func addVolumeMountsFromContainer(target *corev1.Container, sourceName string, c
 // mergeEnvs merges environment variables, skipping duplicates by name
 func mergeEnvs(envSlices ...[]corev1.EnvVar) []corev1.EnvVar {
 	envMap := make(map[string]corev1.EnvVar)
-
 	// Iterate through all provided slices
 	for _, slice := range envSlices {
 		for _, env := range slice {
@@ -420,13 +371,11 @@ func mergeEnvs(envSlices ...[]corev1.EnvVar) []corev1.EnvVar {
 			}
 		}
 	}
-
 	// Convert map back to slice
 	merged := make([]corev1.EnvVar, 0, len(envMap))
 	for _, env := range envMap {
 		merged = append(merged, env)
 	}
-
 	return merged
 }
 
@@ -449,7 +398,7 @@ func (impl LifecycleImplementation) reconcilePod(
 	}
 	mutatedPod := pod.DeepCopy()
 
-	if len(pluginConfig.S3Bucket) != 0 {
+	if len(pluginConfig.RepositoryRef) != 0 {
 		// Build the container config using envVars from caller
 		sidecar := corev1.Container{
 			Env: envVars,

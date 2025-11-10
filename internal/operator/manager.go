@@ -11,6 +11,7 @@ import (
 	// +kubebuilder:scaffold:imports
 	cnpgv1 "github.com/cloudnative-pg/cloudnative-pg/api/v1"
 	"github.com/cloudnative-pg/machinery/pkg/log"
+	apipgbackrest "github.com/dalibo/cnpg-i-pgbackrest/api/v1"
 	"github.com/spf13/viper"
 	"k8s.io/apimachinery/pkg/runtime"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
@@ -27,6 +28,7 @@ import (
 var scheme = runtime.NewScheme()
 
 func init() {
+	utilruntime.Must(apipgbackrest.AddToScheme(scheme))
 	utilruntime.Must(clientgoscheme.AddToScheme(scheme))
 	utilruntime.Must(cnpgv1.AddToScheme(scheme))
 	// +kubebuilder:scaffold:scheme

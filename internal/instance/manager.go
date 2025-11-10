@@ -8,6 +8,8 @@ import (
 	"context"
 	"path"
 
+	apipgbackrest "github.com/dalibo/cnpg-i-pgbackrest/api/v1"
+
 	cnpgv1 "github.com/cloudnative-pg/cloudnative-pg/api/v1"
 	"github.com/spf13/viper"
 	corev1 "k8s.io/api/core/v1"
@@ -22,8 +24,9 @@ import (
 var scheme = runtime.NewScheme()
 
 func init() {
-	utilruntime.Must(cnpgv1.AddToScheme(scheme))
+	utilruntime.Must(apipgbackrest.AddToScheme(scheme))
 	utilruntime.Must(clientgoscheme.AddToScheme(scheme))
+	utilruntime.Must(cnpgv1.AddToScheme(scheme))
 }
 
 // Start starts the sidecar informers and pgbackrest plugin
@@ -39,6 +42,7 @@ func Start(ctx context.Context) error {
 			Cache: &client.CacheOptions{
 				DisableFor: []client.Object{
 					&corev1.Secret{},
+					&apipgbackrest.Repository{},
 					&cnpgv1.Cluster{},
 				},
 			},

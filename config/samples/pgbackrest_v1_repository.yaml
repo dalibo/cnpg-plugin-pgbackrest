@@ -1,0 +1,63 @@
+apiVersion: pgbackrest.dalibo.com/v1
+kind: Repository
+metadata:
+  labels:
+    app.kubernetes.io/name: cnpg-i-pgbackrest
+    app.kubernetes.io/managed-by: kustomize
+  name: repository-sample
+spec:
+  repoConfiguration:
+    stanza: main
+    s3Repositories:
+      - bucket: demo
+        endpoint: s3.minio.svc.cluster.local
+        region: us-east-1
+        repoPath: /cluster-demo
+        uriStyle: path
+        verifyTLS: false
+        retentionPolicy:
+          full: 7
+          fullType: count
+          diff: 14
+          archive: 2
+          archiveType: full
+          history: 30
+        secretRef:
+          accessKeyId:
+            name: minio
+            key: ACCESS_KEY_ID
+          secretAccessKey:
+            name: minio
+            key: ACCESS_SECRET_KEY
+---
+apiVersion: pgbackrest.dalibo.com/v1
+kind: Repository
+metadata:
+  labels:
+    app.kubernetes.io/name: cnpg-i-pgbackrest
+    app.kubernetes.io/managed-by: kustomize
+  name: recovery-repository-sample
+spec:
+  repoConfiguration:
+    stanza: main
+    s3Repositories:
+      - bucket: demo
+        endpoint: s3.minio.svc.cluster.local
+        region: us-east-1
+        repoPath: /cluster-demo
+        uriStyle: path
+        verifyTLS: false
+        retentionPolicy:
+          full: 7
+          fullType: count
+          diff: 14
+          archive: 2
+          archiveType: full
+          history: 30
+        secretRef:
+          accessKeyId:
+            name: minio
+            key: ACCESS_KEY_ID
+          secretAccessKey:
+            name: minio
+            key: ACCESS_SECRET_KEY

@@ -11,7 +11,6 @@ import (
 	cloudnativepgv1 "github.com/cloudnative-pg/api/pkg/api/v1"
 	"github.com/dalibo/cnpg-i-pgbackrest/test/e2e/internal/common"
 	"github.com/dalibo/cnpg-i-pgbackrest/test/e2e/internal/kubernetes"
-	"github.com/dalibo/cnpg-i-pgbackrest/test/e2e/internal/minio"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -19,12 +18,7 @@ import (
 )
 
 var DefaultParamater map[string]string = map[string]string{
-	"s3-bucket":     minio.BUCKET_NAME,
-	"s3-endpoint":   minio.SVC_NAME,
-	"s3-region":     "us-east-1",
-	"s3-verify-tls": "false",
-	"s3-uri-style":  "path",
-	"stanza":        "pgbackrest",
+	"repositoryRef": "repository",
 }
 
 func New(namespace string, name string, nbrInstances int, size string, pluginParam map[string]string) *cloudnativepgv1.Cluster {

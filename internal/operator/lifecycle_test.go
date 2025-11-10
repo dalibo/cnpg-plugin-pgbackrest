@@ -41,13 +41,12 @@ func TestEnvFromContainer(t *testing.T) {
 			},
 		},
 	}
-	type TestCase struct {
+	testCases := []struct {
 		desc          string
 		containerName string
 		srcData       []corev1.EnvVar
 		want          []corev1.EnvVar
-	}
-	testCases := []TestCase{
+	}{
 		{
 			"merge non empty EnvVar on Pod",
 			"test-container-with-var",
@@ -81,12 +80,12 @@ func TestEnvFromContainer(t *testing.T) {
 	}
 
 	for _, tc := range testCases {
-		f := func(t *testing.T) {
+		tc := tc
+		t.Run(tc.desc, func(t *testing.T) {
 			r := envFromContainer(tc.containerName, srcPod, tc.srcData)
 			if !reflect.DeepEqual(envVarSliceToMap(r), envVarSliceToMap(tc.want)) {
 				t.Errorf("Expected %v, but got %v", envVarSliceToMap(tc.want), envVarSliceToMap(r))
 			}
-		}
-		t.Run(tc.desc, f)
+		})
 	}
 }

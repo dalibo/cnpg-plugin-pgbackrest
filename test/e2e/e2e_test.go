@@ -8,7 +8,6 @@ import (
 	"context"
 	"maps"
 	"os"
-	"reflect"
 	"testing"
 
 	"github.com/dalibo/cnpg-i-pgbackrest/test/e2e/internal/certmanager"
@@ -47,9 +46,12 @@ func setup() error {
 	// install our pgbackrest plugin from kubernetes directory at the root
 	// of the repository
 	path, err := os.Getwd()
-	s = kubernetes.InstallSpec{ManifestUrl: path + "/../../kubernetes"}
+	s = kubernetes.InstallSpec{ManifestUrl: path + "/../../manifest.yaml"}
 	if err := pgbackrest.Install(*k8sClient, s); err != nil {
-		panic("can't deploy plugin")
+		panic(err.Error())
+	}
+	if _, err := pgbackrest.CreateRepoConfig(*k8sClient, "repository", "default"); err != nil {
+		panic(err.Error())
 	}
 	return nil
 }
@@ -67,8 +69,8 @@ func createSecret(ctx context.Context, k8sClient *kubernetes.K8sClient, namespac
 		},
 		Type: v1.SecretTypeOpaque,
 		StringData: map[string]string{
-			"key":        minio.ACCESS_KEY,
-			"key-secret": minio.SECRET_KEY,
+			"ACCESS_KEY_ID":     minio.ACCESS_KEY,
+			"ACCESS_SECRET_KEY": minio.SECRET_KEY,
 		},
 	}
 	return secret, k8sClient.Create(ctx, secret)
@@ -90,33 +92,35 @@ func TestInstall(t *testing.T) {
 	// basic verification to ensure our plugin is present
 	k8sClient, err := kubernetes.Client()
 	if k8sClient == nil || err != nil {
-		t.Errorf("error kubernetes client not initialized")
+		t.Fatalf("error kubernetes client not initialized")
 	}
+	ctx := context.TODO()
+
 	// basic check for deployment
 	fqdn := types.NamespacedName{Name: "pgbackrest-controller", Namespace: "cnpg-system"}
-	obj := &appsv1.Deployment{}
-	k8sClient.Get(context.TODO(), fqdn, obj)
-	var want int32 = 1
-	got := obj.Status.ReadyReplicas
-	if got != want {
-		t.Errorf("error no Pod for pgbackrest plugin want: %v, got: %v", want, got)
+	deployment := &appsv1.Deployment{}
+	k8sClient.Get(ctx, fqdn, deployment)
+	if nRep := deployment.Status.ReadyReplicas; nRep != 1 {
+		t.Errorf("error no Pod for pgbackrest plugin want: 1, got: %v", nRep)
 	}
 
 	// verify service creation
 	fqdn = types.NamespacedName{Name: "pgbackrest", Namespace: "cnpg-system"}
 	svc := &corev1.Service{}
-	err = k8sClient.Get(context.TODO(), fqdn, svc)
+	err = k8sClient.Get(ctx, fqdn, svc)
 	if err != nil {
 		t.Errorf("error no service for pgbackrest found %s", err.Error())
 	}
-	want_labels := map[string]string{
+	wantLabels := map[string]string{
 		"app":                "pgbackrest-controller",
 		"cnpg.io/pluginName": "pgbackrest.dalibo.com",
 	}
-	if !reflect.DeepEqual(svc.Labels, want_labels) {
-		t.Errorf("error labels not valid  %v", svc.Labels)
+	for k, v := range wantLabels {
+		if svc.Labels[k] != v {
+			t.Errorf("service label %s mismatch: want %s, got %s", k, v, svc.Labels[k])
+		}
 	}
-	k8sClient.Get(context.TODO(), fqdn, obj)
+
 }
 
 // basic verification to ensure we can use our plugin with a cluster
@@ -124,28 +128,29 @@ func TestDeployInstance(t *testing.T) {
 	logcr.SetLogger(zap.New(zap.WriteTo(os.Stdout), zap.UseDevMode(true)))
 	k8sClient, err := kubernetes.Client()
 	if k8sClient == nil || err != nil {
-		t.Errorf("error kubernetes client not initialized")
+		t.Fatalf("kubernetes client not initialized: %v", err)
 	}
 	ns := "default"
 	ctx := context.TODO()
 	// first create a secret
 	secret, err := createSecret(ctx, k8sClient, ns)
 	if err != nil {
-		t.Error(err.Error())
+		t.Fatalf("failed to create secret: %v", err)
 	}
+	defer k8sClient.Delete(ctx, secret)
 
 	// create a test CloudNativePG Cluster
 	clusterName := "cluster-demo"
 	p := maps.Clone(cluster.DefaultParamater)
-	p["s3-repo-path"] = "/" + clusterName
 	c, err := cluster.Create(k8sClient, ns, clusterName, 1, "100M", p)
 	if err != nil {
-		t.Error(err.Error())
+		t.Fatalf("failed to create cluster: %v", err)
 	}
+	defer k8sClient.Delete(ctx, c)
 	if ready, err := k8sClient.PodsIsReady(ns, clusterName+"-1", 80, 3); err != nil {
-		t.Errorf("error when requesting pod status, %s", err.Error())
+		t.Fatalf("error when requesting pod status, %s", err.Error())
 	} else if !ready {
-		t.Error("pod not ready")
+		t.Fatal("pod not ready")
 	}
 	bi := cluster.BackupInfo{
 		Cluster:   clusterName,
@@ -159,14 +164,11 @@ func TestDeployInstance(t *testing.T) {
 		t.Errorf("Error when executing backup %v", err.Error())
 
 	}
+	defer k8sClient.Delete(ctx, b)
 	retrier, err := common.NewRetrier(80)
 	_, err = bi.IsDone(k8sClient, retrier)
 	if err != nil {
 		t.Errorf("Error when retriving info for backup %v", err.Error())
 	}
 
-	// delete created ressources
-	k8sClient.Delete(ctx, b)
-	k8sClient.Delete(ctx, c)
-	k8sClient.Delete(ctx, secret)
 }
