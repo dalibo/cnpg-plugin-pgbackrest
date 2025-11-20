@@ -31,15 +31,14 @@ func setup() {
 	if err != nil {
 		panic("can't init kubernetes client")
 	}
-	githubUrl := "https://raw.githubusercontent.com/"
 	s := kubernetes.InstallSpec{
-		ManifestUrl: githubUrl + "cloudnative-pg/cloudnative-pg/release-1.27/releases/cnpg-1.27.1.yaml",
+		ManifestUrl: "https://raw.githubusercontent.com/cloudnative-pg/cloudnative-pg/release-1.27/releases/cnpg-1.27.1.yaml",
 	}
 	if err := cnpg.Install(*k8sClient, s); err != nil {
 		panic("can't install CNPG")
 	}
 	s = kubernetes.InstallSpec{
-		ManifestUrl: githubUrl + "cert-manager/cert-manager/releases/download/v1.16.2/cert-manager.yaml",
+		ManifestUrl: "https://github.com/cert-manager/cert-manager/releases/download/v1.19.1/cert-manager.yaml",
 	}
 	if err := certmanager.Install(*k8sClient, s); err != nil {
 		panic("can't install certmanager")
