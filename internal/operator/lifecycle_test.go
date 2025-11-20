@@ -71,7 +71,7 @@ func TestEnvFromContainer(t *testing.T) {
 		{
 			"merge empty EnvVar on Pod",
 			"test-container-without-env",
-			[]corev1.EnvVar{ //no EnvVar on container def, all items are from data source
+			[]corev1.EnvVar{ // no EnvVar on container def, all items are from data source
 				{Name: "V1", Value: "va1"},
 				{Name: "V2", Value: "va2"},
 				{Name: "V28", Value: "Va128"}},
@@ -80,7 +80,6 @@ func TestEnvFromContainer(t *testing.T) {
 	}
 
 	for _, tc := range testCases {
-		tc := tc
 		t.Run(tc.desc, func(t *testing.T) {
 			r := envFromContainer(tc.containerName, srcPod, tc.srcData)
 			if !reflect.DeepEqual(envVarSliceToMap(r), envVarSliceToMap(tc.want)) {

@@ -68,7 +68,7 @@ func (impl LifecycleImplementation) LifecycleHook(
 	contextLogger := log.FromContext(ctx).WithName("lifecycle")
 	contextLogger.Info("Lifecycle hook reconciliation start")
 
-	// retreive information about current object manipulated by the request
+	// retrieve information about current object manipulated by the request
 	operation := request.GetOperationType().GetType().Enum()
 	if operation == nil {
 		return nil, errors.New("no operation set")
@@ -85,7 +85,7 @@ func (impl LifecycleImplementation) LifecycleHook(
 	}
 	pluginConfig, err := NewFromCluster(&cluster)
 	if err != nil {
-		return nil, fmt.Errorf("Can't parse user parameters: %w", err)
+		return nil, fmt.Errorf("can't parse user parameters: %w", err)
 	}
 	switch kind {
 	case "Pod":
@@ -134,7 +134,7 @@ func consolidateEnvVar(
 
 func envFromContainer(srcContainer string, p corev1.PodSpec, srcEnvs []corev1.EnvVar) []corev1.EnvVar {
 	var envs []corev1.EnvVar
-	//first retrieve the container
+	// first retrieve the container
 	var c corev1.Container
 	found := false
 	for _, c = range p.Containers {
@@ -201,13 +201,11 @@ func (impl LifecycleImplementation) reconcileJob(
 	}
 
 	mutatedJob := job.DeepCopy()
-	var podSpec *corev1.PodSpec = &mutatedJob.Spec.Template.Spec
+	podSpec := &mutatedJob.Spec.Template.Spec
 
 	sidecarContainer := &corev1.Container{Env: env, Args: []string{"restore"}}
 
-	if err := reconcilePodSpec(cluster, podSpec, role, sidecarContainer); err != nil {
-		return nil, fmt.Errorf("can't reconcile job: %w", err)
-	}
+	reconcilePodSpec(cluster, podSpec, role, sidecarContainer)
 
 	// Inject plugin-specific volume mounts
 	// only needed here, for postgres container, it's done by the CNPG machenery
@@ -247,7 +245,7 @@ func reconcilePodSpec(
 	spec *corev1.PodSpec,
 	mainContainerName string,
 	containerConfig *corev1.Container,
-) error {
+) {
 	// Merge cluster defaults and main container envs
 	defaultEnv := []corev1.EnvVar{
 		{Name: "NAMESPACE", Value: cluster.Namespace},
@@ -282,7 +280,6 @@ func reconcilePodSpec(
 	containerConfig.StartupProbe = baseProbe.DeepCopy()
 	containerConfig.RestartPolicy = ptr.To(corev1.ContainerRestartPolicyAlways)
 	object.InjectPluginVolumeSpec(spec)
-	return nil
 }
 
 // injects the plugin volume (/plugin) into a CNPG Pod spec.
@@ -407,9 +404,7 @@ func (impl LifecycleImplementation) reconcilePod(
 		}
 
 		// Reuse reconcilePodSpec to mutate PodSpec
-		if err := reconcilePodSpec(cluster, &mutatedPod.Spec, "postgres", &sidecar); err != nil {
-			return nil, err
-		}
+		reconcilePodSpec(cluster, &mutatedPod.Spec, "postgres", &sidecar)
 		if err := object.InjectPluginInitContainerSidecarSpec(&mutatedPod.Spec, &sidecar, true); err != nil {
 			return nil, err
 		}

@@ -20,7 +20,7 @@ func StructToEnvVars(cfg any, prefix string) ([]string, error) {
 	if typ.Kind() != reflect.Struct {
 		return nil, fmt.Errorf("StructToEnvVars expects a struct, got %s", typ.Kind())
 	}
-	var env []string
+	env := make([]string, 0, typ.NumField())
 	for i := range typ.NumField() {
 		field := typ.Field(i)
 		value := val.Field(i)

@@ -101,7 +101,7 @@ func (c *PluginConfiguration) GetRepositoryRef() (*types.NamespacedName, error) 
 			Name: c.RepositoryRef, Namespace: c.Cluster.Namespace,
 		}, nil
 	}
-	return nil, fmt.Errorf("Repository not configured")
+	return nil, fmt.Errorf("repository not configured")
 }
 func (c *PluginConfiguration) GetRecoveryRepositoryRef() (*types.NamespacedName, error) {
 	if len(c.RecoveryRepositoryRef) > 0 {
@@ -109,7 +109,7 @@ func (c *PluginConfiguration) GetRecoveryRepositoryRef() (*types.NamespacedName,
 			Name: c.RecoveryRepositoryRef, Namespace: c.Cluster.Namespace,
 		}, nil
 	}
-	return nil, fmt.Errorf("Recovery repository not configured")
+	return nil, fmt.Errorf("recovery repository not configured")
 }
 
 // GetReferredPgBackrestObjectKey the list of pgbackrest objects referred by this

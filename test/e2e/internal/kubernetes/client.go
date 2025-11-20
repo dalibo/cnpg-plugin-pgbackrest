@@ -38,11 +38,11 @@ func init() {
 
 // Client helps to create a Kubernetes client
 func Client() (*K8sClient, error) {
-	config, err := config.GetConfig()
+	conf, err := config.GetConfig()
 	if err != nil {
 		return nil, err
 	}
-	c, err := client.New(config, client.Options{})
+	c, err := client.New(conf, client.Options{})
 	if err != nil {
 		return nil, fmt.Errorf("can't create k8s client %w", err)
 	}
@@ -231,7 +231,7 @@ func (cl K8sClient) CreateService(namespace string, serviceName string, selector
 		},
 	}
 	if err := cl.Create(context.TODO(), svc); err != nil {
-		return fmt.Errorf("Failed to create service: %w", err)
+		return fmt.Errorf("failed to create service: %w", err)
 	}
 	return nil
 }

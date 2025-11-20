@@ -8,10 +8,6 @@ import (
 	"time"
 )
 
-func main() {
-	fmt.Println("vim-go")
-}
-
 type Retrier struct {
 	MaxRetry      uint
 	Interval      uint

@@ -12,8 +12,8 @@ import (
 func TestStructToEnvVar(t *testing.T) {
 	inProg := false
 	type Place struct {
-		streetName string `env:"street_name,omitempty"`
-		zipcode    string `env:"zip"`
+		StreetName string `env:"street_name,omitempty"`
+		Zipcode    string `env:"zip"`
 	}
 	type Owner struct {
 		FirstName   string `env:"firstName"`
@@ -60,6 +60,7 @@ func TestStructToEnvVar(t *testing.T) {
 				"PGBACKREST_OWNER_age=39",
 				"PGBACKREST_OWNER_phone1=001",
 				"PGBACKREST_OWNER_phone2=002",
+				"PGBACKREST_OWNER_in_progress=n",
 			},
 		},
 		{

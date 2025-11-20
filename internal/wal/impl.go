@@ -41,7 +41,7 @@ func (WALSrvImplementation) GetCapabilities(
 					},
 				},
 			},
-			///archive first, then we will see how to restore
+			// archive first, then we will see how to restore
 			{
 				Type: &wal.WALCapability_Rpc{
 					Rpc: &wal.WALCapability_RPC{

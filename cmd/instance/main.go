@@ -17,7 +17,7 @@ func NewCmd() *cobra.Command {
 		Use:   "instance",
 		Short: "Starts the pgbackrest sidecar plugin",
 		RunE: func(cmd *cobra.Command, _ []string) error {
-			//requiredSettings := []string{
+			// requiredSettings := []string{
 			//		"namespace",
 			//		"pod-name",
 			//		"spool-directory",

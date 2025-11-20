@@ -68,7 +68,7 @@ func StanzaExists(env []string, cmdRunner CmdRunner) (bool, error) {
 	}
 	var info []PgBackRestInfo
 	if err := json.Unmarshal(stdout, &info); err != nil {
-		return false, fmt.Errorf("Error parsing pgbackrest JSON: %w", err)
+		return false, fmt.Errorf("can't parse pgbackrest JSON: %w", err)
 	}
 	return parseDataForStatusCode(info), nil
 }
