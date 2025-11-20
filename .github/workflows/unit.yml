@@ -19,6 +19,6 @@ jobs:
       - name: Install dependencies
         run: go mod tidy
       - name: Try to build
-        run: go build -v .
+        run:  go build -o /tmp/cnpgi-pgbackrest -v ./cmd
       - name: Run unit tests
         run: go test ./internal/...
