@@ -17,7 +17,7 @@ jobs:
       - name: Display Go version
         run: go version
       - name: Install dependencies
-        run: go mod titdy
+        run: go mod tidy
       - name: Try to build
         run: go build -v .
       - name: Run unit tests
