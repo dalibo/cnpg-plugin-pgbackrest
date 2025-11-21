@@ -1,0 +1,12 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: pgbackrest-controller
+  namespace: cnpg-system
+spec:
+  template:
+    spec:
+      containers:
+        - name: pgbackrest-controller
+          image: pgbackrest-controller
+          imagePullPolicy: IfNotPresent

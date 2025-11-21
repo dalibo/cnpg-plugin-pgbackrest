@@ -26,8 +26,6 @@ spec:
             - --client-cert=/client/tls.crt
             - --server-address=:9090
             - --log-level=debug  # not yet implemented
-          image: pgbackrest-controller
-          imagePullPolicy: IfNotPresent
           name: pgbackrest-controller
           ports:
             - containerPort: 9090
