@@ -5,13 +5,18 @@
 package certmanager
 
 import (
+	"context"
 	"fmt"
 	"os/exec"
 
 	"github.com/dalibo/cnpg-i-pgbackrest/test/e2e/internal/kubernetes"
 )
 
-func Install(k8sClient kubernetes.K8sClient, installSpec kubernetes.InstallSpec) error {
+func Install(
+	ctx context.Context,
+	k8sClient kubernetes.K8sClient,
+	installSpec kubernetes.InstallSpec,
+) error {
 	cmd := exec.Command("kubectl", "apply", "-f", installSpec.ManifestUrl)
 	output, err := cmd.CombinedOutput()
 	if err != nil {
@@ -24,7 +29,7 @@ func Install(k8sClient kubernetes.K8sClient, installSpec kubernetes.InstallSpec)
 	}
 	// TODO: do that in parallel
 	for _, d := range []string{"cert-manager", "cert-manager-cainjector", "cert-manager-webhook"} {
-		_, err := k8sClient.DeploymentIsReady("cert-manager", d, 15, 2)
+		_, err := k8sClient.DeploymentIsReady(ctx, "cert-manager", d, 15, 2)
 		if err != nil {
 			return fmt.Errorf("can't install certmanager, err: %w", err)
 		}

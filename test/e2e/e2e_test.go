@@ -6,6 +6,7 @@ package main
 
 import (
 	"context"
+	"io"
 	"maps"
 	"os"
 	"testing"
@@ -21,29 +22,31 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
-	logcr "sigs.k8s.io/controller-runtime/pkg/log"
+	"sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
 )
 
 // Deploy CNGP operator, certmanager, minio and our plugins
 func setup() {
 	k8sClient, err := kubernetes.Client()
+	logger := zap.New(zap.WriteTo(io.Discard), zap.UseDevMode(false))
+	ctx := log.IntoContext(context.Background(), logger)
 	if err != nil {
 		panic("can't init kubernetes client")
 	}
 	s := kubernetes.InstallSpec{
 		ManifestUrl: "https://raw.githubusercontent.com/cloudnative-pg/cloudnative-pg/release-1.27/releases/cnpg-1.27.1.yaml",
 	}
-	if err := cnpg.Install(*k8sClient, s); err != nil {
+	if err := cnpg.Install(ctx, *k8sClient, s); err != nil {
 		panic("can't install CNPG")
 	}
 	s = kubernetes.InstallSpec{
 		ManifestUrl: "https://github.com/cert-manager/cert-manager/releases/download/v1.19.1/cert-manager.yaml",
 	}
-	if err := certmanager.Install(*k8sClient, s); err != nil {
+	if err := certmanager.Install(ctx, *k8sClient, s); err != nil {
 		panic("can't install certmanager")
 	}
-	if err = minio.Install(*k8sClient); err != nil {
+	if err = minio.Install(ctx, *k8sClient); err != nil {
 		panic("can't install minio")
 	}
 	// install our pgbackrest plugin from kubernetes directory at the root
@@ -56,10 +59,10 @@ func setup() {
 		ManifestUrl:  path + "/../../kubernetes/dev/",
 		UseKustomize: true,
 	}
-	if err := pgbackrest.Install(*k8sClient, s); err != nil {
+	if err := pgbackrest.Install(ctx, *k8sClient, s); err != nil {
 		panic(err.Error())
 	}
-	if _, err := pgbackrest.CreateRepoConfig(*k8sClient, "repository", "default"); err != nil {
+	if _, err := pgbackrest.CreateRepoConfig(ctx, *k8sClient, "repository", "default"); err != nil {
 		panic(err.Error())
 	}
 }
@@ -100,7 +103,7 @@ func TestMain(m *testing.M) {
 }
 
 func TestInstall(t *testing.T) {
-	logcr.SetLogger(zap.New(zap.WriteTo(os.Stdout), zap.UseDevMode(true)))
+	log.SetLogger(zap.New(zap.WriteTo(os.Stdout), zap.UseDevMode(true)))
 	// basic verification to ensure our plugin is present
 	k8sClient, err := kubernetes.Client()
 	if k8sClient == nil || err != nil {
@@ -139,13 +142,14 @@ func TestInstall(t *testing.T) {
 
 // basic verification to ensure we can use our plugin with a cluster
 func TestDeployInstance(t *testing.T) {
-	logcr.SetLogger(zap.New(zap.WriteTo(os.Stdout), zap.UseDevMode(true)))
+	log.SetLogger(zap.New(zap.WriteTo(os.Stdout), zap.UseDevMode(true)))
 	k8sClient, err := kubernetes.Client()
 	if k8sClient == nil || err != nil {
 		t.Fatalf("kubernetes client not initialized: %v", err)
 	}
 	ns := "default"
-	ctx := context.TODO()
+	ctx := context.Background()
+	log.FromContext(ctx)
 	// first create a secret
 	secret, err := createSecret(ctx, k8sClient, ns)
 	if err != nil {
@@ -160,7 +164,7 @@ func TestDeployInstance(t *testing.T) {
 	// create a test CloudNativePG Cluster
 	clusterName := "cluster-demo"
 	p := maps.Clone(cluster.DefaultParamater)
-	c, err := cluster.Create(k8sClient, ns, clusterName, 1, "100M", p)
+	c, err := cluster.Create(ctx, k8sClient, ns, clusterName, 1, "100M", p)
 	if err != nil {
 		t.Fatalf("failed to create cluster: %v", err)
 	}
@@ -169,7 +173,7 @@ func TestDeployInstance(t *testing.T) {
 			t.Fatal("can't delete cluster")
 		}
 	}()
-	if ready, err := k8sClient.PodsIsReady(ns, clusterName+"-1", 80, 3); err != nil {
+	if ready, err := k8sClient.PodsIsReady(ctx, ns, clusterName+"-1", 80, 3); err != nil {
 		t.Fatalf("error when requesting pod status, %s", err.Error())
 	} else if !ready {
 		t.Fatal("pod not ready")
@@ -181,7 +185,7 @@ func TestDeployInstance(t *testing.T) {
 		Name:      "backup-01",
 	}
 	// more verification can be done here (before deleting the cluster)
-	b, err := bi.Backup(k8sClient)
+	b, err := bi.Backup(ctx, k8sClient)
 	if err != nil {
 		t.Errorf("Error when executing backup %v", err.Error())
 
@@ -195,7 +199,7 @@ func TestDeployInstance(t *testing.T) {
 	if err != nil {
 		panic("can't initiate retrier")
 	}
-	_, err = bi.IsDone(k8sClient, retrier)
+	_, err = bi.IsDone(ctx, k8sClient, retrier)
 	if err != nil {
 		t.Errorf("Error when retrieving info for backup %v", err.Error())
 	}

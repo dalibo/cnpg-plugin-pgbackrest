@@ -78,15 +78,20 @@ func (cl K8sClient) Delete(
 	return cl.client.Delete(ctx, obj, opts...)
 }
 
-func (cl K8sClient) CreateDeployment(manifest *appsv1.Deployment) error {
-	err := cl.Create(context.TODO(), manifest)
+func (cl K8sClient) CreateDeployment(ctx context.Context, manifest *appsv1.Deployment) error {
+	err := cl.Create(ctx, manifest)
 	if err != nil {
 		return fmt.Errorf("can't deploy %w", err)
 	}
 	return nil
 }
 
-func (cl K8sClient) CreatePvc(namespace string, name string, size string) error {
+func (cl K8sClient) CreatePvc(
+	ctx context.Context,
+	namespace string,
+	name string,
+	size string,
+) error {
 	resourceSize, err := resource.ParseQuantity(size)
 	if err != nil {
 		return fmt.Errorf("invalid size format: %w", err)
@@ -107,25 +112,26 @@ func (cl K8sClient) CreatePvc(namespace string, name string, size string) error 
 			},
 		},
 	}
-	if err := cl.Create(context.TODO(), pvc); err != nil {
+	if err := cl.Create(ctx, pvc); err != nil {
 		return err
 	}
 	return nil
 }
 
-func (cl K8sClient) CreateNs(namespace string) error {
+func (cl K8sClient) CreateNs(ctx context.Context, namespace string) error {
 	ns := &corev1.Namespace{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: namespace,
 		},
 	}
-	if err := cl.Create(context.TODO(), ns); err != nil {
+	if err := cl.Create(ctx, ns); err != nil {
 		return err
 	}
 	return nil
 }
 
 func (cl K8sClient) DeploymentIsReady(
+	ctx context.Context,
 	namespace string,
 	name string,
 	maxRetry uint,
@@ -137,7 +143,7 @@ func (cl K8sClient) DeploymentIsReady(
 		return false, fmt.Errorf("maxRetry should be non-zero value")
 	}
 	for range maxRetry {
-		err := cl.client.Get(context.TODO(), deploymentFqdn, waitedRessource)
+		err := cl.client.Get(ctx, deploymentFqdn, waitedRessource)
 		if errors.IsNotFound(err) {
 			time.Sleep(2 * time.Second) // Deployment not created yet, wait and retry
 			continue
@@ -159,6 +165,7 @@ func (cl K8sClient) DeploymentIsReady(
 }
 
 func (cl K8sClient) PodsIsReady(
+	ctx context.Context,
 	namespace string,
 	name string,
 	maxRetry uint,
@@ -170,7 +177,7 @@ func (cl K8sClient) PodsIsReady(
 		return false, fmt.Errorf("maxRetry should be non-zero value")
 	}
 	for range maxRetry {
-		err := cl.client.Get(context.TODO(), podFqdn, waitedRessource)
+		err := cl.client.Get(ctx, podFqdn, waitedRessource)
 		if errors.IsNotFound(err) {
 			time.Sleep(2 * time.Second) // Deployment not created yet, wait and retry
 			continue
@@ -194,7 +201,11 @@ func (cl K8sClient) PodsIsReady(
 	)
 }
 
-func (cl K8sClient) CreateSelfsignedIssuer(namespace string, issuerName string) error {
+func (cl K8sClient) CreateSelfsignedIssuer(
+	ctx context.Context,
+	namespace string,
+	issuerName string,
+) error {
 	issuer := &certmanagerv1.ClusterIssuer{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      issuerName,
@@ -206,7 +217,7 @@ func (cl K8sClient) CreateSelfsignedIssuer(namespace string, issuerName string) 
 			},
 		},
 	}
-	if err := cl.Create(context.TODO(), issuer); err != nil {
+	if err := cl.Create(ctx, issuer); err != nil {
 		return fmt.Errorf("failed to create ClusterIssuer: %w", err)
 	}
 	return nil
@@ -221,7 +232,11 @@ type CertificateSpec struct {
 	DurationInMinute int
 }
 
-func (cl K8sClient) CreateCertificate(namespace string, certSpec CertificateSpec) error {
+func (cl K8sClient) CreateCertificate(
+	ctx context.Context,
+	namespace string,
+	certSpec CertificateSpec,
+) error {
 
 	cert := &certmanagerv1.Certificate{
 		ObjectMeta: metav1.ObjectMeta{
@@ -241,13 +256,14 @@ func (cl K8sClient) CreateCertificate(namespace string, certSpec CertificateSpec
 			DNSNames:   certSpec.AltName,
 		},
 	}
-	if err := cl.Create(context.TODO(), cert); err != nil {
+	if err := cl.Create(ctx, cert); err != nil {
 		return err
 	}
 	return nil
 }
 
 func (cl K8sClient) CreateService(
+	ctx context.Context,
 	namespace string,
 	serviceName string,
 	selector map[string]string,
@@ -272,7 +288,7 @@ func (cl K8sClient) CreateService(
 			Type: corev1.ServiceTypeClusterIP, // Internal Service (default)
 		},
 	}
-	if err := cl.Create(context.TODO(), svc); err != nil {
+	if err := cl.Create(ctx, svc); err != nil {
 		return fmt.Errorf("failed to create service: %w", err)
 	}
 	return nil
