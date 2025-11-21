@@ -58,6 +58,7 @@ func New(
 }
 
 func Create(
+	ctx context.Context,
 	k8sClient *kubernetes.K8sClient,
 	namespace string,
 	name string,
@@ -66,7 +67,7 @@ func Create(
 	pluginParam map[string]string,
 ) (*cloudnativepgv1.Cluster, error) {
 	m := New(namespace, name, nbrInstances, size, pluginParam)
-	if err := k8sClient.Create(context.TODO(), m); err != nil {
+	if err := k8sClient.Create(ctx, m); err != nil {
 		return nil, err
 	}
 	return m, nil
@@ -79,7 +80,10 @@ type BackupInfo struct {
 	Params    map[string]string
 }
 
-func (b BackupInfo) Backup(kClient *kubernetes.K8sClient) (*cloudnativepgv1.Backup, error) {
+func (b BackupInfo) Backup(
+	ctx context.Context,
+	kClient *kubernetes.K8sClient,
+) (*cloudnativepgv1.Backup, error) {
 	backup := &cloudnativepgv1.Backup{
 		TypeMeta: metav1.TypeMeta{
 			Kind:       "Backup",
@@ -100,17 +104,21 @@ func (b BackupInfo) Backup(kClient *kubernetes.K8sClient) (*cloudnativepgv1.Back
 			},
 		},
 	}
-	if err := kClient.Create(context.TODO(), backup); err != nil {
+	if err := kClient.Create(ctx, backup); err != nil {
 		return nil, err
 	}
 	return backup, nil
 }
 
-func (b BackupInfo) IsDone(kClient *kubernetes.K8sClient, r *common.Retrier) (bool, error) {
+func (b BackupInfo) IsDone(
+	ctx context.Context,
+	kClient *kubernetes.K8sClient,
+	r *common.Retrier,
+) (bool, error) {
 	waitedRessource := &cloudnativepgv1.Backup{}
 	fqdn := types.NamespacedName{Name: b.Name, Namespace: b.Namespace}
 	for range r.MaxRetry {
-		err := kClient.Get(context.TODO(), fqdn, waitedRessource)
+		err := kClient.Get(ctx, fqdn, waitedRessource)
 		if errors.IsNotFound(err) {
 			r.Wait()
 			continue

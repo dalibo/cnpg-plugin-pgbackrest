@@ -15,11 +15,15 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-func Install(k8sClient kubernetes.K8sClient, installSpec kubernetes.InstallSpec) error {
+func Install(
+	ctx context.Context,
+	k8sClient kubernetes.K8sClient,
+	installSpec kubernetes.InstallSpec,
+) error {
 	if err := kubernetes.Apply(installSpec); err != nil {
 		return err
 	}
-	_, err := k8sClient.DeploymentIsReady("cnpg-system", "pgbackrest-controller", 15, 2)
+	_, err := k8sClient.DeploymentIsReady(ctx, "cnpg-system", "pgbackrest-controller", 15, 2)
 	return err
 }
 
@@ -72,12 +76,13 @@ func NewRepoConfig(
 }
 
 func CreateRepoConfig(
+	ctx context.Context,
 	k8sClient kubernetes.K8sClient,
 	name string,
 	ns string,
 ) (*apipgbackrest.Repository, error) {
 	repo := NewRepoConfig(k8sClient, name, ns)
-	if err := k8sClient.Create(context.TODO(), repo); err != nil {
+	if err := k8sClient.Create(ctx, repo); err != nil {
 		return nil, err
 	}
 	return repo, nil

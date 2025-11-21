@@ -5,6 +5,8 @@
 package minio
 
 import (
+	"context"
+
 	"github.com/dalibo/cnpg-i-pgbackrest/test/e2e/internal/kubernetes"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
@@ -27,10 +29,10 @@ type minioDeploymentSpec struct {
 	vol       string
 }
 
-func Install(k8sClient kubernetes.K8sClient) error {
+func Install(ctx context.Context, k8sClient kubernetes.K8sClient) error {
 	label := map[string]string{"app": "minio"}
 	ns := "minio"
-	if err := k8sClient.CreateNs(ns); err != nil {
+	if err := k8sClient.CreateNs(ctx, ns); err != nil {
 		return err
 	}
 	certSpec := kubernetes.CertificateSpec{
@@ -41,10 +43,10 @@ func Install(k8sClient kubernetes.K8sClient) error {
 		SecretName:       "selfsigned-cert-secret",
 		DurationInMinute: 24 * 60 * 30, // 30 days
 	}
-	if err := k8sClient.CreateSelfsignedIssuer(ns, certSpec.IssuerName); err != nil {
+	if err := k8sClient.CreateSelfsignedIssuer(ctx, ns, certSpec.IssuerName); err != nil {
 		return err
 	}
-	if err := k8sClient.CreateCertificate(ns, certSpec); err != nil {
+	if err := k8sClient.CreateCertificate(ctx, ns, certSpec); err != nil {
 		return err
 	}
 	spec := minioDeploymentSpec{
@@ -57,17 +59,17 @@ func Install(k8sClient kubernetes.K8sClient) error {
 		pvc:   "minio-pvc",
 		vol:   "/storage",
 	}
-	if err := k8sClient.CreatePvc(ns, spec.pvc, "1G"); err != nil {
+	if err := k8sClient.CreatePvc(ctx, ns, spec.pvc, "1G"); err != nil {
 		return err
 	}
 	d := manifest(ns, spec, certSpec)
-	if err := k8sClient.CreateDeployment(d); err != nil {
+	if err := k8sClient.CreateDeployment(ctx, d); err != nil {
 		return err
 	}
-	if _, err := k8sClient.DeploymentIsReady(ns, spec.name, 20, 2); err != nil {
+	if _, err := k8sClient.DeploymentIsReady(ctx, ns, spec.name, 20, 2); err != nil {
 		return err
 	}
-	if err := k8sClient.CreateService(ns, "s3", label, 443, intstr.FromInt32(9000)); err != nil {
+	if err := k8sClient.CreateService(ctx, ns, "s3", label, 443, intstr.FromInt32(9000)); err != nil {
 		return err
 	}
 	return nil
