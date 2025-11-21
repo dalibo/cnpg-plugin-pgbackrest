@@ -15,7 +15,12 @@ func Install(k8sClient kubernetes.K8sClient, installSpec kubernetes.InstallSpec)
 	cmd := exec.Command("kubectl", "apply", "-f", installSpec.ManifestUrl)
 	output, err := cmd.CombinedOutput()
 	if err != nil {
-		return fmt.Errorf("can't install cert-manager with manifest: %s, output, %s, error: %w", installSpec.ManifestUrl, string(output), err)
+		return fmt.Errorf(
+			"can't install cert-manager with manifest: %s, output, %s, error: %w",
+			installSpec.ManifestUrl,
+			string(output),
+			err,
+		)
 	}
 	// TODO: do that in parallel
 	for _, d := range []string{"cert-manager", "cert-manager-cainjector", "cert-manager-webhook"} {

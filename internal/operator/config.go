@@ -134,7 +134,11 @@ func (c *PluginConfiguration) GetReferredPgBackrestObjectKey() []types.Namespace
 	return res
 }
 
-func GetEnvVarConfig(ctx context.Context, r apipgbackrest.Repository, c client.Client) ([]string, error) {
+func GetEnvVarConfig(
+	ctx context.Context,
+	r apipgbackrest.Repository,
+	c client.Client,
+) ([]string, error) {
 	conf := r.Spec.Configuration
 	prefix := "PGBACKREST_"
 	env, err := utils.StructToEnvVars(conf, prefix)

@@ -61,7 +61,11 @@ func setup() {
 	}
 }
 
-func createSecret(ctx context.Context, k8sClient *kubernetes.K8sClient, namespace string) (*corev1.Secret, error) {
+func createSecret(
+	ctx context.Context,
+	k8sClient *kubernetes.K8sClient,
+	namespace string,
+) (*corev1.Secret, error) {
 	// TODO: move that ?
 	secret := &corev1.Secret{
 		TypeMeta: metav1.TypeMeta{

@@ -26,7 +26,11 @@ func GetValueFromSecret(
 
 	value, ok := secret.Data[secretReference.Key]
 	if !ok {
-		return nil, fmt.Errorf("missing key %s, inside secret %s", secretReference.Key, secretReference.Name)
+		return nil, fmt.Errorf(
+			"missing key %s, inside secret %s",
+			secretReference.Key,
+			secretReference.Name,
+		)
 	}
 
 	return value, nil

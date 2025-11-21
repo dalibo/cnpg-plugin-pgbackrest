@@ -48,19 +48,33 @@ func Client() (*K8sClient, error) {
 	}
 	return &K8sClient{client: c}, nil
 }
-func (cl K8sClient) Get(ctx context.Context, key client.ObjectKey, obj client.Object, opts ...client.GetOption) error {
+
+func (cl K8sClient) Get(
+	ctx context.Context,
+	key client.ObjectKey,
+	obj client.Object,
+	opts ...client.GetOption,
+) error {
 	return cl.client.Get(ctx, key, obj, opts...)
 }
 
 // wrap K8S.client Create function to ignore when an object already exist
-func (cl K8sClient) Create(ctx context.Context, obj client.Object, opts ...client.CreateOption) error {
+func (cl K8sClient) Create(
+	ctx context.Context,
+	obj client.Object,
+	opts ...client.CreateOption,
+) error {
 	if err := cl.client.Create(ctx, obj, opts...); err != nil && !errors.IsAlreadyExists(err) {
 		return err
 	}
 	return nil
 }
 
-func (cl K8sClient) Delete(ctx context.Context, obj client.Object, opts ...client.DeleteOption) error {
+func (cl K8sClient) Delete(
+	ctx context.Context,
+	obj client.Object,
+	opts ...client.DeleteOption,
+) error {
 	return cl.client.Delete(ctx, obj, opts...)
 }
 
@@ -111,7 +125,12 @@ func (cl K8sClient) CreateNs(namespace string) error {
 	return nil
 }
 
-func (cl K8sClient) DeploymentIsReady(namespace string, name string, maxRetry uint, retryInterval uint) (bool, error) {
+func (cl K8sClient) DeploymentIsReady(
+	namespace string,
+	name string,
+	maxRetry uint,
+	retryInterval uint,
+) (bool, error) {
 	waitedRessource := &appsv1.Deployment{}
 	deploymentFqdn := types.NamespacedName{Name: name, Namespace: namespace}
 	if maxRetry == 0 {
@@ -131,10 +150,20 @@ func (cl K8sClient) DeploymentIsReady(namespace string, name string, maxRetry ui
 		}
 		time.Sleep(time.Duration(retryInterval) * time.Second)
 	}
-	return false, fmt.Errorf("max retry %d reached, when monitoring %s on namespace %s", maxRetry, name, namespace)
+	return false, fmt.Errorf(
+		"max retry %d reached, when monitoring %s on namespace %s",
+		maxRetry,
+		name,
+		namespace,
+	)
 }
 
-func (cl K8sClient) PodsIsReady(namespace string, name string, maxRetry uint, retryInterval uint) (bool, error) {
+func (cl K8sClient) PodsIsReady(
+	namespace string,
+	name string,
+	maxRetry uint,
+	retryInterval uint,
+) (bool, error) {
 	waitedRessource := &corev1.Pod{}
 	podFqdn := types.NamespacedName{Name: name, Namespace: namespace}
 	if maxRetry == 0 {
@@ -157,7 +186,12 @@ func (cl K8sClient) PodsIsReady(namespace string, name string, maxRetry uint, re
 		}
 		time.Sleep(time.Duration(retryInterval) * time.Second)
 	}
-	return false, fmt.Errorf("max retry %d reached, when monitoring %s on namespace %s", maxRetry, name, namespace)
+	return false, fmt.Errorf(
+		"max retry %d reached, when monitoring %s on namespace %s",
+		maxRetry,
+		name,
+		namespace,
+	)
 }
 
 func (cl K8sClient) CreateSelfsignedIssuer(namespace string, issuerName string) error {
@@ -196,7 +230,9 @@ func (cl K8sClient) CreateCertificate(namespace string, certSpec CertificateSpec
 		},
 		Spec: certmanagerv1.CertificateSpec{
 			SecretName: certSpec.SecretName,
-			Duration:   &metav1.Duration{Duration: time.Minute * time.Duration(certSpec.DurationInMinute)},
+			Duration: &metav1.Duration{
+				Duration: time.Minute * time.Duration(certSpec.DurationInMinute),
+			},
 			IssuerRef: cmmeta.ObjectReference{
 				Name: certSpec.IssuerName,
 				Kind: "ClusterIssuer",
@@ -211,7 +247,13 @@ func (cl K8sClient) CreateCertificate(namespace string, certSpec CertificateSpec
 	return nil
 }
 
-func (cl K8sClient) CreateService(namespace string, serviceName string, selector map[string]string, srcPort int32, dstPort intstr.IntOrString) error {
+func (cl K8sClient) CreateService(
+	namespace string,
+	serviceName string,
+	selector map[string]string,
+	srcPort int32,
+	dstPort intstr.IntOrString,
+) error {
 
 	svc := &corev1.Service{
 		ObjectMeta: metav1.ObjectMeta{

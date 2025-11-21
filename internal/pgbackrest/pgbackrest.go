@@ -112,7 +112,13 @@ func PushWal(walName string, env []string, cmdRunner CmdRunner) (string, error) 
 	}
 	return string(output), nil
 }
-func GetWAL(env []string, walName string, destinationPath string, cmdRunner CmdRunner) (string, error) {
+
+func GetWAL(
+	env []string,
+	walName string,
+	destinationPath string,
+	cmdRunner CmdRunner,
+) (string, error) {
 	cmd := cmdRunner("pgbackrest", "archive-get", walName, destinationPath)
 	cmd.Env = os.Environ()
 	cmd.Env = append(cmd.Env, env...)
@@ -189,7 +195,13 @@ func Restore(ctx context.Context, env []string, lockFile *string, cmdRunner CmdR
 	}
 	err := cmd.Run()
 	if err != nil {
-		contextLogger.Info("pgbackrest restore error", "stdout", stdout.String(), "stderr", stderr.String())
+		contextLogger.Info(
+			"pgbackrest restore error",
+			"stdout",
+			stdout.String(),
+			"stderr",
+			stderr.String(),
+		)
 		return fmt.Errorf("can't restore: %s, error : %w", stderr.String(), err)
 	}
 	return nil

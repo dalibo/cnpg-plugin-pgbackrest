@@ -65,7 +65,10 @@ func TestEnvFromContainer(t *testing.T) {
 				{Name: "V29", Value: "va29"},
 			},
 			[]corev1.EnvVar{
-				{Name: "V3ContainerOnly", Value: "va3"}, // this should be addeded (does not exist on srcData, but exists on container def)
+				{
+					Name:  "V3ContainerOnly",
+					Value: "va3",
+				}, // this should be addeded (does not exist on srcData, but exists on container def)
 			},
 		},
 		{

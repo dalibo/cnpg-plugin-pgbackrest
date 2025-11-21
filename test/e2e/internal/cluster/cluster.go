@@ -21,7 +21,13 @@ var DefaultParamater map[string]string = map[string]string{
 	"repositoryRef": "repository",
 }
 
-func New(namespace string, name string, nbrInstances int, size string, pluginParam map[string]string) *cloudnativepgv1.Cluster {
+func New(
+	namespace string,
+	name string,
+	nbrInstances int,
+	size string,
+	pluginParam map[string]string,
+) *cloudnativepgv1.Cluster {
 
 	cluster := &cloudnativepgv1.Cluster{
 		TypeMeta: metav1.TypeMeta{
@@ -51,7 +57,14 @@ func New(namespace string, name string, nbrInstances int, size string, pluginPar
 	return cluster
 }
 
-func Create(k8sClient *kubernetes.K8sClient, namespace string, name string, nbrInstances int, size string, pluginParam map[string]string) (*cloudnativepgv1.Cluster, error) {
+func Create(
+	k8sClient *kubernetes.K8sClient,
+	namespace string,
+	name string,
+	nbrInstances int,
+	size string,
+	pluginParam map[string]string,
+) (*cloudnativepgv1.Cluster, error) {
 	m := New(namespace, name, nbrInstances, size, pluginParam)
 	if err := k8sClient.Create(context.TODO(), m); err != nil {
 		return nil, err
