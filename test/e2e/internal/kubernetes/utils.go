@@ -13,11 +13,15 @@ import (
 type InstallSpec struct {
 	ManifestUrl  string
 	CmdCustomOpt []string
+	UseKustomize bool
 }
 
 func Apply(s InstallSpec) error {
-
-	cmd := exec.Command("kubectl", "apply", "-f", s.ManifestUrl)
+	manifestFlag := "-f"
+	if s.UseKustomize {
+		manifestFlag = "-k"
+	}
+	cmd := exec.Command("kubectl", "apply", manifestFlag, s.ManifestUrl)
 	cmd.Args = append(cmd.Args, s.CmdCustomOpt...)
 	if o, err := cmd.CombinedOutput(); err != nil {
 		return fmt.Errorf(

@@ -52,7 +52,10 @@ func setup() {
 	if err != nil {
 		panic("can't define current working dir")
 	}
-	s = kubernetes.InstallSpec{ManifestUrl: path + "/../../manifest.yaml"}
+	s = kubernetes.InstallSpec{
+		ManifestUrl:  path + "/../../kubernetes/dev/",
+		UseKustomize: true,
+	}
 	if err := pgbackrest.Install(*k8sClient, s); err != nil {
 		panic(err.Error())
 	}

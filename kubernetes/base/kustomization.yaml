@@ -6,5 +6,5 @@ resources:
   - certificate.yaml
   - deployment.yaml
   - service.yaml
-  - ../config/crd
-  - ../config/rbac
+  - ../../config/crd
+  - ../../config/rbac
