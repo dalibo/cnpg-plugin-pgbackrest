@@ -23,7 +23,11 @@ func Install(k8sClient kubernetes.K8sClient, installSpec kubernetes.InstallSpec)
 	return err
 }
 
-func NewRepoConfig(k8sClient kubernetes.K8sClient, name string, ns string) *apipgbackrest.Repository {
+func NewRepoConfig(
+	k8sClient kubernetes.K8sClient,
+	name string,
+	ns string,
+) *apipgbackrest.Repository {
 	verifyTls := false
 	repo := &apipgbackrest.Repository{
 		TypeMeta: metav1.TypeMeta{
@@ -67,7 +71,11 @@ func NewRepoConfig(k8sClient kubernetes.K8sClient, name string, ns string) *apip
 	return repo
 }
 
-func CreateRepoConfig(k8sClient kubernetes.K8sClient, name string, ns string) (*apipgbackrest.Repository, error) {
+func CreateRepoConfig(
+	k8sClient kubernetes.K8sClient,
+	name string,
+	ns string,
+) (*apipgbackrest.Repository, error) {
 	repo := NewRepoConfig(k8sClient, name, ns)
 	if err := k8sClient.Create(context.TODO(), repo); err != nil {
 		return nil, err

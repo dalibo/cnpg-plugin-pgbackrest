@@ -132,7 +132,11 @@ func consolidateEnvVar(
 	return envs, nil
 }
 
-func envFromContainer(srcContainer string, p corev1.PodSpec, srcEnvs []corev1.EnvVar) []corev1.EnvVar {
+func envFromContainer(
+	srcContainer string,
+	p corev1.PodSpec,
+	srcEnvs []corev1.EnvVar,
+) []corev1.EnvVar {
 	var envs []corev1.EnvVar
 	// first retrieve the container
 	var c corev1.Container
@@ -264,7 +268,9 @@ func reconcilePodSpec(
 		TimeoutSeconds:   10,
 		ProbeHandler: corev1.ProbeHandler{
 			Exec: &corev1.ExecAction{
-				Command: []string{"/app/bin/cnpg-i-pgbackrest"}, // todo implement health sub-command
+				Command: []string{
+					"/app/bin/cnpg-i-pgbackrest",
+				}, // todo implement health sub-command
 			},
 		},
 	}
@@ -328,7 +334,10 @@ func ensureVolume(volumes []corev1.Volume, volume corev1.Volume) []corev1.Volume
 
 // ensureVolumeMount makes sure the passed volume mounts are present in the list of volume mounts.
 // If a volume mount is already present, it is updated.
-func ensureVolumeMount(mounts []corev1.VolumeMount, volumeMounts ...corev1.VolumeMount) []corev1.VolumeMount {
+func ensureVolumeMount(
+	mounts []corev1.VolumeMount,
+	volumeMounts ...corev1.VolumeMount,
+) []corev1.VolumeMount {
 	for _, mount := range volumeMounts {
 		mountFound := false
 		for i := range mounts {
@@ -347,10 +356,16 @@ func ensureVolumeMount(mounts []corev1.VolumeMount, volumeMounts ...corev1.Volum
 	return mounts
 }
 
-func addVolumeMountsFromContainer(target *corev1.Container, sourceName string, containers []corev1.Container) error {
+func addVolumeMountsFromContainer(
+	target *corev1.Container,
+	sourceName string,
+	containers []corev1.Container,
+) error {
 	for i := range containers {
 		if containers[i].Name == sourceName {
-			target.VolumeMounts = ensureVolumeMount(target.VolumeMounts, containers[i].VolumeMounts...)
+			target.VolumeMounts = ensureVolumeMount(
+				target.VolumeMounts,
+				containers[i].VolumeMounts...)
 			return nil
 		}
 	}

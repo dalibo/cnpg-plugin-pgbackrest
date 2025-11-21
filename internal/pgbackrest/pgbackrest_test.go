@@ -47,7 +47,8 @@ func TestLatestBackup(t *testing.T) {
 	for _, tc := range testCases {
 		f := func(t *testing.T) {
 			got := LatestBackup(tc.data)
-			if (tc.want == nil && got != tc.want) || (got != nil && tc.want != nil && *got != *tc.want) {
+			if (tc.want == nil && got != tc.want) ||
+				(got != nil && tc.want != nil && *got != *tc.want) {
 				t.Errorf("error %v\n%v", got, tc.data)
 			}
 
@@ -117,7 +118,9 @@ func TestPushWal(t *testing.T) {
 		{
 			desc: "push wal", walPath: "/machin",
 			want: execCalls{
-				execCalls: []fakeExec{{cmdName: "pgbackrest", args: []string{"archive-push", "/machin"}}},
+				execCalls: []fakeExec{
+					{cmdName: "pgbackrest", args: []string{"archive-push", "/machin"}},
+				},
 			},
 		},
 	}

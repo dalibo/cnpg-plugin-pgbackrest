@@ -72,7 +72,11 @@ func (w_impl WALSrvImplementation) Archive(
 	if err != nil {
 		return nil, err
 	}
-	created, err := pgbackrest.EnsureStanzaExists(repo.Spec.Configuration.Stanza, env, utils.RealCmdRunner)
+	created, err := pgbackrest.EnsureStanzaExists(
+		repo.Spec.Configuration.Stanza,
+		env,
+		utils.RealCmdRunner,
+	)
 	if err != nil {
 		return nil, fmt.Errorf("stanza verification failed stanza, error: %w", err)
 	}

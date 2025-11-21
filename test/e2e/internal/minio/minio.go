@@ -73,7 +73,11 @@ func Install(k8sClient kubernetes.K8sClient) error {
 	return nil
 }
 
-func manifest(namespace string, depSpec minioDeploymentSpec, certSpec kubernetes.CertificateSpec) *appsv1.Deployment {
+func manifest(
+	namespace string,
+	depSpec minioDeploymentSpec,
+	certSpec kubernetes.CertificateSpec,
+) *appsv1.Deployment {
 	return &appsv1.Deployment{
 		ObjectMeta: metav1.ObjectMeta{Name: depSpec.name, Namespace: namespace},
 		Spec: appsv1.DeploymentSpec{
@@ -84,10 +88,17 @@ func manifest(namespace string, depSpec minioDeploymentSpec, certSpec kubernetes
 				Spec: corev1.PodSpec{
 					InitContainers: []corev1.Container{
 						{
-							Name:         "init-bucket",
-							Image:        "minio/minio:latest",
-							Command:      []string{"mc", "mb", "--with-lock", depSpec.vol + "/" + BUCKET_NAME},
-							VolumeMounts: []corev1.VolumeMount{{Name: "storage", MountPath: depSpec.vol}},
+							Name:  "init-bucket",
+							Image: "minio/minio:latest",
+							Command: []string{
+								"mc",
+								"mb",
+								"--with-lock",
+								depSpec.vol + "/" + BUCKET_NAME,
+							},
+							VolumeMounts: []corev1.VolumeMount{
+								{Name: "storage", MountPath: depSpec.vol},
+							},
 						},
 					},
 					Containers: []corev1.Container{
