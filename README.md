@@ -47,9 +47,11 @@ To install and use this plugin, Kubernetes and CNPG users should:
   $ kubectl apply -f ./kubernetes
   ```
 
-- The installation can be verified by inspecting the presence and status
-  of the `pgbackrest-controller` deployment in the namespace dedicated
-  to the CloudNativePG operator (Eg: `cnpg-system`).
+- The installation can be verified by checking the presence and status
+  of the `pgbackrest-controller` deployment in the namespace used by the
+  CloudNativePG operator (e.g., `cnpg-system`), but also by confirming
+  that the Custom Resource Definition `repository.pgbackrest.dalibo.com`
+  is installed.
 
 ### Initiate an instance with pgBackRest
 
@@ -74,15 +76,52 @@ To use this plugin with a **Cluster**, CNPG users must:
     name: pgbackrest-s3-secret
   type: Opaque
   stringData:
-    key: <key_to_replace>
-    key-secret: <secret_to_replace>
+    ACCESS_KEY_ID: <key_to_replace>
+    ACCESS_SECRET_KEY: <secret_to_replace>
+  ```
+
+- Add a pgbackrest repository definition:
+
+  Example:
+
+  ``` yaml
+  ---
+  apiVersion: pgbackrest.dalibo.com/v1
+  kind: Repository
+  metadata:
+    name: repository-sample
+  spec:
+    repoConfiguration:
+      stanza: main
+      s3Repositories:
+        - bucket: demo
+          endpoint: s3.minio.svc.cluster.local
+          region: us-east-1
+          repoPath: /cluster-demo
+          uriStyle: path
+          verifyTLS: false
+          retentionPolicy:
+            full: 7
+            fullType: count
+            diff: 14
+            archive: 2
+            archiveType: full
+            history: 30
+          secretRef:
+            accessKeyId:
+              name: pgbackrest-s3-secret
+              key: ACCESS_KEY_ID
+            secretAccessKey:
+              name: pgbackrest-s3-secret
+              key: ACCESS_SECRET_KEY
   ```
 
 - Adapt the PostgreSQL Cluster manifest by:
 
   - Adding the plugin definition `pgbackrest.dalibo.com` under the
     `plugins` entry.
-  - Specifying the `s3` parameters directly below the plugin declaration
+  - Referencing the pgbackrest configuration directly under the plugin
+    declaration
 
   Example:
 
@@ -97,11 +136,7 @@ To use this plugin with a **Cluster**, CNPG users must:
     plugins:
       - name: cnpg-i-pgbackrest.dalibo.com
         parameters:
-          s3-bucket: demo-pgbackrest
-          s3-endpoint: s3.fr-par.scw.cloud
-          s3-region: fr-par
-          s3-repo-path: /demo-pgbackrest-5/cluster-demo
-          stanza: pgbackrest
+          repositoryRef: repository-sample
     storage:
       size: 1Gi
   ```
