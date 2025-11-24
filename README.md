@@ -44,7 +44,7 @@ To install and use this plugin, Kubernetes and CNPG users should:
   `kubernetes` directory
 
   ``` console
-  $ kubectl apply -f ./kubernetes
+  $ kubectl apply -k ./kubernetes/dev
   ```
 
 - The installation can be verified by checking the presence and status
@@ -310,7 +310,7 @@ The plugin can now be deployed on that Kubernetes cluster:
   applied:
 
   ``` console
-  $ kubectl apply -f ./kubernetes/
+  $ kubectl apply -k ./kubernetes/dev
   ```
 
 - Then the deployment can be verified by inspecting the objects
