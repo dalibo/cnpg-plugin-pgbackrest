@@ -11,7 +11,6 @@ import (
 	"github.com/cloudnative-pg/cnpg-i/pkg/wal"
 	"github.com/dalibo/cnpg-i-pgbackrest/internal/operator"
 	"github.com/dalibo/cnpg-i-pgbackrest/internal/pgbackrest"
-	"github.com/dalibo/cnpg-i-pgbackrest/internal/utils"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/log"
 )
@@ -72,18 +71,15 @@ func (w_impl WALSrvImplementation) Archive(
 	if err != nil {
 		return nil, err
 	}
-	created, err := pgbackrest.EnsureStanzaExists(
-		repo.Spec.Configuration.Stanza,
-		env,
-		utils.RealCmdRunner,
-	)
+	pgb := pgbackrest.NewPgBackrest(env)
+	created, err := pgb.EnsureStanzaExists(repo.Spec.Configuration.Stanza)
 	if err != nil {
 		return nil, fmt.Errorf("stanza verification failed stanza, error: %w", err)
 	}
 	if created {
 		contextLogger.Info("stanza created while archiving", "WAL", walName)
 	}
-	_, err = pgbackrest.PushWal(walName, env, utils.RealCmdRunner)
+	_, err = pgb.PushWal(walName)
 	if err != nil {
 		return nil, fmt.Errorf("pgBackRest archive-push failed: %w", err)
 	}
@@ -117,7 +113,8 @@ func (w WALSrvImplementation) Restore(
 		"destinationPath", destinationPath,
 	)
 
-	_, err = pgbackrest.GetWAL(env, walName, destinationPath, utils.RealCmdRunner)
+	pgb := pgbackrest.NewPgBackrest(env)
+	_, err = pgb.GetWAL(walName, destinationPath)
 	if err != nil {
 		return nil, fmt.Errorf("getting archive failed: %w", err)
 	}

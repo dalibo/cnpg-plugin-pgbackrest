@@ -14,7 +14,6 @@ import (
 	"github.com/dalibo/cnpg-i-pgbackrest/internal/metadata"
 	"github.com/dalibo/cnpg-i-pgbackrest/internal/operator"
 	"github.com/dalibo/cnpg-i-pgbackrest/internal/pgbackrest"
-	"github.com/dalibo/cnpg-i-pgbackrest/internal/utils"
 )
 
 type BackupServiceImplementation struct {
@@ -60,7 +59,8 @@ func (b BackupServiceImplementation) Backup(
 	}
 	contextLogger.Info("Starting backup")
 	lockFile := "/tmp/pgbackrest-cnpg-plugin.lock"
-	r, err := pgbackrest.Backup(&lockFile, env, utils.RealCmdRunner)
+	pgb := pgbackrest.NewPgBackrest(env)
+	r, err := pgb.Backup(&lockFile)
 	if err != nil {
 		contextLogger.Error(err, "can't backup")
 		return nil, err
