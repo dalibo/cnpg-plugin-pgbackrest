@@ -12,6 +12,13 @@ import (
 	"testing"
 )
 
+func newPgBackrestWithRunner(env []string, runner CmdRunner) *PgBackrest {
+	return &PgBackrest{
+		cmdRunner: runner,
+		baseEnv:   env,
+	}
+}
+
 var backupInfo = []BackupInfo{
 	{
 		Archive: Archive{"000000010000000000000001", "000000010000000000000002"},
@@ -129,7 +136,8 @@ func TestPushWal(t *testing.T) {
 	for _, tc := range testCases {
 		fExec := execCalls{}
 		f := func(t *testing.T) {
-			if _, err := PushWal(tc.walPath, nil, fExec.fakeCmdRunner(backup, nil)); err != nil {
+			pgb := newPgBackrestWithRunner(nil, fExec.fakeCmdRunner(backup, nil))
+			if _, err := pgb.PushWal(tc.walPath); err != nil {
 				t.Errorf("can't simulate push WAL, %v", err)
 			}
 			if !reflect.DeepEqual(fExec, tc.want) {
@@ -163,7 +171,8 @@ func TestBackup(t *testing.T) {
 	for _, tc := range testCases {
 		fExec := execCalls{}
 		t.Run(tc.desc, func(t *testing.T) {
-			Backup(tc.lockFile, nil, fExec.fakeCmdRunner(backup, nil)) //nolint:errcheck
+			pgb := newPgBackrestWithRunner(nil, fExec.fakeCmdRunner(backup, nil))
+			pgb.Backup(tc.lockFile) //nolint:errcheck
 			if !reflect.DeepEqual(fExec, tc.want) {
 				t.Errorf("error want %v, got %v", fExec, tc.want)
 			}
