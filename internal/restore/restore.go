@@ -11,7 +11,6 @@ import (
 	restore "github.com/cloudnative-pg/cnpg-i/pkg/restore/job"
 	"github.com/dalibo/cnpg-i-pgbackrest/internal/operator"
 	"github.com/dalibo/cnpg-i-pgbackrest/internal/pgbackrest"
-	"github.com/dalibo/cnpg-i-pgbackrest/internal/utils"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/log"
 )
@@ -59,7 +58,8 @@ func (impl JobHookImpl) Restore(
 	if err != nil {
 		return nil, err
 	}
-	if err := pgbackrest.Restore(ctx, env, &lockFile, utils.RealCmdRunner); err != nil {
+	pgb := pgbackrest.NewPgBackrest(env)
+	if err := pgb.Restore(ctx, &lockFile); err != nil {
 		return nil, err
 	}
 	restoreCmd := fmt.Sprintf(
