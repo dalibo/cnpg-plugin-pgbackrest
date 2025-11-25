@@ -7,7 +7,10 @@
 
 package api
 
-import machineryapi "github.com/cloudnative-pg/machinery/pkg/api"
+import (
+	machineryapi "github.com/cloudnative-pg/machinery/pkg/api"
+	"github.com/dalibo/cnpg-i-pgbackrest/internal/utils"
+)
 
 // Define retention strategy for a repository
 type Retention struct {
@@ -119,4 +122,8 @@ type Repository struct {
 
 	// +kubebuilder:validation:MinLength=1
 	Stanza string `json:"stanza" env:"STANZA"`
+}
+
+func (r *Repository) ToEnv() ([]string, error) {
+	return utils.StructToEnvVars(*r, "PGBACKREST_")
 }

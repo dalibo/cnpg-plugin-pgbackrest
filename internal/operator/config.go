@@ -140,8 +140,7 @@ func GetEnvVarConfig(
 	c client.Client,
 ) ([]string, error) {
 	conf := r.Spec.Configuration
-	prefix := "PGBACKREST_"
-	env, err := utils.StructToEnvVars(conf, prefix)
+	env, err := conf.ToEnv()
 	if err != nil {
 		return nil, err
 	}
@@ -164,10 +163,12 @@ func GetEnvVarConfig(
 			return nil, err
 		}
 		// build env var names
-		env = append(env,
-			fmt.Sprintf("%s=%s", fmt.Sprintf("%sREPO%d_S3_KEY", prefix, i+1), aKey),
-			fmt.Sprintf("%s=%s", fmt.Sprintf("%sREPO%d_S3_KEY_SECRET", prefix, i+1), sKey),
-			fmt.Sprintf("%s=%s", fmt.Sprintf("%sREPO%d_TYPE", prefix, i+1), "s3"),
+		prefix := fmt.Sprintf("PGBACKREST_REPO%d_", i+1)
+		env = append(
+			env,
+			fmt.Sprintf("%sS3_KEY=%s", prefix, aKey),
+			fmt.Sprintf("%sS3_KEY_SECRET=%s", prefix, sKey),
+			fmt.Sprintf("%sTYPE=%s", prefix, "s3"),
 		)
 	}
 	return env, nil
