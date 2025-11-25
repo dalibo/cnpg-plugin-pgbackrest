@@ -13,7 +13,6 @@ import (
 	"github.com/cloudnative-pg/cnpg-i/pkg/reconciler"
 	"github.com/cloudnative-pg/machinery/pkg/log"
 	apipgbackrest "github.com/dalibo/cnpg-i-pgbackrest/api/v1"
-	"github.com/dalibo/cnpg-i-pgbackrest/internal/utils"
 	rbacv1 "k8s.io/api/rbac/v1"
 	"k8s.io/apimachinery/pkg/api/equality"
 	apierrs "k8s.io/apimachinery/pkg/api/errors"
@@ -120,7 +119,7 @@ func (r ReconcilerImplementation) ensureRole(
 	pgbackrestRepositories []apipgbackrest.Repository,
 ) error {
 	contextLogger := log.FromContext(ctx)
-	newRole := utils.BuildK8SRole(cluster, pgbackrestRepositories)
+	newRole := BuildK8SRole(cluster, pgbackrestRepositories)
 
 	var role rbacv1.Role
 	if err := r.Client.Get(ctx, client.ObjectKey{
@@ -172,7 +171,7 @@ func (r ReconcilerImplementation) ensureRoleBinding(
 	var role rbacv1.RoleBinding
 	if err := r.Client.Get(ctx, client.ObjectKey{
 		Namespace: cluster.Namespace,
-		Name:      utils.GetRBACName(cluster.Name),
+		Name:      GetRBACName(cluster.Name),
 	}, &role); err != nil {
 		if apierrs.IsNotFound(err) {
 			return r.createRoleBinding(ctx, cluster)
@@ -189,7 +188,7 @@ func (r ReconcilerImplementation) createRoleBinding(
 	ctx context.Context,
 	cluster *cnpgv1.Cluster,
 ) error {
-	roleBinding := utils.BindingK8SRole(cluster)
+	roleBinding := BindingK8SRole(cluster)
 	if err := setOwnerReference(cluster, roleBinding); err != nil {
 		return err
 	}
