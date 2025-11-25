@@ -182,20 +182,17 @@ func LatestBackup(backups []BackupInfo) *BackupInfo {
 	return &found
 }
 
-func Restore(ctx context.Context, env []string, lockFile *string, cmdRunner CmdRunner) error {
+func (p *PgBackrest) Restore(ctx context.Context, lockFile *string) error {
 	contextLogger := log.FromContext(ctx)
-	cmd := cmdRunner("restore")
-	cmd.Env = os.Environ()
-	cmd.Env = append(cmd.Env,
-		"PGBACKREST_archive-check=n",
-	)
-	cmd.Env = append(cmd.Env, env...)
+	env := make([]string, 2)
+	env = append(env, "PGBACKREST_archive-check=n")
+	if lockFile != nil && (*lockFile) != "" {
+		env = append(env, "PGBACKREST_lock-path="+(*lockFile))
+	}
+	cmd := p.run([]string{"restore"}, env)
 	var stdout, stderr bytes.Buffer
 	cmd.Stdout = &stdout
 	cmd.Stderr = &stderr
-	if lockFile != nil && (*lockFile) != "" {
-		cmd.Env = append(cmd.Env, "PGBACKREST_lock-path="+(*lockFile))
-	}
 	err := cmd.Run()
 	if err != nil {
 		contextLogger.Info(
