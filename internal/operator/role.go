@@ -6,7 +6,6 @@ package operator
 import (
 	"fmt"
 
-	cnpgv1 "github.com/cloudnative-pg/cloudnative-pg/api/v1"
 	"github.com/cloudnative-pg/machinery/pkg/stringset"
 	apipgbackrest "github.com/dalibo/cnpg-i-pgbackrest/api/v1"
 	rbacv1 "k8s.io/api/rbac/v1"
@@ -27,13 +26,14 @@ func getSecrets(r apipgbackrest.Repository, s *stringset.Data) {
 }
 
 func BuildK8SRole(
-	cluster *cnpgv1.Cluster,
+	ns string,
+	clusterName string,
 	pgbackrestRepositories []apipgbackrest.Repository,
 ) *rbacv1.Role {
 	role := &rbacv1.Role{
 		ObjectMeta: metav1.ObjectMeta{
-			Namespace: cluster.Namespace,
-			Name:      GetRBACName(cluster.Name),
+			Namespace: ns,
+			Name:      GetRBACName(clusterName),
 		},
 		Rules: []rbacv1.PolicyRule{},
 	}
@@ -90,25 +90,26 @@ func BuildK8SRole(
 }
 
 func BindingK8SRole(
-	cluster *cnpgv1.Cluster,
+	ns string,
+	clusterName string,
 ) *rbacv1.RoleBinding {
 	return &rbacv1.RoleBinding{
 		ObjectMeta: metav1.ObjectMeta{
-			Namespace: cluster.Namespace,
-			Name:      GetRBACName(cluster.Name),
+			Namespace: ns,
+			Name:      GetRBACName(clusterName),
 		},
 		Subjects: []rbacv1.Subject{
 			{
 				Kind:      "ServiceAccount",
 				APIGroup:  "",
-				Name:      cluster.Name,
-				Namespace: cluster.Namespace,
+				Name:      clusterName,
+				Namespace: ns,
 			},
 		},
 		RoleRef: rbacv1.RoleRef{
 			APIGroup: "rbac.authorization.k8s.io",
 			Kind:     "Role",
-			Name:     GetRBACName(cluster.Name),
+			Name:     GetRBACName(clusterName),
 		},
 	}
 
