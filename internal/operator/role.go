@@ -28,7 +28,7 @@ func getSecrets(r apipgbackrest.Repository, s *stringset.Data) {
 func BuildK8SRole(
 	ns string,
 	clusterName string,
-	pgbackrestRepositories []apipgbackrest.Repository,
+	repos []apipgbackrest.Repository,
 ) *rbacv1.Role {
 	role := &rbacv1.Role{
 		ObjectMeta: metav1.ObjectMeta{
@@ -39,9 +39,9 @@ func BuildK8SRole(
 	}
 	pgbRepoSet := stringset.New()
 	secretsSet := stringset.New()
-	for _, pgbRepo := range pgbackrestRepositories {
-		pgbRepoSet.Put(pgbRepo.Name)
-		getSecrets(pgbRepo, secretsSet)
+	for _, r := range repos {
+		pgbRepoSet.Put(r.Name)
+		getSecrets(r, secretsSet)
 	}
 	role.Rules = append(
 		role.Rules,
