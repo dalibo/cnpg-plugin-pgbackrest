@@ -134,7 +134,7 @@ To use this plugin with a **Cluster**, CNPG users must:
   spec:
     instances: 1
     plugins:
-      - name: cnpg-i-pgbackrest.dalibo.com
+      - name: pgbackrest.dalibo.com
         parameters:
           repositoryRef: repository-sample
     storage:
@@ -189,7 +189,7 @@ spec:
   cluster:
     name: cluster-demo
   pluginConfiguration:
-    name: cnpg-i-pgbackrest.dalibo.com
+    name: pgbackrest.dalibo.com
 ```
 
 #### Scheduled backup
@@ -214,7 +214,7 @@ spec:
   cluster:
     name: cluster-demo
   pluginConfiguration:
-    name: cnpg-i-pgbackrest.dalibo.com
+    name: pgbackrest.dalibo.com
 ```
 
 ## How it works
