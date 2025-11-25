@@ -6,14 +6,16 @@ package instance
 
 import (
 	"context"
+	"fmt"
+	"strconv"
 
 	"github.com/cloudnative-pg/cnpg-i/pkg/backup"
-	"sigs.k8s.io/controller-runtime/pkg/client"
-	"sigs.k8s.io/controller-runtime/pkg/log"
-
 	"github.com/dalibo/cnpg-i-pgbackrest/internal/metadata"
 	"github.com/dalibo/cnpg-i-pgbackrest/internal/operator"
 	"github.com/dalibo/cnpg-i-pgbackrest/internal/pgbackrest"
+	apipgbackrest "github.com/dalibo/cnpg-i-pgbackrest/internal/pgbackrest/api"
+	"sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/log"
 )
 
 type BackupServiceImplementation struct {
@@ -38,6 +40,17 @@ func (b BackupServiceImplementation) GetCapabilities(
 	}, nil
 }
 
+func getEnvVarBackupRepoDest(repo apipgbackrest.Repository, selectedRepo string) (string, error) {
+	sRepo, err := strconv.ParseUint(selectedRepo, 10, 64)
+	if err != nil {
+		return "", err
+	}
+	if sRepo != 1 && sRepo > uint64(len(repo.S3Repositories)) {
+		return "", fmt.Errorf("can't parse selected repository: %s, %w", selectedRepo, err)
+	}
+	return fmt.Sprintf("PGBACKREST_REPO=%d", sRepo), nil
+}
+
 func (b BackupServiceImplementation) Backup(
 	ctx context.Context,
 	request *backup.BackupRequest,
@@ -57,6 +70,16 @@ func (b BackupServiceImplementation) Backup(
 		contextLogger.Error(err, "can't get envvar")
 		return nil, err
 	}
+	selectedRepo, ok := request.Parameters["selectedRepository"]
+	if !ok {
+		selectedRepo = "1" // use first repo by default
+	}
+	repoDestEnv, err := getEnvVarBackupRepoDest(repo.Spec.Configuration, selectedRepo)
+	if err != nil {
+		return nil, err
+	}
+	env = append(env, repoDestEnv)
+	contextLogger.Info("using repo", "repo", repoDestEnv)
 	contextLogger.Info("Starting backup")
 	lockFile := "/tmp/pgbackrest-cnpg-plugin.lock"
 	pgb := pgbackrest.NewPgBackrest(env)
