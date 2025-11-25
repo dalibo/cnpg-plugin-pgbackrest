@@ -116,6 +116,12 @@ To use this plugin with a **Cluster**, CNPG users must:
               key: ACCESS_SECRET_KEY
   ```
 
+> ![NOTE] The 's3Repositories' variable is a list, so you can
+> configure multiple repositories. You can then select the repository to
+> which your backup will be performed. By default, the first repository
+> is selected for backup, WAL archiving always occurs on all
+> repositories. See the backup chapter for more information.
+
 - Adapt the PostgreSQL Cluster manifest by:
 
   - Adding the plugin definition `pgbackrest.dalibo.com` under the
@@ -190,6 +196,40 @@ spec:
     name: cluster-demo
   pluginConfiguration:
     name: pgbackrest.dalibo.com
+```
+
+It's also possible to use the `cnpg` plugin to perform your backup:
+
+``` console
+$ kubectl cnpg backup cluster-demo -m plugin --plugin-name pgbackrest.dalibo.com
+```
+
+When performing a backup, you can choose the repository to which to push
+it. To do this, you need to define the `selectedRepository` key using
+the number of the repository, according to its position in the list of
+configured repositories. For example, to use the first repository:
+
+``` yaml
+---
+apiVersion: postgresql.cnpg.io/v1
+kind: Backup
+metadata:
+  name: backup-example
+spec:
+  method: plugin
+  cluster:
+    name: cluster-demo
+  pluginConfiguration:
+    name: pgbackrest.dalibo.com
+    parameters:
+      selectedRepository: "1"
+```
+
+Or with the CNPG plugin:
+
+``` console
+$ kubectl cnpg backup cluster-demo -m plugin --plugin-name pgbackrest.dalibo.com \
+  --plugin-parameters selectedRepository=1
 ```
 
 #### Scheduled backup
