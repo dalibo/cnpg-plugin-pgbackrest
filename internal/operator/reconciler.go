@@ -119,7 +119,7 @@ func (r ReconcilerImplementation) ensureRole(
 	pgbackrestRepositories []apipgbackrest.Repository,
 ) error {
 	contextLogger := log.FromContext(ctx)
-	newRole := BuildK8SRole(cluster, pgbackrestRepositories)
+	newRole := BuildK8SRole(cluster.Namespace, cluster.Name, pgbackrestRepositories)
 
 	var role rbacv1.Role
 	if err := r.Client.Get(ctx, client.ObjectKey{
@@ -188,7 +188,7 @@ func (r ReconcilerImplementation) createRoleBinding(
 	ctx context.Context,
 	cluster *cnpgv1.Cluster,
 ) error {
-	roleBinding := BindingK8SRole(cluster)
+	roleBinding := BindingK8SRole(cluster.Namespace, cluster.Name)
 	if err := setOwnerReference(cluster, roleBinding); err != nil {
 		return err
 	}
