@@ -27,8 +27,8 @@ COPY --from=builder /app/bin/cnpg-i-pgbackrest /app/bin/cnpg-i-pgbackrest
 RUN --mount=type=cache,target=/var/cache/apt \
     --mount=type=cache,target=/var/lib/apt \
     apt-get -qq update && \
-    apt-get -y install --no-install-recommends lsb-release curl ca-certificates
-RUN echo "deb http://apt.postgresql.org/pub/repos/apt $(lsb_release -c -s)-pgdg main" \
+    apt-get -y install --no-install-recommends curl ca-certificates
+RUN echo "deb http://apt.postgresql.org/pub/repos/apt trixie-pgdg main" \
     | tee /etc/apt/sources.list.d/pgdg.list
 RUN curl --output /etc/apt/trusted.gpg.d/pgdg.asc https://www.postgresql.org/media/keys/ACCC4CF8.asc
 RUN --mount=type=cache,target=/var/cache/apt \
