@@ -42,6 +42,21 @@ spec:
               repoConfiguration:
                 description: Define pgbackrest repository
                 properties:
+                  archive:
+                    properties:
+                      async:
+                        default: false
+                        type: boolean
+                      getQueueMax:
+                        pattern: ^[0-9]+ ?(B|KiB|MiB|GiB|TiB|PiB)$
+                        type: string
+                      pushQueueMax:
+                        pattern: ^(0B|[0-9]+(KiB|MiB|GiB|TiB)|([0-4])PiB)$
+                        type: string
+                    type: object
+                  processMax:
+                    default: 1
+                    type: integer
                   s3Repositories:
                     items:
                       properties:

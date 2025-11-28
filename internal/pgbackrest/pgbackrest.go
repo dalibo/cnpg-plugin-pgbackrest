@@ -9,8 +9,10 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"io"
 	"os"
 	"os/exec"
+	"sync"
 
 	"github.com/dalibo/cnpg-i-pgbackrest/internal/utils"
 	"sigs.k8s.io/controller-runtime/pkg/log"
@@ -117,13 +119,69 @@ func (p *PgBackrest) EnsureStanzaExists(stanza string) (bool, error) {
 	return true, nil
 }
 
-func (p *PgBackrest) PushWal(walName string) (string, error) {
+func (p *PgBackrest) PushWal(ctx context.Context, walName string) <-chan error {
 	cmd := p.run([]string{"archive-push", walName}, nil)
-	output, err := cmd.CombinedOutput()
-	if err != nil {
-		return "", fmt.Errorf("pgBackRest archive-push failed, output: %s %w", string(output), err)
-	}
-	return string(output), nil
+	result := make(chan error, 1)
+	logger := log.FromContext(ctx)
+
+	go func() {
+		defer close(result)
+
+		stdoutPipe, _ := cmd.StdoutPipe()
+		stderrPipe, _ := cmd.StderrPipe()
+
+		if err := cmd.Start(); err != nil {
+			logger.Error(err, "can't start pgBackRest archive-push", "WAL", walName)
+			result <- err
+			return
+		}
+
+		// Read stdout & stderr concurrently
+		var stdout, stderr []byte
+		var outErr, errErr error
+		var wg sync.WaitGroup
+
+		wg.Add(2)
+		go func() {
+			defer wg.Done()
+			stdout, outErr = io.ReadAll(stdoutPipe)
+		}()
+		go func() {
+			defer wg.Done()
+			stderr, errErr = io.ReadAll(stderrPipe)
+		}()
+
+		// Wait for read completion
+		wg.Wait()
+
+		done := make(chan error, 1)
+		go func() { done <- cmd.Wait() }()
+
+		select {
+		case err := <-done:
+			if err != nil || outErr != nil || errErr != nil {
+				logger.Error(
+					err,
+					"pgBackRest archive-push failed",
+					"WAL",
+					walName,
+					"stdout",
+					string(stdout),
+					"stderr",
+					string(stderr),
+				)
+				result <- err
+				return
+			}
+
+		case <-ctx.Done():
+			_ = cmd.Process.Kill() // ensure subprocess tree is killed
+			result <- ctx.Err()
+		}
+
+	}()
+
+	return result
 }
 
 func (p *PgBackrest) GetWAL(walName string, dstPath string) (string, error) {

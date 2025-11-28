@@ -113,6 +113,20 @@ type S3Repository struct {
 	// +optional
 	RetentionPolicy Retention `json:"retentionPolicy" nestedEnvPrefix:"_RETENTION_"`
 }
+type ArchiveOption struct {
+
+	// +kubebuilder:default=false
+	// +optional
+	Async bool `json:"async" env:"_ASYNC"`
+
+	// +kubebuilder:validation:Pattern:="^(0B|[0-9]+(KiB|MiB|GiB|TiB)|([0-4])PiB)$"
+	// +optional
+	PushQueueMax *string `json:"pushQueueMax" env:"_PUSH_QUEUE_MAX"`
+
+	// +kubebuilder:validation:Pattern:="^[0-9]+ ?(B|KiB|MiB|GiB|TiB|PiB)$"
+	// +optional
+	GetQueueMax *string `json:"getQueueMax" env:"_GET_QUEUE_MAX"`
+}
 
 // Define pgbackrest repository
 type Repository struct {
@@ -122,6 +136,13 @@ type Repository struct {
 
 	// +kubebuilder:validation:MinLength=1
 	Stanza string `json:"stanza" env:"STANZA"`
+
+	// +optional
+	// +kubebuilder:default=1
+	ProcessMax uint `json:"processMax" env:"PROCESS_MAX"`
+
+	// +optional
+	Archive ArchiveOption `json:"archive" nestedEnvPrefix:"ARCHIVE"`
 }
 
 func (r *Repository) ToEnv() ([]string, error) {
