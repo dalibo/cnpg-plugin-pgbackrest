@@ -33,8 +33,7 @@ RUN echo "deb http://apt.postgresql.org/pub/repos/apt trixie-pgdg main" \
 RUN curl --output /etc/apt/trusted.gpg.d/pgdg.asc https://www.postgresql.org/media/keys/ACCC4CF8.asc
 RUN --mount=type=cache,target=/var/cache/apt \
     --mount=type=cache,target=/var/lib/apt \
-     apt-get update && apt-get -y install --no-install-recommends  \
-    gnupg \
+    apt-get update && apt-get -y install --no-install-recommends  \
     pgbackrest \
     && rm -rf /var/lib/apt/lists/*
 
