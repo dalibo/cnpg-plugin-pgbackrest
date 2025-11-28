@@ -29,7 +29,7 @@ type CNPGI struct {
 // Start starts the GRPC service
 func (c *CNPGI) Start(ctx context.Context) error {
 	enrich := func(server *grpc.Server) error {
-		wal.RegisterWALServer(server, wal_pgbackrest.WALSrvImplementation{
+		wal.RegisterWALServer(server, &wal_pgbackrest.WALSrvImplementation{
 			InstanceName:   c.InstanceName,
 			Client:         c.Client,
 			SpoolDirectory: c.SpoolDirectory,

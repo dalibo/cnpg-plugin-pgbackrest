@@ -156,6 +156,13 @@ the default setup), an other one for the pgbackrest plugin, named
 for archiving the WALs and triggering backups when a backup request is
 made.
 
+### Stanza Initialization
+
+Stanzas are initialized when archiving the first WAL. Since the stanza
+initialization state is tracked internally, restarting the sidecar
+container will require running the `pgbackrest create-stanza` command
+again.
+
 ### WAL Archiving
 
 WAL archiving can be customized through the `pgbackrest` CRD. It is
