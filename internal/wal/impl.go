@@ -22,8 +22,9 @@ type WALSrvImplementation struct {
 	PGWALPath      string
 	SpoolDirectory string
 	// mutually exclusive with serverAddress
-	PluginPath   string
-	InstanceName string
+	PluginPath    string
+	InstanceName  string
+	StanzaCreated bool
 }
 
 // GetCapabilities gets the capabilities of the WAL service
@@ -53,7 +54,7 @@ func (WALSrvImplementation) GetCapabilities(
 }
 
 // Archive WAL through pgbackrest (currently via a S3 stanza)
-func (w_impl WALSrvImplementation) Archive(
+func (w_impl *WALSrvImplementation) Archive(
 	ctx context.Context,
 	request *wal.WALArchiveRequest,
 ) (*wal.WALArchiveResult, error) {
@@ -75,12 +76,17 @@ func (w_impl WALSrvImplementation) Archive(
 		return nil, err
 	}
 	pgb := pgbackrest.NewPgBackrest(env)
-	created, err := pgb.EnsureStanzaExists(repo.Spec.Configuration.Stanza)
-	if err != nil {
-		return nil, fmt.Errorf("stanza verification failed stanza, error: %w", err)
-	}
-	if created {
-		contextLogger.Info("stanza created while archiving", "WAL", walName)
+	if !w_impl.StanzaCreated {
+		ok, err := pgb.EnsureStanzaExists(repo.Spec.Configuration.Stanza)
+		if err != nil {
+			return nil, fmt.Errorf("stanza creation failed: %w", err)
+		}
+		if ok {
+			w_impl.StanzaCreated = ok
+			contextLogger.Info("stanza created while archiving", "WAL", walName)
+		}
+	} else {
+		contextLogger.Info("stanza already exist, le'ts archive", "WAL", walName)
 	}
 	errCh := pgb.PushWal(context.Background(), walName)
 	if err := <-errCh; err != nil {
