@@ -156,6 +156,14 @@ the default setup), an other one for the pgbackrest plugin, named
 for archiving the WALs and triggering backups when a backup request is
 made.
 
+### WAL Archiving
+
+WAL archiving can be customized through the `pgbackrest` CRD. It is
+possible to define the WAL archiving strategy (e.g. [using the
+`asynchronous`
+mode](https://pgbackrest.org/configuration.html#section-archive/option-archive-async))
+as well as configure the `pgbackrest` queue size.
+
 ### Backup an instance
 
 There are two ways to backup a PostgreSQL Cluster managed by the

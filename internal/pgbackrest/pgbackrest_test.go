@@ -5,6 +5,7 @@
 package pgbackrest
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"os/exec"
@@ -137,7 +138,8 @@ func TestPushWal(t *testing.T) {
 		fExec := execCalls{}
 		f := func(t *testing.T) {
 			pgb := newPgBackrestWithRunner(nil, fExec.fakeCmdRunner(backup, nil))
-			if _, err := pgb.PushWal(tc.walPath); err != nil {
+			errCh := pgb.PushWal(context.Background(), tc.walPath)
+			if err := <-errCh; err != nil {
 				t.Errorf("can't simulate push WAL, %v", err)
 			}
 			if !reflect.DeepEqual(fExec, tc.want) {

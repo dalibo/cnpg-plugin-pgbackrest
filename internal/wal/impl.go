@@ -68,6 +68,9 @@ func (w_impl WALSrvImplementation) Archive(
 		return nil, err
 	}
 	env, err := operator.GetEnvVarConfig(ctx, *repo, w_impl.Client)
+	if w_impl.SpoolDirectory != "" {
+		env = append(env, "PGBACKREST_SPOOL_PATH="+w_impl.SpoolDirectory)
+	}
 	if err != nil {
 		return nil, err
 	}
@@ -79,9 +82,9 @@ func (w_impl WALSrvImplementation) Archive(
 	if created {
 		contextLogger.Info("stanza created while archiving", "WAL", walName)
 	}
-	_, err = pgb.PushWal(walName)
-	if err != nil {
-		return nil, fmt.Errorf("pgBackRest archive-push failed: %w", err)
+	errCh := pgb.PushWal(context.Background(), walName)
+	if err := <-errCh; err != nil {
+		return nil, err
 	}
 	contextLogger.Info("pgBackRest archive-push successful", "WAL", walName)
 	return &wal.WALArchiveResult{}, nil
