@@ -2,7 +2,6 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-# Step 1: build image
 FROM golang:1.25 AS builder
 WORKDIR /app
 COPY go.mod ./
@@ -10,12 +9,6 @@ COPY go.sum ./
 RUN go mod download -x
 COPY . ./
 RUN --mount=type=cache,target="/root/.cache/go-build" CGO_ENABLED=0 go build -o bin/cnpg-i-pgbackrest ./cmd/
-
-### pgbackrest controller only
-FROM golang:1-alpine AS pgbackrest-controller
-USER 10001:10001
-COPY --from=builder /app/bin/cnpg-i-pgbackrest /app/bin/cnpg-i-pgbackrest
-ENTRYPOINT ["/app/bin/cnpg-i-pgbackrest"]
 
 ### sidecar definition
 FROM debian:trixie-slim AS pgbackrest-sidecar
