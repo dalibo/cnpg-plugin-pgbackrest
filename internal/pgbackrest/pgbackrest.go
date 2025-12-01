@@ -5,11 +5,12 @@
 package pgbackrest
 
 import (
+	"bufio"
 	"bytes"
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
-	"io"
 	"os"
 	"os/exec"
 	"sync"
@@ -138,17 +139,26 @@ func (p *PgBackrest) PushWal(ctx context.Context, walName string) <-chan error {
 
 		// Read stdout & stderr concurrently
 		var stdout, stderr []byte
-		var outErr, errErr error
+		var errOut error
 		var wg sync.WaitGroup
 
 		wg.Add(2)
 		go func() {
 			defer wg.Done()
-			stdout, outErr = io.ReadAll(stdoutPipe)
+			scanner := bufio.NewScanner(stdoutPipe)
+			for scanner.Scan() {
+				l := scanner.Text()
+				logger.Info(l)
+			}
 		}()
 		go func() {
 			defer wg.Done()
-			stderr, errErr = io.ReadAll(stderrPipe)
+			scanner := bufio.NewScanner(stderrPipe)
+			for scanner.Scan() {
+				l := scanner.Text()
+				errOut = errors.New(l)
+				logger.Error(errOut, "error from pgbackrest")
+			}
 		}()
 
 		// Wait for read completion
@@ -159,7 +169,7 @@ func (p *PgBackrest) PushWal(ctx context.Context, walName string) <-chan error {
 
 		select {
 		case err := <-done:
-			if err != nil || outErr != nil || errErr != nil {
+			if err != nil || errOut != nil {
 				logger.Error(
 					err,
 					"pgBackRest archive-push failed",
