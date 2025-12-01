@@ -8,6 +8,10 @@ metadata:
 spec:
   repoConfiguration:
     stanza: main
+    archive:
+      async: true
+      getQueueMax: 128MiB
+    processMax: 4
     s3Repositories:
       - bucket: demo
         endpoint: s3.minio.svc.cluster.local
