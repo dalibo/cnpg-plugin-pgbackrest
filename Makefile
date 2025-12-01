@@ -78,13 +78,13 @@ cleanup-test-e2e: ## Tear down the Kind cluster used for e2e tests
 
 .PHONY: build-controller-image
 build-controller-image: ## Build controller image.
-	$(CONTAINER_TOOL) build --tag pgbackrest-controller:latest --target pgbackrest-controller \
-		-f containers/pgbackrestPlugin.containers .
+	$(CONTAINER_TOOL) build --tag pgbackrest-controller:latest \
+		-f containers/pgbackrest-controller.container .
 
 .PHONY: build-sidecar-image
 build-sidecar-image: ## Build sidecar image
-	$(CONTAINER_TOOL) build --tag pgbackrest-sidecar:latest --target pgbackrest-sidecar \
-		-f containers/pgbackrestPlugin.containers .
+	$(CONTAINER_TOOL) build --tag pgbackrest-sidecar:latest \
+		-f containers/pgbackrest-sidecar.container .
 
 .PHONY: build-images
 build-images: build-sidecar-image build-controller-image ## Build controller and sidecar images.
