@@ -47,6 +47,32 @@ To install and use this plugin, Kubernetes and CNPG users should:
   $ kubectl apply -k ./kubernetes/dev
   ```
 
+> ![NOTE] Kustomize layers and overlays are available in the
+> Kubernetes directory. You can add your own customisation to patch the
+> resources provided by default.
+
+> ![NOTE] The image used by the CNPG instance sidecar container can be
+> customised by adding the `SIDECAR_IMAGE` environment variable to the
+> pgbackrest plugin controller container.
+>
+> For example, this patch can be used to add the 'SIDECAR_IMAGE' variable:
+>
+> ``` yaml
+> apiVersion: apps/v1
+> kind: Deployment
+> metadata:
+>   name: pgbackrest-controller
+>   namespace: cnpg-system
+> spec:
+>   template:
+>     spec:
+>       containers:
+>         - name: pgbackrest-controller
+>           env:
+>             - name: SIDECAR_IMAGE
+>               value: <my_own_image>
+> ```
+
 - The installation can be verified by checking the presence and status
   of the `pgbackrest-controller` deployment in the namespace used by the
   CloudNativePG operator (e.g., `cnpg-system`), but also by confirming
