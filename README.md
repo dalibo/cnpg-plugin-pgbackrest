@@ -47,13 +47,14 @@ To install and use this plugin, Kubernetes and CNPG users should:
   $ kubectl apply -k ./kubernetes/dev
   ```
 
-> ![NOTE] Kustomize layers and overlays are available in the
-> Kubernetes directory. You can add your own customisation to patch the
-> resources provided by default.
+> ![NOTE]
+> Kustomize layers and overlays are available in the  Kubernetes directory.
+> You can add your own customisation to patch the resources provided by default.
 
-> ![NOTE] The image used by the CNPG instance sidecar container can be
-> customised by adding the `SIDECAR_IMAGE` environment variable to the
-> pgbackrest plugin controller container.
+> ![NOTE]
+> The image used by the CNPG instance sidecar container can be customised by
+> adding the `SIDECAR_IMAGE` environment variable to the pgbackrest plugin
+> controller container.
 >
 > For example, this patch can be used to add the 'SIDECAR_IMAGE' variable:
 >
@@ -142,7 +143,8 @@ To use this plugin with a **Cluster**, CNPG users must:
               key: ACCESS_SECRET_KEY
   ```
 
-> ![NOTE] The 's3Repositories' variable is a list, so you can
+> ![NOTE]
+> The 's3Repositories' variable is a list, so you can
 > configure multiple repositories. You can then select the repository to
 > which your backup will be performed. By default, the first repository
 > is selected for backup, WAL archiving always occurs on all
