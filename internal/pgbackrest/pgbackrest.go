@@ -80,6 +80,74 @@ func (p *PgBackrest) run(args []string, extraEnv []string) *exec.Cmd {
 	return cmd
 }
 
+func (p *PgBackrest) runBackgroundTask(
+	ctx context.Context,
+	args []string,
+	extraEnv []string,
+) <-chan error {
+	result := make(chan error, 1)
+	logger := log.FromContext(ctx)
+	cmd := p.run(args, extraEnv)
+	go func() {
+		defer close(result)
+
+		stdoutPipe, _ := cmd.StdoutPipe()
+		stderrPipe, _ := cmd.StderrPipe()
+
+		if err := cmd.Start(); err != nil {
+			logger.Error(err, "can't start pgbackrest task", "args", args)
+			result <- err
+			return
+		}
+
+		// Read stdout & stderr concurrently
+		var wg sync.WaitGroup
+		var errOut error
+
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			scanner := bufio.NewScanner(stdoutPipe)
+			for scanner.Scan() {
+				l := scanner.Text()
+				logger.Info(l)
+			}
+		}()
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			scanner := bufio.NewScanner(stderrPipe)
+			for scanner.Scan() {
+				l := scanner.Text()
+				errOut = errors.New(l)
+				logger.Error(errOut, "error from pgbackrest")
+			}
+		}()
+
+		// Wait for read completion
+		wg.Wait()
+
+		done := make(chan error, 1)
+		go func() { done <- cmd.Wait() }()
+
+		select {
+		case err := <-done:
+			if err != nil || errOut != nil {
+				logger.Error(err, "pgbackrest task failed", "args", args)
+				result <- err
+				return
+			}
+
+		case <-ctx.Done():
+			_ = cmd.Process.Kill() // ensure subprocess tree is killed
+			result <- ctx.Err()
+		}
+
+	}()
+
+	return result
+}
+
 func (p *PgBackrest) StanzaExists() (bool, error) {
 	cmd := p.run([]string{"info", "--output=json"}, nil)
 	stdout, err := cmd.CombinedOutput()
@@ -121,77 +189,7 @@ func (p *PgBackrest) EnsureStanzaExists(stanza string) (bool, error) {
 }
 
 func (p *PgBackrest) PushWal(ctx context.Context, walName string) <-chan error {
-	cmd := p.run([]string{"archive-push", walName}, nil)
-	result := make(chan error, 1)
-	logger := log.FromContext(ctx)
-
-	go func() {
-		defer close(result)
-
-		stdoutPipe, _ := cmd.StdoutPipe()
-		stderrPipe, _ := cmd.StderrPipe()
-
-		if err := cmd.Start(); err != nil {
-			logger.Error(err, "can't start pgBackRest archive-push", "WAL", walName)
-			result <- err
-			return
-		}
-
-		// Read stdout & stderr concurrently
-		var stdout, stderr []byte
-		var errOut error
-		var wg sync.WaitGroup
-
-		wg.Add(2)
-		go func() {
-			defer wg.Done()
-			scanner := bufio.NewScanner(stdoutPipe)
-			for scanner.Scan() {
-				l := scanner.Text()
-				logger.Info(l)
-			}
-		}()
-		go func() {
-			defer wg.Done()
-			scanner := bufio.NewScanner(stderrPipe)
-			for scanner.Scan() {
-				l := scanner.Text()
-				errOut = errors.New(l)
-				logger.Error(errOut, "error from pgbackrest")
-			}
-		}()
-
-		// Wait for read completion
-		wg.Wait()
-
-		done := make(chan error, 1)
-		go func() { done <- cmd.Wait() }()
-
-		select {
-		case err := <-done:
-			if err != nil || errOut != nil {
-				logger.Error(
-					err,
-					"pgBackRest archive-push failed",
-					"WAL",
-					walName,
-					"stdout",
-					string(stdout),
-					"stderr",
-					string(stderr),
-				)
-				result <- err
-				return
-			}
-
-		case <-ctx.Done():
-			_ = cmd.Process.Kill() // ensure subprocess tree is killed
-			result <- ctx.Err()
-		}
-
-	}()
-
-	return result
+	return p.runBackgroundTask(ctx, []string{"archive-push", walName}, nil)
 }
 
 func (p *PgBackrest) GetWAL(walName string, dstPath string) (string, error) {
