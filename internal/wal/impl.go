@@ -9,8 +9,10 @@ import (
 	"fmt"
 
 	"github.com/cloudnative-pg/cnpg-i/pkg/wal"
+	apipgbackrest "github.com/dalibo/cnpg-i-pgbackrest/api/v1"
 	"github.com/dalibo/cnpg-i-pgbackrest/internal/operator"
 	"github.com/dalibo/cnpg-i-pgbackrest/internal/pgbackrest"
+	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/log"
 )
@@ -101,14 +103,45 @@ func (w WALSrvImplementation) Restore(
 	request *wal.WALRestoreRequest,
 ) (*wal.WALRestoreResult, error) {
 	logger := log.FromContext(ctx)
-
+	conf, err := operator.NewFromClusterJSON(request.ClusterDefinition)
+	if err != nil {
+		return nil, err
+	}
 	walName := request.GetSourceWalName()
 	dstPath := request.GetDestinationFileName()
 
-	repo, err := operator.GetRepo(ctx,
+	var promotionToken string
+	if conf.Cluster.Spec.ReplicaCluster != nil {
+		promotionToken = conf.Cluster.Spec.ReplicaCluster.PromotionToken
+	}
+
+	var repo *apipgbackrest.Repository
+	var getRepoRef func(*operator.PluginConfiguration) (*types.NamespacedName, error)
+	switch {
+
+	case promotionToken != "" && conf.Cluster.Status.LastPromotionToken != promotionToken:
+		getRepoRef = func(pc *operator.PluginConfiguration) (*types.NamespacedName, error) {
+			return pc.GetReplicaRepositoryRef()
+		}
+
+	case conf.Cluster.IsReplica() && conf.Cluster.Status.CurrentPrimary == w.InstanceName:
+		getRepoRef = func(pc *operator.PluginConfiguration) (*types.NamespacedName, error) {
+			return pc.GetReplicaRepositoryRef()
+		}
+
+	case conf.Cluster.Status.CurrentPrimary == "":
+		getRepoRef = func(pc *operator.PluginConfiguration) (*types.NamespacedName, error) {
+			return pc.GetRecoveryRepositoryRef()
+		}
+	}
+	if getRepoRef == nil {
+		return nil, fmt.Errorf("recovery not configured")
+	}
+	repo, err = operator.GetRepo(
+		ctx,
 		request,
 		w.Client,
-		(*operator.PluginConfiguration).GetRecoveryRepositoryRef,
+		getRepoRef,
 	)
 	if err != nil {
 		return nil, err

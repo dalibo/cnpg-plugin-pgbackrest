@@ -1,0 +1,22 @@
+---
+apiVersion: postgresql.cnpg.io/v1
+kind: Cluster
+metadata:
+  name: cluster-demo-replica
+spec:
+  imagePullPolicy: IfNotPresent
+  instances: 2
+  storage:
+    size: 1Gi
+  bootstrap:
+    recovery:
+      source: origin
+  replica:
+    enabled: true
+    source: origin
+  externalClusters:
+    - name: origin
+      plugin:
+        name: pgbackrest.dalibo.com
+        parameters:
+          repositoryRef: repository-sample

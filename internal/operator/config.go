@@ -24,6 +24,7 @@ type PluginConfiguration struct {
 	ServerName            string
 	RepositoryRef         string
 	RecoveryRepositoryRef string
+	ReplicaRepositoryRef  string
 }
 
 type Plugin struct {
@@ -69,6 +70,23 @@ func getRecovParams(cluster *cnpgv1.Cluster) map[string]string {
 	return recoveryExternalCluster.PluginConfiguration.Parameters
 }
 
+func getReplicaParams(cluster *cnpgv1.Cluster) map[string]string {
+
+	if cluster.Spec.ReplicaCluster == nil || len(cluster.Spec.ReplicaCluster.Source) == 0 {
+		return nil
+	}
+
+	replicaSource, found := cluster.ExternalCluster(
+		cluster.Spec.ReplicaCluster.Source,
+	)
+	if !found || replicaSource.PluginConfiguration.Name != metadata.PluginName {
+		return nil
+	}
+
+	return replicaSource.PluginConfiguration.Parameters
+
+}
+
 func NewFromClusterJSON(clusterJSON []byte) (*PluginConfiguration, error) {
 	var res cnpgv1.Cluster
 	if err := decoder.DecodeObjectLenient(clusterJSON, &res); err != nil {
@@ -87,13 +105,29 @@ func NewFromCluster(cluster *cnpgv1.Cluster) (*PluginConfiguration, error) {
 	if recovParams := getRecovParams(cluster); recovParams != nil {
 		recovObjName = recovParams["repositoryRef"]
 	}
+	repliObjName := ""
+	if repliParams := getReplicaParams(cluster); repliParams != nil {
+		repliObjName = repliParams["repositoryRef"]
+	}
 	result := &PluginConfiguration{
 		Cluster:               cluster,
 		ServerName:            serverName,
 		RepositoryRef:         helper.Parameters["repositoryRef"],
 		RecoveryRepositoryRef: recovObjName,
+		ReplicaRepositoryRef:  repliObjName,
 	}
 	return result, nil
+}
+
+func (c *PluginConfiguration) GetReplicaRepositoryRef() (*types.NamespacedName, error) {
+	if len(c.ReplicaRepositoryRef) > 0 {
+		return &types.NamespacedName{
+			Name:      c.ReplicaRepositoryRef,
+			Namespace: c.Cluster.Namespace,
+		}, nil
+
+	}
+	return nil, fmt.Errorf("replica repository not configured")
 }
 
 func (c *PluginConfiguration) GetRepositoryRef() (*types.NamespacedName, error) {
@@ -126,7 +160,10 @@ func (c *PluginConfiguration) GetReferredPgBackrestObjectKey() []types.Namespace
 	if len(c.RecoveryRepositoryRef) > 0 {
 		objectNames.Put(c.RecoveryRepositoryRef)
 	}
-	res := make([]types.NamespacedName, 0, 2)
+	if len(c.ReplicaRepositoryRef) > 0 {
+		objectNames.Put(c.ReplicaRepositoryRef)
+	}
+	res := make([]types.NamespacedName, 0, 3)
 	for _, name := range objectNames.ToSortedList() {
 		res = append(
 			res, types.NamespacedName{

@@ -408,7 +408,7 @@ func (impl LifecycleImplementation) reconcilePod(
 	}
 	mutatedPod := pod.DeepCopy()
 
-	if len(pluginConfig.RepositoryRef) != 0 {
+	if len(pluginConfig.RepositoryRef) != 0 || len(pluginConfig.ReplicaRepositoryRef) != 0 {
 		// Build the container config using envVars from caller
 		sidecar := corev1.Container{
 			Env:  envVars,
