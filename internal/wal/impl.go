@@ -153,9 +153,9 @@ func (w WALSrvImplementation) Restore(
 	logger.Info("Restoring WAL", "WAL", walName, "destination", dstPath)
 
 	pgb := pgbackrest.NewPgBackrest(env)
-	_, err = pgb.GetWAL(walName, dstPath)
-	if err != nil {
-		return nil, fmt.Errorf("getting archive failed: %w", err)
+	errCh := pgb.GetWAL(ctx, walName, dstPath)
+	if err := <-errCh; err != nil {
+		return nil, err
 	}
 
 	logger.Info("Successfully restored WAL", "WAL", walName, "destination", dstPath)
