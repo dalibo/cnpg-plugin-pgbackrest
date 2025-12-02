@@ -46,6 +46,7 @@ func NewPlugin(cluster cnpgv1.Cluster, pluginName string) *Plugin {
 
 	return result
 }
+
 func getRecovParams(cluster *cnpgv1.Cluster) map[string]string {
 	if cluster.Spec.Bootstrap == nil || cluster.Spec.Bootstrap.Recovery == nil {
 		return nil
@@ -83,8 +84,8 @@ func NewFromCluster(cluster *cnpgv1.Cluster) (*PluginConfiguration, error) {
 	)
 	serverName := cluster.Name
 	recovObjName := ""
-	if rParams := getRecovParams(cluster); rParams != nil {
-		recovObjName = rParams["repositoryRef"]
+	if recovParams := getRecovParams(cluster); recovParams != nil {
+		recovObjName = recovParams["repositoryRef"]
 	}
 	result := &PluginConfiguration{
 		Cluster:               cluster,
@@ -98,15 +99,18 @@ func NewFromCluster(cluster *cnpgv1.Cluster) (*PluginConfiguration, error) {
 func (c *PluginConfiguration) GetRepositoryRef() (*types.NamespacedName, error) {
 	if len(c.RepositoryRef) > 0 {
 		return &types.NamespacedName{
-			Name: c.RepositoryRef, Namespace: c.Cluster.Namespace,
+			Name:      c.RepositoryRef,
+			Namespace: c.Cluster.Namespace,
 		}, nil
 	}
 	return nil, fmt.Errorf("repository not configured")
 }
+
 func (c *PluginConfiguration) GetRecoveryRepositoryRef() (*types.NamespacedName, error) {
 	if len(c.RecoveryRepositoryRef) > 0 {
 		return &types.NamespacedName{
-			Name: c.RecoveryRepositoryRef, Namespace: c.Cluster.Namespace,
+			Name:      c.RecoveryRepositoryRef,
+			Namespace: c.Cluster.Namespace,
 		}, nil
 	}
 	return nil, fmt.Errorf("recovery repository not configured")
