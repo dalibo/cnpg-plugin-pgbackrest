@@ -103,7 +103,7 @@ func (w WALSrvImplementation) Restore(
 	logger := log.FromContext(ctx)
 
 	walName := request.GetSourceWalName()
-	destinationPath := request.GetDestinationFileName()
+	dstPath := request.GetDestinationFileName()
 
 	repo, err := operator.GetRepo(ctx,
 		request,
@@ -117,22 +117,15 @@ func (w WALSrvImplementation) Restore(
 	if err != nil {
 		return nil, err
 	}
-	logger.Info("Starting WAL restore via pgBackRest",
-		"walName", walName,
-		"destinationPath", destinationPath,
-	)
+	logger.Info("Restoring WAL", "WAL", walName, "destination", dstPath)
 
 	pgb := pgbackrest.NewPgBackrest(env)
-	_, err = pgb.GetWAL(walName, destinationPath)
+	_, err = pgb.GetWAL(walName, dstPath)
 	if err != nil {
 		return nil, fmt.Errorf("getting archive failed: %w", err)
 	}
 
-	logger.Info("Successfully restored WAL via pgBackRest",
-		"walName",
-		walName,
-		"destinationPath",
-		destinationPath)
+	logger.Info("Successfully restored WAL", "WAL", walName, "destination", dstPath)
 
 	return &wal.WALRestoreResult{}, nil
 }

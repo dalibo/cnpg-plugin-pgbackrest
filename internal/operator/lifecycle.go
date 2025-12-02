@@ -254,7 +254,6 @@ func reconcilePodSpec(
 		{Name: "NAMESPACE", Value: cluster.Namespace},
 		{Name: "CLUSTER_NAME", Value: cluster.Name},
 	}
-
 	var mainEnv []corev1.EnvVar
 	for _, c := range spec.Containers {
 		if c.Name == mainContainerName {
@@ -412,8 +411,7 @@ func (impl LifecycleImplementation) reconcilePod(
 	if len(pluginConfig.RepositoryRef) != 0 {
 		// Build the container config using envVars from caller
 		sidecar := corev1.Container{
-			Env: envVars,
-			// Optionally add Command/Args if needed
+			Env:  envVars,
 			Args: []string{"instance"},
 		}
 
