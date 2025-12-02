@@ -192,13 +192,11 @@ func (p *PgBackrest) PushWal(ctx context.Context, walName string) <-chan error {
 	return p.runBackgroundTask(ctx, []string{"archive-push", walName}, nil)
 }
 
-func (p *PgBackrest) GetWAL(walName string, dstPath string) (string, error) {
-	cmd := p.run([]string{"archive-get", walName, dstPath}, nil)
-	output, err := cmd.CombinedOutput()
-	if err != nil {
-		return "", fmt.Errorf("pgBackRest archive-get failed, output: %s %w", string(output), err)
-	}
-	return string(output), nil
+func (p *PgBackrest) GetWAL(
+	ctx context.Context,
+	walName string, dstPath string,
+) <-chan error {
+	return p.runBackgroundTask(ctx, []string{"archive-get", walName, dstPath}, nil)
 }
 
 func (p *PgBackrest) Backup(lockFile *string) (*BackupInfo, error) {

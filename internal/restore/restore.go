@@ -59,7 +59,8 @@ func (impl JobHookImpl) Restore(
 		return nil, err
 	}
 	pgb := pgbackrest.NewPgBackrest(env)
-	if err := pgb.Restore(ctx, &lockFile); err != nil {
+	errCh := pgb.Restore(ctx, &lockFile)
+	if err := <-errCh; err != nil {
 		return nil, err
 	}
 	restoreCmd := fmt.Sprintf(
