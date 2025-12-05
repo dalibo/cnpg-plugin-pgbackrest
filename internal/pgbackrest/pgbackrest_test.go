@@ -5,13 +5,20 @@
 package pgbackrest
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
+	"io"
 	"os/exec"
 	"reflect"
+	"strings"
+	"sync"
 	"testing"
+	"time"
 )
+
+type CmdRunner func(name string, args ...string) CommandExecutor
 
 func newPgBackrestWithRunner(env []string, runner CmdRunner) *PgBackrest {
 	return &PgBackrest{
@@ -105,14 +112,15 @@ type execCalls struct {
 }
 
 func (e *execCalls) fakeCmdRunner(output string, err error) CmdRunner {
-	return func(name string, args ...string) *exec.Cmd {
+	return func(name string, args ...string) CommandExecutor {
+		// Track the command call
 		e.execCalls = append(e.execCalls, fakeExec{cmdName: name, args: args})
 		// Fake the command execution by returning a function that provides predefined output
 		cmd := exec.Command("echo", output) // Fake command that outputs JSON
 		if err != nil {
-			return exec.Command("false") // Simulate failure
+			cmd = exec.Command("false") // Simulate failure
 		}
-		return cmd
+		return &ExecCmd{Cmd: cmd}
 	}
 }
 
@@ -132,12 +140,11 @@ func TestPushWal(t *testing.T) {
 			},
 		},
 	}
-
-	backup := "" // we don't care about output here
+	output := ""
 	for _, tc := range testCases {
 		fExec := execCalls{}
 		f := func(t *testing.T) {
-			pgb := newPgBackrestWithRunner(nil, fExec.fakeCmdRunner(backup, nil))
+			pgb := newPgBackrestWithRunner(nil, fExec.fakeCmdRunner(output, nil))
 			errCh := pgb.PushWal(context.Background(), tc.walPath)
 			if err := <-errCh; err != nil {
 				t.Errorf("can't simulate push WAL, %v", err)
@@ -179,5 +186,136 @@ func TestBackup(t *testing.T) {
 				t.Errorf("error want %v, got %v", fExec, tc.want)
 			}
 		})
+	}
+}
+
+// MockCommandExecutor implements CommandExecutor for testing
+type MockCommandExecutor struct {
+	stdout         io.ReadCloser
+	stderr         io.ReadCloser
+	startErr       error
+	waitErr        error
+	killed         bool
+	env            []string
+	mu             sync.Mutex
+	combinedOutput []byte
+	combinedErr    error
+}
+
+func (m *MockCommandExecutor) Run() error                         { return nil }
+func (m *MockCommandExecutor) Start() error                       { return m.startErr }
+func (m *MockCommandExecutor) StdoutPipe() (io.ReadCloser, error) { return m.stdout, nil }
+func (m *MockCommandExecutor) StderrPipe() (io.ReadCloser, error) { return m.stderr, nil }
+func (m *MockCommandExecutor) Wait() error                        { return m.waitErr }
+func (m *MockCommandExecutor) Kill() error {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	m.killed = true
+	return nil
+}
+
+func (m *MockCommandExecutor) SetEnv(env []string) { m.env = env }
+
+func (m *MockCommandExecutor) CombinedOutput() ([]byte, error) {
+	return m.combinedOutput, m.combinedErr
+}
+func TestRunBackgroundTask_Normal(t *testing.T) {
+	// Prepare mock stdout/stderr
+	stdout := io.NopCloser(bytes.NewBufferString("stdout line\n"))
+	stderr := io.NopCloser(bytes.NewBufferString("stderr line\n"))
+
+	mockCmd := &MockCommandExecutor{
+		stdout: stdout,
+		stderr: stderr,
+	}
+
+	cmdRunner := func(name string, args ...string) CommandExecutor {
+		return mockCmd
+	}
+
+	pg := &PgBackrest{
+		cmdRunner: cmdRunner,
+		baseEnv:   []string{"BASE=1"},
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+	defer cancel()
+
+	errCh := pg.runBackgroundTask(ctx, []string{"--test"}, []string{"EXTRA=1"})
+
+	err := <-errCh
+
+	if err != nil {
+		t.Fatalf("expected no error, got %v", err)
+	}
+	foundBase := false
+	foundExtra := false
+	for _, v := range mockCmd.env {
+		if v == "BASE=1" {
+			foundBase = true
+		}
+		if v == "EXTRA=1" {
+			foundExtra = true
+		}
+	}
+	if !foundBase || !foundExtra {
+		t.Errorf("expected BASE=1 and EXTRA=1 in env, got %v", mockCmd.env)
+	}
+
+	if mockCmd.killed {
+		t.Errorf("command should not be killed on normal completion")
+	}
+}
+
+func TestRunBackgroundTask_CommandFails(t *testing.T) {
+	// Prepare mock stdout/stderr
+	stdout := io.NopCloser(bytes.NewBufferString("stdout line\n"))
+	stderr := io.NopCloser(bytes.NewBufferString("stderr line\n"))
+	mockCmd := &MockCommandExecutor{
+		stdout:         stdout,
+		stderr:         stderr,
+		combinedOutput: []byte("command failed"),
+		combinedErr:    fmt.Errorf("simulated error"),
+		waitErr:        fmt.Errorf("simulated error"),
+	}
+
+	// Command runner returns the mock command
+	cmdRunner := func(name string, args ...string) CommandExecutor {
+		return mockCmd
+	}
+
+	pg := &PgBackrest{
+		cmdRunner: cmdRunner,
+		baseEnv:   []string{"BASE=1"},
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+	defer cancel()
+
+	errCh := pg.runBackgroundTask(ctx, []string{"--test"}, []string{"EXTRA=1"})
+
+	err := <-errCh
+
+	if err == nil {
+		t.Fatal("expected error, got nil")
+	}
+
+	if !strings.Contains(err.Error(), "simulated error") {
+		t.Errorf("unexpected error message: %v", err)
+	}
+
+	// Even on failure, the command should have been started
+	foundBase := false
+	foundExtra := false
+	for _, v := range mockCmd.env {
+		if v == "BASE=1" {
+			foundBase = true
+		}
+		if v == "EXTRA=1" {
+			foundExtra = true
+		}
+	}
+	if !foundBase || !foundExtra {
+		t.Errorf("expected BASE=1 and EXTRA=1 in env, got %v", mockCmd.env)
 	}
 }

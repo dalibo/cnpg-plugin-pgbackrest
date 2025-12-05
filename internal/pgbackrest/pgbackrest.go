@@ -6,16 +6,15 @@ package pgbackrest
 
 import (
 	"bufio"
-	"bytes"
 	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
 	"os"
 	"os/exec"
 	"sync"
 
-	"github.com/dalibo/cnpg-i-pgbackrest/internal/utils"
 	"sigs.k8s.io/controller-runtime/pkg/log"
 )
 
@@ -60,23 +59,47 @@ type PgBackRestInfo struct {
 	Repo []Repo `json:"repo"`
 }
 
-type CmdRunner func(name string, arg ...string) *exec.Cmd
+type CommandExecutor interface {
+	CombinedOutput() ([]byte, error)
+	Kill() error
+	Run() error
+	Start() error
+	StderrPipe() (io.ReadCloser, error)
+	StdoutPipe() (io.ReadCloser, error)
+	Wait() error
+	SetEnv(env []string)
+}
+type ExecCmd struct {
+	*exec.Cmd
+}
+
+func (e *ExecCmd) Kill() error {
+	if e.Process == nil {
+		return fmt.Errorf("process does not exist")
+	}
+	return e.Process.Kill()
+}
+func (e *ExecCmd) SetEnv(env []string) {
+	e.Env = env
+}
 
 type PgBackrest struct {
-	cmdRunner CmdRunner
+	cmdRunner func(name string, args ...string) CommandExecutor
 	baseEnv   []string
 }
 
 func NewPgBackrest(env []string) *PgBackrest {
 	return &PgBackrest{
-		cmdRunner: utils.RealCmdRunner,
-		baseEnv:   env,
+		cmdRunner: func(name string, args ...string) CommandExecutor {
+			return &ExecCmd{exec.Command(name, args...)}
+		},
+		baseEnv: env,
 	}
 }
 
-func (p *PgBackrest) run(args []string, extraEnv []string) *exec.Cmd {
+func (p *PgBackrest) run(args []string, extraEnv []string) CommandExecutor {
 	cmd := p.cmdRunner("pgbackrest", args...)
-	cmd.Env = append(os.Environ(), append(p.baseEnv, extraEnv...)...)
+	cmd.SetEnv(append(os.Environ(), append(p.baseEnv, extraEnv...)...))
 	return cmd
 }
 
@@ -139,7 +162,7 @@ func (p *PgBackrest) runBackgroundTask(
 			}
 
 		case <-ctx.Done():
-			_ = cmd.Process.Kill() // ensure subprocess tree is killed
+			_ = cmd.Kill() // ensure subprocess tree is killed
 			result <- ctx.Err()
 		}
 
@@ -246,27 +269,11 @@ func LatestBackup(backups []BackupInfo) *BackupInfo {
 	return &found
 }
 
-func (p *PgBackrest) Restore(ctx context.Context, lockFile *string) error {
-	contextLogger := log.FromContext(ctx)
+func (p *PgBackrest) Restore(ctx context.Context, lockFile *string) <-chan error {
 	env := make([]string, 2)
 	env = append(env, "PGBACKREST_archive-check=n")
 	if lockFile != nil && (*lockFile) != "" {
 		env = append(env, "PGBACKREST_lock-path="+(*lockFile))
 	}
-	cmd := p.run([]string{"restore"}, env)
-	var stdout, stderr bytes.Buffer
-	cmd.Stdout = &stdout
-	cmd.Stderr = &stderr
-	err := cmd.Run()
-	if err != nil {
-		contextLogger.Info(
-			"pgbackrest restore error",
-			"stdout",
-			stdout.String(),
-			"stderr",
-			stderr.String(),
-		)
-		return fmt.Errorf("can't restore: %s, error : %w", stderr.String(), err)
-	}
-	return nil
+	return p.runBackgroundTask(ctx, []string{"restore"}, env)
 }
