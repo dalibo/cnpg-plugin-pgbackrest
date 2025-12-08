@@ -280,6 +280,18 @@ func reconcilePodSpec(
 	}
 	containerConfig.Name = "plugin-pgbackrest"
 	containerConfig.ImagePullPolicy = cluster.Spec.ImagePullPolicy
+	containerConfig.SecurityContext = &corev1.SecurityContext{
+		AllowPrivilegeEscalation: ptr.To(false),
+		RunAsNonRoot:             ptr.To(true),
+		Privileged:               ptr.To(false),
+		ReadOnlyRootFilesystem:   ptr.To(true),
+		SeccompProfile: &corev1.SeccompProfile{
+			Type: corev1.SeccompProfileTypeRuntimeDefault,
+		},
+		Capabilities: &corev1.Capabilities{
+			Drop: []corev1.Capability{"ALL"},
+		},
+	}
 	containerConfig.Env = mergeEnvs(containerConfig.Env, mainEnv, defaultEnv)
 	containerConfig.StartupProbe = baseProbe.DeepCopy()
 	containerConfig.RestartPolicy = ptr.To(corev1.ContainerRestartPolicyAlways)

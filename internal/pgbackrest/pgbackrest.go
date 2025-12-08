@@ -222,12 +222,9 @@ func (p *PgBackrest) GetWAL(
 	return p.runBackgroundTask(ctx, []string{"archive-get", walName, dstPath}, nil)
 }
 
-func (p *PgBackrest) Backup(lockFile *string) (*BackupInfo, error) {
-	env := make([]string, 2)
+func (p *PgBackrest) Backup() (*BackupInfo, error) {
+	env := make([]string, 1)
 	env = append(env, "PGBACKREST_archive-check=n")
-	if lockFile != nil && (*lockFile) != "" {
-		env = append(env, "PGBACKREST_lock-path="+(*lockFile))
-	}
 	cmd := p.run([]string{"backup"}, env)
 	output, err := cmd.CombinedOutput()
 	if err != nil {
@@ -269,11 +266,8 @@ func LatestBackup(backups []BackupInfo) *BackupInfo {
 	return &found
 }
 
-func (p *PgBackrest) Restore(ctx context.Context, lockFile *string) <-chan error {
-	env := make([]string, 2)
+func (p *PgBackrest) Restore(ctx context.Context) <-chan error {
+	env := make([]string, 1)
 	env = append(env, "PGBACKREST_archive-check=n")
-	if lockFile != nil && (*lockFile) != "" {
-		env = append(env, "PGBACKREST_lock-path="+(*lockFile))
-	}
 	return p.runBackgroundTask(ctx, []string{"restore"}, env)
 }
