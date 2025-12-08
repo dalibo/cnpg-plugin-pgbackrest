@@ -1,0 +1,19 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: pgbackrest-controller
+  namespace: cnpg-system
+spec:
+  template:
+    spec:
+      containers:
+        - name: pgbackrest-controller
+          image: registry.hub.docker.com/dalibo/cnpg-pgbackrest-controller:latest
+          imagePullPolicy: IfNotPresent
+          env:
+            - name: SIDECAR_IMAGE
+              valueFrom:
+                secretKeyRef:
+                  key: SIDECAR_IMAGE
+                  name: plugin-pgbackrest
