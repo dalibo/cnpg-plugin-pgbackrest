@@ -146,5 +146,10 @@ type Repository struct {
 }
 
 func (r *Repository) ToEnv() ([]string, error) {
-	return utils.StructToEnvVars(*r, "PGBACKREST_")
+	envConf, err := utils.StructToEnvVars(*r, "PGBACKREST_")
+	if err != nil {
+		return nil, err
+	}
+	envConf = append(envConf, "PGBACKREST_lock-path=/controller/tmp/pgbackrest-cnpg-plugin.lock")
+	return envConf, nil
 }

@@ -158,15 +158,12 @@ func TestPushWal(t *testing.T) {
 }
 
 func TestBackup(t *testing.T) {
-	lockFile := "/tmp/test.lock"
 	testCases := []struct {
-		desc     string
-		lockFile *string
-		want     execCalls
+		desc string
+		want execCalls
 	}{
 		{
-			desc:     "run backup",
-			lockFile: &lockFile,
+			desc: "run backup",
 			want: execCalls{
 				execCalls: []fakeExec{
 					{cmdName: "pgbackrest", args: []string{"backup"}},
@@ -181,7 +178,7 @@ func TestBackup(t *testing.T) {
 		fExec := execCalls{}
 		t.Run(tc.desc, func(t *testing.T) {
 			pgb := newPgBackrestWithRunner(nil, fExec.fakeCmdRunner(backup, nil))
-			pgb.Backup(tc.lockFile) //nolint:errcheck
+			pgb.Backup() //nolint:errcheck
 			if !reflect.DeepEqual(fExec, tc.want) {
 				t.Errorf("error want %v, got %v", fExec, tc.want)
 			}

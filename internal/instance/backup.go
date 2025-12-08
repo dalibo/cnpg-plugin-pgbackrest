@@ -81,9 +81,8 @@ func (b BackupServiceImplementation) Backup(
 	env = append(env, repoDestEnv)
 	contextLogger.Info("using repo", "repo", repoDestEnv)
 	contextLogger.Info("Starting backup")
-	lockFile := "/tmp/pgbackrest-cnpg-plugin.lock"
 	pgb := pgbackrest.NewPgBackrest(env)
-	r, err := pgb.Backup(&lockFile)
+	r, err := pgb.Backup()
 	if err != nil {
 		contextLogger.Error(err, "can't backup")
 		return nil, err

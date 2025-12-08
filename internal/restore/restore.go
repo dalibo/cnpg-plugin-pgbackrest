@@ -45,7 +45,6 @@ func (impl JobHookImpl) Restore(
 ) (*restore.RestoreResponse, error) {
 	contextLogger := log.FromContext(ctx)
 	contextLogger.Info("Start restoring backup")
-	lockFile := "/tmp/pgbackrest-cnpg-plugin.lock"
 	r, err := operator.GetRepo(ctx,
 		req,
 		impl.Client,
@@ -59,7 +58,7 @@ func (impl JobHookImpl) Restore(
 		return nil, err
 	}
 	pgb := pgbackrest.NewPgBackrest(env)
-	errCh := pgb.Restore(ctx, &lockFile)
+	errCh := pgb.Restore(ctx)
 	if err := <-errCh; err != nil {
 		return nil, err
 	}
