@@ -13,6 +13,7 @@ import (
 	"github.com/dalibo/cnpg-i-pgbackrest/test/e2e/internal/kubernetes"
 	"github.com/dalibo/cnpg-i-pgbackrest/test/e2e/internal/minio"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/types"
 )
 
 func Install(
@@ -86,4 +87,21 @@ func CreateRepoConfig(
 		return nil, err
 	}
 	return repo, nil
+}
+
+func GetRepo(
+	ctx context.Context,
+	k8sClient *kubernetes.K8sClient,
+	name string,
+	ns string,
+) (*apipgbackrest.Repository, error) {
+	var repo apipgbackrest.Repository
+	fqdn := types.NamespacedName{
+		Name:      name,
+		Namespace: ns,
+	}
+	if err := k8sClient.Get(ctx, fqdn, &repo); err != nil {
+		return nil, err
+	}
+	return &repo, nil
 }

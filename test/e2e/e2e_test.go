@@ -11,6 +11,8 @@ import (
 	"os"
 	"testing"
 
+	cloudnativepgv1 "github.com/cloudnative-pg/api/pkg/api/v1"
+	apipgbackrest "github.com/dalibo/cnpg-i-pgbackrest/api/v1"
 	"github.com/dalibo/cnpg-i-pgbackrest/test/e2e/internal/certmanager"
 	"github.com/dalibo/cnpg-i-pgbackrest/test/e2e/internal/cluster"
 	"github.com/dalibo/cnpg-i-pgbackrest/test/e2e/internal/cnpg"
@@ -140,6 +142,50 @@ func TestInstall(t *testing.T) {
 
 }
 
+func takeBackup(
+	ctx context.Context,
+	t *testing.T,
+	k8sClient *kubernetes.K8sClient,
+	ns string,
+	clusterName string,
+	bName string,
+	params map[string]string,
+) *cloudnativepgv1.Backup {
+
+	bi := cluster.BackupInfo{
+		Cluster:   clusterName,
+		Namespace: ns,
+		Params:    params,
+		Name:      bName,
+	}
+	// more verification can be done here (before deleting the cluster)
+	b, err := bi.Backup(ctx, k8sClient)
+	if err != nil {
+		t.Fatalf("error when executing backup %v", err)
+	}
+	retrier, err := common.NewRetrier(80)
+	if err != nil {
+		panic("can't initiate retrier")
+	}
+	if _, err = bi.IsDone(ctx, k8sClient, retrier); err != nil {
+		t.Fatalf("error when trying to determine if backup is done, %v", err)
+	}
+	return b
+}
+
+func getRepo(
+	ctx context.Context,
+	t *testing.T,
+	k8sClient *kubernetes.K8sClient,
+	ns string,
+) *apipgbackrest.Repository {
+	repo, err := pgbackrest.GetRepo(ctx, k8sClient, "repository", ns)
+	if err != nil {
+		t.Fatalf("failed to get repo: %v", err)
+	}
+	return repo
+}
+
 // basic verification to ensure we can use our plugin with a cluster
 func TestDeployInstance(t *testing.T) {
 	log.SetLogger(zap.New(zap.WriteTo(os.Stdout), zap.UseDevMode(true)))
@@ -178,30 +224,40 @@ func TestDeployInstance(t *testing.T) {
 	} else if !ready {
 		t.Fatal("pod not ready")
 	}
-	bi := cluster.BackupInfo{
-		Cluster:   clusterName,
-		Namespace: ns,
-		Params:    p,
-		Name:      "backup-01",
-	}
-	// more verification can be done here (before deleting the cluster)
-	b, err := bi.Backup(ctx, k8sClient)
-	if err != nil {
-		t.Errorf("Error when executing backup %v", err.Error())
 
-	}
+	// take a first backup
+	b := takeBackup(ctx, t, k8sClient, ns, clusterName, "backup-01", p)
 	defer func() {
-		if err := k8sClient.Delete(ctx, b); err != nil {
-			t.Fatal("can't delete backup")
+		if delErr := k8sClient.Delete(ctx, b); delErr != nil {
+			t.Fatalf("can't delete backup-01: %v", delErr)
 		}
 	}()
-	retrier, err := common.NewRetrier(80)
-	if err != nil {
-		panic("can't initiate retrier")
-	}
-	_, err = bi.IsDone(ctx, k8sClient, retrier)
-	if err != nil {
-		t.Errorf("Error when retrieving info for backup %v", err.Error())
+
+	// check stored backup info / status
+	repo := getRepo(ctx, t, k8sClient, ns)
+	fBackup := repo.Status.RecoveryWindow.FirstBackup
+	lBackup := repo.Status.RecoveryWindow.LastBackup
+	if fBackup.Timestamp.Start == 0 || fBackup != lBackup {
+		t.Fatal("registered backup data are invalid after first backup")
 	}
 
+	// take a second backup
+	b2 := takeBackup(ctx, t, k8sClient, ns, clusterName, "backup-02", p)
+	defer func() {
+		if delErr := k8sClient.Delete(ctx, b2); delErr != nil {
+			t.Fatalf("can't delete backup-02: %v", delErr)
+		}
+	}()
+
+	// check stored backup info / status
+	repo = getRepo(ctx, t, k8sClient, ns)
+	if err != nil {
+		t.Fatalf("failed to get repo after second backup: %v", err)
+	}
+	fBackup = repo.Status.RecoveryWindow.FirstBackup
+	lBackup = repo.Status.RecoveryWindow.LastBackup
+	// After the second backup, both ends of the window should NOT match the first case
+	if fBackup.Timestamp.Start == 0 || fBackup == lBackup {
+		t.Fatal("registered backup data are invalid after second backup")
+	}
 }

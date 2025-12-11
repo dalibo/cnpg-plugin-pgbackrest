@@ -10,10 +10,12 @@ import (
 	"strconv"
 
 	"github.com/cloudnative-pg/cnpg-i/pkg/backup"
+	apipgbackrestv1 "github.com/dalibo/cnpg-i-pgbackrest/api/v1"
 	"github.com/dalibo/cnpg-i-pgbackrest/internal/metadata"
 	"github.com/dalibo/cnpg-i-pgbackrest/internal/operator"
 	"github.com/dalibo/cnpg-i-pgbackrest/internal/pgbackrest"
 	apipgbackrest "github.com/dalibo/cnpg-i-pgbackrest/internal/pgbackrest/api"
+	"k8s.io/client-go/util/retry"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/log"
 )
@@ -51,6 +53,20 @@ func getEnvVarBackupRepoDest(repo apipgbackrest.Repository, selectedRepo string)
 	return fmt.Sprintf("PGBACKREST_REPO=%d", sRepo), nil
 }
 
+func updateBackupInfo(
+	ctx context.Context,
+	c client.Client,
+	repo *apipgbackrestv1.Repository,
+	firstBackup apipgbackrest.BackupInfo,
+	lastBackup apipgbackrest.BackupInfo,
+) error {
+	return retry.RetryOnConflict(retry.DefaultBackoff, func() error {
+		repo.Status.RecoveryWindow.FirstBackup = firstBackup
+		repo.Status.RecoveryWindow.LastBackup = lastBackup
+		return c.Status().Update(ctx, repo)
+	})
+}
+
 func (b BackupServiceImplementation) Backup(
 	ctx context.Context,
 	request *backup.BackupRequest,
@@ -86,11 +102,16 @@ func (b BackupServiceImplementation) Backup(
 		contextLogger.Error(err, "can't backup")
 		return nil, err
 	}
-	backups, err := pgb.GetBackupInfo()
+	backupsList, err := pgb.GetBackupInfo()
 	if err != nil {
 		return nil, err
 	}
-	lastBackup := pgbackrest.LatestBackup(backups)
+	lastBackup := pgbackrest.LatestBackup(backupsList)
+	firstBackup := pgbackrest.FirstBackup(backupsList)
+	if err != updateBackupInfo(ctx, b.Client, repo, *firstBackup, *lastBackup) {
+		contextLogger.Error(err, "can't update backup info")
+		return nil, err
+	}
 	contextLogger.Info("Backup done!")
 	return &backup.BackupResult{
 		BackupName: lastBackup.Label,

@@ -12,6 +12,39 @@ import (
 	"github.com/dalibo/cnpg-i-pgbackrest/internal/utils"
 )
 
+type Timestamp struct {
+	Start int64 `json:"start"`
+	Stop  int64 `json:"stop"`
+}
+
+type BackupData struct {
+	Backup []BackupInfo `json:"backup"`
+}
+
+type Lsn struct {
+	Start string `json:"start"`
+	Stop  string `json:"stop"`
+}
+
+type Archive struct {
+	Start string `json:"start"`
+	Stop  string `json:"stop"`
+}
+
+type BackupInfo struct {
+	Archive   Archive   `json:"archive"`
+	Label     string    `json:"label"`
+	Lsn       Lsn       `json:"lsn"`
+	Prior     string    `json:"prior"`
+	Timestamp Timestamp `json:"timestamp"`
+	Type      string    `json:"type"`
+}
+
+type RecoveryWindow struct {
+	FirstBackup BackupInfo `json:"firstBackup"`
+	LastBackup  BackupInfo `json:"lastBackup"`
+}
+
 // Define retention strategy for a repository
 type Retention struct {
 	// Number of backups worth of continuous WAL to retain.

@@ -16,6 +16,8 @@ import (
 	"sync"
 	"testing"
 	"time"
+
+	pgbackrestapi "github.com/dalibo/cnpg-i-pgbackrest/internal/pgbackrest/api"
 )
 
 type CmdRunner func(name string, args ...string) CommandExecutor
@@ -27,34 +29,67 @@ func newPgBackrestWithRunner(env []string, runner CmdRunner) *PgBackrest {
 	}
 }
 
-var backupInfo = []BackupInfo{
+var backupInfo = []pgbackrestapi.BackupInfo{
 	{
-		Archive: Archive{"000000010000000000000001", "000000010000000000000002"},
-		Label:   "backup_20250306", Lsn: Lsn{"0/16B2D80", "0/16B2E00"},
-		Prior: "backup_20250305", Timestamp: Timestamp{1710000000, 1710003600},
+		Archive: pgbackrestapi.Archive{
+			Start: "000000010000000000000001",
+			Stop:  "000000010000000000000002",
+		},
+		Label: "backup_20250306",
+		Lsn: pgbackrestapi.Lsn{
+			Start: "0/16B2D80",
+			Stop:  "0/16B2E00",
+		},
+		Prior: "backup_20250305",
+		Timestamp: pgbackrestapi.Timestamp{
+			Start: 1710000000,
+			Stop:  1710003600,
+		},
 		Type: "full"},
 }
 
 func TestLatestBackup(t *testing.T) {
-	backupsInfoTwo := append(backupInfo, BackupInfo{
-		Archive: Archive{"000000010000000000000003", "000000010000000000000004"},
-		Label:   "backup_20250307", Lsn: Lsn{"0/16C2D80", "0/16C2E00"},
-		Prior: "backup_20250306", Timestamp: Timestamp{1810007200, 1810010800},
+	backupsInfoTwo := append(backupInfo, pgbackrestapi.BackupInfo{
+		Archive: pgbackrestapi.Archive{
+			Start: "000000010000000000000003",
+			Stop:  "000000010000000000000004",
+		},
+		Label: "backup_20250307",
+		Lsn: pgbackrestapi.Lsn{
+			Start: "0/16C2D80",
+			Stop:  "0/16C2E00",
+		},
+		Prior: "backup_20250306",
+		Timestamp: pgbackrestapi.Timestamp{
+			Start: 1810007200,
+			Stop:  1810010800,
+		},
 		Type: "incremental",
 	})
-	backupsInfoThree := append(backupsInfoTwo, BackupInfo{
-		Archive: Archive{"000000010000000000000003", "000000010000000000000004"},
-		Label:   "backup_20250307", Lsn: Lsn{"0/16C2D80", "0/16C2E00"},
-		Prior: "backup_20250306", Timestamp: Timestamp{1910007200, 1910010800},
+	backupsInfoThree := append(backupsInfoTwo, pgbackrestapi.BackupInfo{
+		Archive: pgbackrestapi.Archive{
+			Start: "000000010000000000000003",
+			Stop:  "000000010000000000000004",
+		},
+		Label: "backup_20250307",
+		Lsn: pgbackrestapi.Lsn{
+			Start: "0/16C2D80",
+			Stop:  "0/16C2E00",
+		},
+		Prior: "backup_20250306",
+		Timestamp: pgbackrestapi.Timestamp{
+			Start: 1910007200,
+			Stop:  1910010800,
+		},
 		Type: "incremental",
 	})
 	type TestCase struct {
 		desc string
-		data []BackupInfo
-		want *BackupInfo
+		data []pgbackrestapi.BackupInfo
+		want *pgbackrestapi.BackupInfo
 	}
 	testCases := []TestCase{
-		{"No backup", []BackupInfo{}, nil},
+		{"No backup", []pgbackrestapi.BackupInfo{}, nil},
 		{"Only one backup", backupInfo, &backupInfo[0]},
 		{"Three backups", backupsInfoThree, &backupsInfoThree[2]},
 		{"Two backups", backupsInfoTwo, &backupsInfoTwo[1]},
