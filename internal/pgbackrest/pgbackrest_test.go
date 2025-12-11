@@ -167,7 +167,6 @@ func TestBackup(t *testing.T) {
 			want: execCalls{
 				execCalls: []fakeExec{
 					{cmdName: "pgbackrest", args: []string{"backup"}},
-					{cmdName: "pgbackrest", args: []string{"info", "--output", "json"}},
 				},
 			},
 		},
