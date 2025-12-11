@@ -15,35 +15,12 @@ import (
 	"os/exec"
 	"sync"
 
+	pgbackrestapi "github.com/dalibo/cnpg-i-pgbackrest/internal/pgbackrest/api"
 	"sigs.k8s.io/controller-runtime/pkg/log"
 )
 
-type Timestamp struct {
-	Start int64 `json:"start"`
-	Stop  int64 `json:"stop"`
-}
-
-type Lsn struct {
-	Start string `json:"start"`
-	Stop  string `json:"stop"`
-}
-
-type Archive struct {
-	Start string `json:"start"`
-	Stop  string `json:"stop"`
-}
-
-type BackupInfo struct {
-	Archive   Archive   `json:"archive"`
-	Label     string    `json:"label"`
-	Lsn       Lsn       `json:"lsn"`
-	Prior     string    `json:"prior"`
-	Timestamp Timestamp `json:"timestamp"`
-	Type      string    `json:"type"`
-}
-
 type BackupData struct {
-	Backup []BackupInfo `json:"backup"`
+	Backup []pgbackrestapi.BackupInfo `json:"backup"`
 }
 
 type RepoStatus struct {
@@ -233,28 +210,40 @@ func (p *PgBackrest) Backup() error {
 	return nil
 }
 
-func (p *PgBackrest) GetBackupInfo() ([]BackupInfo, error) {
+func (p *PgBackrest) GetBackupInfo() ([]pgbackrestapi.BackupInfo, error) {
 	cmd := p.run([]string{"info", "--output", "json"}, nil)
 	output, err := cmd.CombinedOutput()
 	if err != nil {
 		return nil, fmt.Errorf("can't get pgbackrest info: %s, %w", string(output), err)
 	}
 	var pgbackrestInfo []BackupData
-	err = json.Unmarshal(output, &pgbackrestInfo)
-	if err != nil {
+	if err := json.Unmarshal(output, &pgbackrestInfo); err != nil {
 		return nil, err
 	}
 	return pgbackrestInfo[0].Backup, nil
 
 }
 
-func LatestBackup(backups []BackupInfo) *BackupInfo {
+func LatestBackup(backups []pgbackrestapi.BackupInfo) *pgbackrestapi.BackupInfo {
 	if len(backups) < 1 {
 		return nil
 	}
 	found := backups[0]
 	for _, backup := range backups {
 		if backup.Timestamp.Stop > found.Timestamp.Stop {
+			found = backup
+		}
+	}
+	return &found
+}
+
+func FirstBackup(backups []pgbackrestapi.BackupInfo) *pgbackrestapi.BackupInfo {
+	if len(backups) < 1 {
+		return nil
+	}
+	found := backups[0]
+	for _, backup := range backups {
+		if backup.Timestamp.Stop < found.Timestamp.Stop {
 			found = backup
 		}
 	}

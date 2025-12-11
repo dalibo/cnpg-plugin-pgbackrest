@@ -59,6 +59,9 @@ type RepositoryStatus struct {
 	// +listMapKey=type
 	// +optional
 	Conditions []metav1.Condition `json:"conditions,omitempty"`
+
+	// +optional
+	RecoveryWindow pgbackrestapi.RecoveryWindow `json:"recoveryWindow"`
 }
 
 // +kubebuilder:object:root=true
