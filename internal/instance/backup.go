@@ -82,21 +82,25 @@ func (b BackupServiceImplementation) Backup(
 	contextLogger.Info("using repo", "repo", repoDestEnv)
 	contextLogger.Info("Starting backup")
 	pgb := pgbackrest.NewPgBackrest(env)
-	r, err := pgb.Backup()
-	if err != nil {
+	if err := pgb.Backup(); err != nil {
 		contextLogger.Error(err, "can't backup")
 		return nil, err
 	}
+	backups, err := pgb.GetBackupInfo()
+	if err != nil {
+		return nil, err
+	}
+	lastBackup := pgbackrest.LatestBackup(backups)
 	contextLogger.Info("Backup done!")
 	return &backup.BackupResult{
-		BackupName: r.Label,
-		BeginLsn:   r.Lsn.Start,
-		BeginWal:   r.Archive.Start,
-		EndLsn:     r.Lsn.Stop,
-		EndWal:     r.Archive.Stop,
+		BackupName: lastBackup.Label,
+		BeginLsn:   lastBackup.Lsn.Start,
+		BeginWal:   lastBackup.Archive.Start,
+		EndLsn:     lastBackup.Lsn.Stop,
+		EndWal:     lastBackup.Archive.Stop,
 		Online:     true,
-		StartedAt:  r.Timestamp.Start,
-		StoppedAt:  r.Timestamp.Stop,
+		StartedAt:  lastBackup.Timestamp.Start,
+		StoppedAt:  lastBackup.Timestamp.Stop,
 		Metadata: map[string]string{
 			"version":     metadata.Data.Version,
 			"name":        metadata.Data.Name,

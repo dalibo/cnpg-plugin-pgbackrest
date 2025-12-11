@@ -222,24 +222,19 @@ func (p *PgBackrest) GetWAL(
 	return p.runBackgroundTask(ctx, []string{"archive-get", walName, dstPath}, nil)
 }
 
-func (p *PgBackrest) Backup() (*BackupInfo, error) {
+func (p *PgBackrest) Backup() error {
 	env := make([]string, 1)
 	env = append(env, "PGBACKREST_archive-check=n")
 	cmd := p.run([]string{"backup"}, env)
 	output, err := cmd.CombinedOutput()
 	if err != nil {
-		return nil, fmt.Errorf("can't backup: %s, error : %w", string(output), err)
+		return fmt.Errorf("can't backup: %s, error : %w", string(output), err)
 	}
-	backups, err := p.GetBackupInfo(env)
-	if err != nil {
-		return nil, err
-	}
-	latestBackup := LatestBackup(backups)
-	return latestBackup, nil
+	return nil
 }
 
-func (p *PgBackrest) GetBackupInfo(env []string) ([]BackupInfo, error) {
-	cmd := p.run([]string{"info", "--output", "json"}, env)
+func (p *PgBackrest) GetBackupInfo() ([]BackupInfo, error) {
+	cmd := p.run([]string{"info", "--output", "json"}, nil)
 	output, err := cmd.CombinedOutput()
 	if err != nil {
 		return nil, fmt.Errorf("can't get pgbackrest info: %s, %w", string(output), err)
