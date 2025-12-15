@@ -17,10 +17,9 @@ import (
 
 // PgbackrestPlugin is the implementation of the PostgreSQL sidecar
 type PgbackrestPluginServer struct {
-	Client         client.Client
-	PGDataPath     string
-	PGWALPath      string
-	SpoolDirectory string
+	Client     client.Client
+	PGDataPath string
+	PGWALPath  string
 	// mutually exclusive with serverAddress
 	PluginPath   string
 	InstanceName string
@@ -30,11 +29,10 @@ type PgbackrestPluginServer struct {
 func (c *PgbackrestPluginServer) Start(ctx context.Context) error {
 	enrich := func(server *grpc.Server) error {
 		wal.RegisterWALServer(server, &wal_pgbackrest.WALSrvImplementation{
-			InstanceName:   c.InstanceName,
-			Client:         c.Client,
-			SpoolDirectory: c.SpoolDirectory,
-			PGDataPath:     c.PGDataPath,
-			PGWALPath:      c.PGWALPath,
+			InstanceName: c.InstanceName,
+			Client:       c.Client,
+			PGDataPath:   c.PGDataPath,
+			PGWALPath:    c.PGWALPath,
 		})
 		backup.RegisterBackupServer(server, BackupServiceImplementation{
 			Client:       c.Client,

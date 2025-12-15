@@ -17,10 +17,9 @@ import (
 
 // CNPGI is the implementation of the PostgreSQL sidecar
 type CNPGI struct {
-	Client         client.Client
-	PGDataPath     string
-	PGWALPath      string
-	SpoolDirectory string
+	Client     client.Client
+	PGDataPath string
+	PGWALPath  string
 	// mutually exclusive with serverAddress
 	PluginPath   string
 	InstanceName string
@@ -30,15 +29,13 @@ type CNPGI struct {
 func (c *CNPGI) Start(ctx context.Context) error {
 	enrich := func(server *grpc.Server) error {
 		wal.RegisterWALServer(server, &wal_pgbackrest.WALSrvImplementation{
-			InstanceName:   c.InstanceName,
-			Client:         c.Client,
-			SpoolDirectory: c.SpoolDirectory,
-			PGDataPath:     c.PGDataPath,
-			PGWALPath:      c.PGWALPath,
+			InstanceName: c.InstanceName,
+			Client:       c.Client,
+			PGDataPath:   c.PGDataPath,
+			PGWALPath:    c.PGWALPath,
 		})
 		restore.RegisterRestoreJobHooksServer(server, &JobHookImpl{
 			Client:               c.Client,
-			SpoolDirectory:       c.SpoolDirectory,
 			PgDataPath:           c.PGDataPath,
 			PgWalFolderToSymlink: "/var/lib/postgresql/wal/pg_wal",
 		})

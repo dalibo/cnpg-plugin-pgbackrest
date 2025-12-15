@@ -59,10 +59,9 @@ func Start(ctx context.Context) error {
 		Client:       mgr.GetClient(),
 		InstanceName: podName,
 		// TODO: improve
-		PGDataPath:     viper.GetString("pgdata"),
-		PGWALPath:      path.Join(viper.GetString("pgdata"), "pg_wal"),
-		SpoolDirectory: viper.GetString("spool-directory"),
-		PluginPath:     viper.GetString("plugin-path"),
+		PGDataPath: viper.GetString("pgdata"),
+		PGWALPath:  path.Join(viper.GetString("pgdata"), "pg_wal"),
+		PluginPath: viper.GetString("plugin-path"),
 	}); err != nil {
 		setupLog.Error(err, "unable to create pbacrest plugin runnable/server")
 		return err
