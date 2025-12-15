@@ -19,10 +19,9 @@ import (
 
 type WALSrvImplementation struct {
 	wal.UnimplementedWALServer
-	Client         client.Client
-	PGDataPath     string
-	PGWALPath      string
-	SpoolDirectory string
+	Client     client.Client
+	PGDataPath string
+	PGWALPath  string
 	// mutually exclusive with serverAddress
 	PluginPath    string
 	InstanceName  string
@@ -71,9 +70,6 @@ func (w_impl *WALSrvImplementation) Archive(
 		return nil, err
 	}
 	env, err := operator.GetEnvVarConfig(ctx, *repo, w_impl.Client)
-	if w_impl.SpoolDirectory != "" {
-		env = append(env, "PGBACKREST_SPOOL_PATH="+w_impl.SpoolDirectory)
-	}
 	if err != nil {
 		return nil, err
 	}

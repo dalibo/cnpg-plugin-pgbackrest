@@ -20,7 +20,6 @@ type JobHookImpl struct {
 
 	Client client.Client
 
-	SpoolDirectory       string
 	PgDataPath           string
 	PgWalFolderToSymlink string
 }
