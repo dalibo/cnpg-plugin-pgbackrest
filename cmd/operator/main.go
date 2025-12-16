@@ -27,6 +27,13 @@ func NewCmd() *cobra.Command {
 			return nil
 		},
 	}
+	cmd.Flags().String("metrics-bind-address", "0", "The address the metrics endpoint binds to. "+
+		"Use :8443 for HTTPS or :8080 for HTTP, or leave as 0 to disable the metrics service.")
+	_ = viper.BindPFlag("metrics-bind-address", cmd.Flags().Lookup("metrics-bind-address"))
+
+	cmd.Flags().Bool("metrics-secure", true,
+		"If set, the metrics endpoint is served securely via HTTPS. Use --metrics-secure=false to use HTTP instead.")
+	_ = viper.BindPFlag("metrics-secure", cmd.Flags().Lookup("metrics-secure"))
 
 	cmd.Flags().String(
 		"plugin-path",
