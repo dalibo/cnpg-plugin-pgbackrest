@@ -11,6 +11,7 @@ import (
 	"github.com/cloudnative-pg/cnpg-i/pkg/backup"
 	"github.com/cloudnative-pg/cnpg-i/pkg/metrics"
 	"github.com/cloudnative-pg/cnpg-i/pkg/wal"
+	"github.com/dalibo/cnpg-i-pgbackrest/internal/utils"
 	wal_pgbackrest "github.com/dalibo/cnpg-i-pgbackrest/internal/wal"
 	"google.golang.org/grpc"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -42,6 +43,7 @@ func (c *PgbackrestPluginServer) Start(ctx context.Context) error {
 		metrics.RegisterMetricsServer(server, &metricsImpl{
 			Client: c.Client,
 		})
+		utils.AddHealthCheck(server)
 		return nil
 	}
 
