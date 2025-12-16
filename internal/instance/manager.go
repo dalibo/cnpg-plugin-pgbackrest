@@ -9,6 +9,7 @@ import (
 	"path"
 
 	apipgbackrest "github.com/dalibo/cnpg-i-pgbackrest/api/v1"
+	extendedclient "github.com/dalibo/cnpg-i-pgbackrest/internal/instance/client"
 
 	cnpgv1 "github.com/cloudnative-pg/cloudnative-pg/api/v1"
 	"github.com/spf13/viper"
@@ -49,9 +50,9 @@ func Start(ctx context.Context) error {
 		setupLog.Error(err, "unable to start manager")
 		return err
 	}
-
+	customCacheClient := extendedclient.NewExtendedClient(mgr.GetClient())
 	if err := mgr.Add(&PgbackrestPluginServer{
-		Client:       mgr.GetClient(),
+		Client:       customCacheClient,
 		InstanceName: podName,
 		// TODO: improve
 		PGDataPath: viper.GetString("pgdata"),
