@@ -40,6 +40,7 @@ func Start(ctx context.Context) error {
 					&corev1.Secret{},
 					&apipgbackrest.Repository{},
 					&cnpgv1.Cluster{},
+					&cnpgv1.Backup{},
 				},
 			},
 		},
