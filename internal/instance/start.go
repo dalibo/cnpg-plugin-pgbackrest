@@ -9,6 +9,7 @@ import (
 
 	"github.com/cloudnative-pg/cnpg-i-machinery/pkg/pluginhelper/http"
 	"github.com/cloudnative-pg/cnpg-i/pkg/backup"
+	"github.com/cloudnative-pg/cnpg-i/pkg/metrics"
 	"github.com/cloudnative-pg/cnpg-i/pkg/wal"
 	wal_pgbackrest "github.com/dalibo/cnpg-i-pgbackrest/internal/wal"
 	"google.golang.org/grpc"
@@ -37,6 +38,9 @@ func (c *PgbackrestPluginServer) Start(ctx context.Context) error {
 		backup.RegisterBackupServer(server, BackupServiceImplementation{
 			Client:       c.Client,
 			InstanceName: c.InstanceName,
+		})
+		metrics.RegisterMetricsServer(server, &metricsImpl{
+			Client: c.Client,
 		})
 		return nil
 	}

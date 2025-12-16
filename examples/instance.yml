@@ -19,6 +19,8 @@ spec:
   instances: 1
   plugins:
     - name: pgbackrest.dalibo.com
+      enabled: true
+      isWALArchiver: true
       parameters:
         repositoryRef: repository-sample
   storage:
