@@ -11,12 +11,12 @@ metadata:
   labels:
     app.kubernetes.io/name: cnpg-i-pgbackrest
     app.kubernetes.io/managed-by: kustomize
-  name: repository-editor-role
+  name: stanza-editor-role
 rules:
 - apiGroups:
   - pgbackrest.dalibo.com
   resources:
-  - repositories
+  - stanzas
   verbs:
   - create
   - delete
@@ -28,6 +28,6 @@ rules:
 - apiGroups:
   - pgbackrest.dalibo.com
   resources:
-  - repositories/status
+  - stanzas/status
   verbs:
   - get

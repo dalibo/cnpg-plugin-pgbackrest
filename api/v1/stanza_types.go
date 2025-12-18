@@ -29,24 +29,24 @@ import (
 // +kubebuilder:rbac:groups="",resources=secrets,verbs=create;list;get;watch;delete
 // +kubebuilder:rbac:groups=postgresql.cnpg.io,resources=clusters/finalizers,verbs=update
 // +kubebuilder:rbac:groups=postgresql.cnpg.io,resources=backups,verbs=get;list;watch
-// +kubebuilder:rbac:groups=pgbackrest.dalibo.com,resources=repositories,verbs=get;list;watch;create;update;patch;delete
-// +kubebuilder:rbac:groups=pgbackrest.dalibo.com,resources=repositories/status,verbs=get;update;patch
-// +kubebuilder:rbac:groups=pgbackrest.dalibo.com,resources=repositories/finalizers,verbs=update
+// +kubebuilder:rbac:groups=pgbackrest.dalibo.com,resources=stanzas,verbs=get;list;watch;create;update;patch;delete
+// +kubebuilder:rbac:groups=pgbackrest.dalibo.com,resources=stanzas/status,verbs=get;update;patch
+// +kubebuilder:rbac:groups=pgbackrest.dalibo.com,resources=stanzas/finalizers,verbs=update
 
-// RepositorySpec defines the desired state of Repository
-type RepositorySpec struct {
-	Configuration pgbackrestapi.Repository `json:"repoConfiguration"`
+// StanzaSpec defines the desired state of Stanza
+type StanzaSpec struct {
+	Configuration pgbackrestapi.Stanza `json:"stanzaConfiguration"`
 }
 
-// RepositoryStatus defines the observed state of Repository.
-type RepositoryStatus struct {
+// StanzaStatus defines the observed state of Stanza.
+type StanzaStatus struct {
 	// INSERT ADDITIONAL STATUS FIELD - define observed state of cluster
 	// Important: Run "make" to regenerate code after modifying this file
 
 	// For Kubernetes API conventions, see:
 	// https://github.com/kubernetes/community/blob/master/contributors/devel/sig-architecture/api-conventions.md#typical-status-properties
 
-	// conditions represent the current state of the Repository resource.
+	// conditions represent the current state of the Stanza resource.
 	// Each condition has a unique type and reflects the status of a specific aspect of the resource.
 	//
 	// Standard condition types include:
@@ -67,32 +67,32 @@ type RepositoryStatus struct {
 // +kubebuilder:object:root=true
 // +kubebuilder:subresource:status
 
-// Repository is the Schema for the repositories API
-type Repository struct {
+// Stanza is the Schema for the stanzas API
+type Stanza struct {
 	metav1.TypeMeta `json:",inline"`
 
 	// metadata is a standard object metadata
 	// +optional
 	metav1.ObjectMeta `json:"metadata,omitzero"`
 
-	// spec defines the desired state of Repository
+	// spec defines the desired state of Stanza
 	// +required
-	Spec RepositorySpec `json:"spec"`
+	Spec StanzaSpec `json:"spec"`
 
-	// status defines the observed state of Repository
+	// status defines the observed state of Stanza
 	// +optional
-	Status RepositoryStatus `json:"status,omitzero"`
+	Status StanzaStatus `json:"status,omitzero"`
 }
 
 // +kubebuilder:object:root=true
 
-// RepositoryList contains a list of Repository
-type RepositoryList struct {
+// StanzaList contains a list of Stanza
+type StanzaList struct {
 	metav1.TypeMeta `json:",inline"`
 	metav1.ListMeta `json:"metadata"`
-	Items           []Repository `json:"items"`
+	Items           []Stanza `json:"items"`
 }
 
 func init() {
-	SchemeBuilder.Register(&Repository{}, &RepositoryList{})
+	SchemeBuilder.Register(&Stanza{}, &StanzaList{})
 }

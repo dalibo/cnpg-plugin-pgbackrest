@@ -109,10 +109,11 @@ func (m metricsImpl) Collect(
 ) (*metrics.CollectMetricsResult, error) {
 	contextLogger := log.FromContext(ctx)
 	contextLogger.Debug("metrics collect call received")
-	repo, err := operator.GetRepo(ctx,
+	stanza, err := operator.GetStanza(
+		ctx,
 		req,
 		m.Client,
-		(*operator.PluginConfiguration).GetRepositoryRef,
+		(*operator.PluginConfiguration).GetStanzaRef,
 	)
 	if err != nil {
 		return nil, err
@@ -121,11 +122,11 @@ func (m metricsImpl) Collect(
 		Metrics: []*metrics.CollectMetric{
 			{
 				FqName: firstRecoverabilityPointMetricName,
-				Value:  float64(repo.Status.RecoveryWindow.FirstBackup.Timestamp.Stop),
+				Value:  float64(stanza.Status.RecoveryWindow.FirstBackup.Timestamp.Stop),
 			},
 			{
 				FqName: lastAvailableBackupTimestampMetricName,
-				Value:  float64(repo.Status.RecoveryWindow.LastBackup.Timestamp.Stop),
+				Value:  float64(stanza.Status.RecoveryWindow.LastBackup.Timestamp.Stop),
 			},
 			{
 				FqName: lastFailedBackupTimestampMetricName,

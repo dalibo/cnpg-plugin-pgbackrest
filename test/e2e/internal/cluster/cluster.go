@@ -18,7 +18,7 @@ import (
 )
 
 var DefaultParamater map[string]string = map[string]string{
-	"repositoryRef": "repository",
+	"stanzaRef": "stanza",
 }
 
 func New(

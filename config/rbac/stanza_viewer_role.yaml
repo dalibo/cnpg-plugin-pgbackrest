@@ -11,12 +11,12 @@ metadata:
   labels:
     app.kubernetes.io/name: cnpg-i-pgbackrest
     app.kubernetes.io/managed-by: kustomize
-  name: repository-viewer-role
+  name: stanza-viewer-role
 rules:
 - apiGroups:
   - pgbackrest.dalibo.com
   resources:
-  - repositories
+  - stanzas
   verbs:
   - get
   - list
@@ -24,6 +24,6 @@ rules:
 - apiGroups:
   - pgbackrest.dalibo.com
   resources:
-  - repositories/status
+  - stanzas/status
   verbs:
   - get

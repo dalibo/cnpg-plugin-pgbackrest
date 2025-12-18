@@ -40,7 +40,7 @@ func Start(ctx context.Context) error {
 			Cache: &client.CacheOptions{
 				DisableFor: []client.Object{
 					&corev1.Secret{},
-					&apipgbackrest.Repository{},
+					&apipgbackrest.Stanza{},
 					&cnpgv1.Cluster{},
 				},
 			},

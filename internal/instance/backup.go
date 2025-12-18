@@ -42,7 +42,7 @@ func (b BackupServiceImplementation) GetCapabilities(
 	}, nil
 }
 
-func getEnvVarBackupRepoDest(repo apipgbackrest.Repository, selectedRepo string) (string, error) {
+func getEnvVarBackupRepoDest(repo apipgbackrest.Stanza, selectedRepo string) (string, error) {
 	sRepo, err := strconv.ParseUint(selectedRepo, 10, 64)
 	if err != nil {
 		return "", err
@@ -56,14 +56,14 @@ func getEnvVarBackupRepoDest(repo apipgbackrest.Repository, selectedRepo string)
 func updateBackupInfo(
 	ctx context.Context,
 	c client.Client,
-	repo *apipgbackrestv1.Repository,
+	stanza *apipgbackrestv1.Stanza,
 	firstBackup apipgbackrest.BackupInfo,
 	lastBackup apipgbackrest.BackupInfo,
 ) error {
 	return retry.RetryOnConflict(retry.DefaultBackoff, func() error {
-		repo.Status.RecoveryWindow.FirstBackup = firstBackup
-		repo.Status.RecoveryWindow.LastBackup = lastBackup
-		return c.Status().Update(ctx, repo)
+		stanza.Status.RecoveryWindow.FirstBackup = firstBackup
+		stanza.Status.RecoveryWindow.LastBackup = lastBackup
+		return c.Status().Update(ctx, stanza)
 	})
 }
 
@@ -72,25 +72,25 @@ func (b BackupServiceImplementation) Backup(
 	request *backup.BackupRequest,
 ) (*backup.BackupResult, error) {
 	contextLogger := log.FromContext(ctx)
-	repo, err := operator.GetRepo(
+	stanza, err := operator.GetStanza(
 		ctx,
 		request,
 		b.Client,
-		(*operator.PluginConfiguration).GetRepositoryRef,
+		(*operator.PluginConfiguration).GetStanzaRef,
 	)
 	if err != nil {
 		return nil, err
 	}
-	env, err := operator.GetEnvVarConfig(ctx, *repo, b.Client)
+	env, err := operator.GetEnvVarConfig(ctx, *stanza, b.Client)
 	if err != nil {
 		contextLogger.Error(err, "can't get envvar")
 		return nil, err
 	}
 	selectedRepo, ok := request.Parameters["selectedRepository"]
 	if !ok {
-		selectedRepo = "1" // use first repo by default
+		selectedRepo = "1" // use first stanza by default
 	}
-	repoDestEnv, err := getEnvVarBackupRepoDest(repo.Spec.Configuration, selectedRepo)
+	repoDestEnv, err := getEnvVarBackupRepoDest(stanza.Spec.Configuration, selectedRepo)
 	if err != nil {
 		return nil, err
 	}
@@ -108,7 +108,7 @@ func (b BackupServiceImplementation) Backup(
 	}
 	lastBackup := pgbackrest.LatestBackup(backupsList)
 	firstBackup := pgbackrest.FirstBackup(backupsList)
-	if err != updateBackupInfo(ctx, b.Client, repo, *firstBackup, *lastBackup) {
+	if err != updateBackupInfo(ctx, b.Client, stanza, *firstBackup, *lastBackup) {
 		contextLogger.Error(err, "can't update backup info")
 		return nil, err
 	}
