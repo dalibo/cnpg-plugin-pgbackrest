@@ -45,7 +45,7 @@ type RecoveryWindow struct {
 	LastBackup  BackupInfo `json:"lastBackup"`
 }
 
-// Define retention strategy for a repository
+// Define retention strategy for a repository.
 type Retention struct {
 	// Number of backups worth of continuous WAL to retain.
 	// Can be used to aggressively expire WAL segments and save disk space.
@@ -161,14 +161,14 @@ type ArchiveOption struct {
 	GetQueueMax *string `json:"getQueueMax" env:"_GET_QUEUE_MAX"`
 }
 
-// Define pgbackrest repository
-type Repository struct {
+// Define pgbackrest stanza
+type Stanza struct {
 
 	// +optional
 	S3Repositories []S3Repository `json:"s3Repositories" nestedEnvPrefix:"REPO"`
 
 	// +kubebuilder:validation:MinLength=1
-	Stanza string `json:"stanza" env:"STANZA"`
+	Name string `json:"name" env:"STANZA"`
 
 	// +optional
 	// +kubebuilder:default=1
@@ -178,7 +178,7 @@ type Repository struct {
 	Archive ArchiveOption `json:"archive" nestedEnvPrefix:"ARCHIVE"`
 }
 
-func (r *Repository) ToEnv() ([]string, error) {
+func (r *Stanza) ToEnv() ([]string, error) {
 	envConf, err := utils.StructToEnvVars(*r, "PGBACKREST_")
 	if err != nil {
 		return nil, err

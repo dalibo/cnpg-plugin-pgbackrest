@@ -12,7 +12,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-func getSecrets(r apipgbackrest.Repository, s *stringset.Data) {
+func getSecrets(r apipgbackrest.Stanza, s *stringset.Data) {
 	for _, s3r := range r.Spec.Configuration.S3Repositories {
 		akidr := s3r.SecretRef.AccessKeyIDReference
 		akisr := s3r.SecretRef.SecretAccessKeyReference
@@ -28,7 +28,7 @@ func getSecrets(r apipgbackrest.Repository, s *stringset.Data) {
 func BuildK8SRole(
 	ns string,
 	clusterName string,
-	repos []apipgbackrest.Repository,
+	stanzas []apipgbackrest.Stanza,
 ) *rbacv1.Role {
 	role := &rbacv1.Role{
 		ObjectMeta: metav1.ObjectMeta{
@@ -37,11 +37,11 @@ func BuildK8SRole(
 		},
 		Rules: []rbacv1.PolicyRule{},
 	}
-	pgbRepoSet := stringset.New()
+	pgbStanzaSet := stringset.New()
 	secretsSet := stringset.New()
-	for _, r := range repos {
-		pgbRepoSet.Put(r.Name)
-		getSecrets(r, secretsSet)
+	for _, st := range stanzas {
+		pgbStanzaSet.Put(st.Name)
+		getSecrets(st, secretsSet)
 	}
 	role.Rules = append(
 		role.Rules,
@@ -55,9 +55,9 @@ func BuildK8SRole(
 				"list",
 			},
 			Resources: []string{
-				"repositories",
+				"stanzas",
 			},
-			ResourceNames: pgbRepoSet.ToSortedList(),
+			ResourceNames: pgbStanzaSet.ToSortedList(),
 		},
 		rbacv1.PolicyRule{
 			APIGroups: []string{
@@ -67,9 +67,9 @@ func BuildK8SRole(
 				"update",
 			},
 			Resources: []string{
-				"repositories/status",
+				"stanzas/status",
 			},
-			ResourceNames: pgbRepoSet.ToSortedList(),
+			ResourceNames: pgbStanzaSet.ToSortedList(),
 		},
 		rbacv1.PolicyRule{
 			APIGroups: []string{

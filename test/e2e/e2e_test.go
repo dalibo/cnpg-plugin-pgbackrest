@@ -64,7 +64,7 @@ func setup() {
 	if err := pgbackrest.Install(ctx, *k8sClient, s); err != nil {
 		panic(err.Error())
 	}
-	if _, err := pgbackrest.CreateRepoConfig(ctx, *k8sClient, "repository", "default"); err != nil {
+	if _, err := pgbackrest.CreateStanzaConfig(ctx, *k8sClient, "stanza", "default"); err != nil {
 		panic(err.Error())
 	}
 }
@@ -173,17 +173,17 @@ func takeBackup(
 	return b
 }
 
-func getRepo(
+func getStanza(
 	ctx context.Context,
 	t *testing.T,
 	k8sClient *kubernetes.K8sClient,
 	ns string,
-) *apipgbackrest.Repository {
-	repo, err := pgbackrest.GetRepo(ctx, k8sClient, "repository", ns)
+) *apipgbackrest.Stanza {
+	stanza, err := pgbackrest.GetStanza(ctx, k8sClient, "stanza", ns)
 	if err != nil {
-		t.Fatalf("failed to get repo: %v", err)
+		t.Fatalf("failed to get stanza: %v", err)
 	}
-	return repo
+	return stanza
 }
 
 // basic verification to ensure we can use our plugin with a cluster
@@ -234,9 +234,9 @@ func TestDeployInstance(t *testing.T) {
 	}()
 
 	// check stored backup info / status
-	repo := getRepo(ctx, t, k8sClient, ns)
-	fBackup := repo.Status.RecoveryWindow.FirstBackup
-	lBackup := repo.Status.RecoveryWindow.LastBackup
+	stanza := getStanza(ctx, t, k8sClient, ns)
+	fBackup := stanza.Status.RecoveryWindow.FirstBackup
+	lBackup := stanza.Status.RecoveryWindow.LastBackup
 	if fBackup.Timestamp.Start == 0 || fBackup != lBackup {
 		t.Fatal("registered backup data are invalid after first backup")
 	}
@@ -250,12 +250,12 @@ func TestDeployInstance(t *testing.T) {
 	}()
 
 	// check stored backup info / status
-	repo = getRepo(ctx, t, k8sClient, ns)
+	stanza = getStanza(ctx, t, k8sClient, ns)
 	if err != nil {
-		t.Fatalf("failed to get repo after second backup: %v", err)
+		t.Fatalf("failed to get stanza after second backup: %v", err)
 	}
-	fBackup = repo.Status.RecoveryWindow.FirstBackup
-	lBackup = repo.Status.RecoveryWindow.LastBackup
+	fBackup = stanza.Status.RecoveryWindow.FirstBackup
+	lBackup = stanza.Status.RecoveryWindow.LastBackup
 	// After the second backup, both ends of the window should NOT match the first case
 	if fBackup.Timestamp.Start == 0 || fBackup == lBackup {
 		t.Fatal("registered backup data are invalid after second backup")

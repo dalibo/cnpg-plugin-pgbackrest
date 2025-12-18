@@ -77,7 +77,7 @@ To install and use this plugin, Kubernetes and CNPG users should:
 - The installation can be verified by checking the presence and status
   of the `pgbackrest-controller` deployment in the namespace used by the
   CloudNativePG operator (e.g., `cnpg-system`), but also by confirming
-  that the Custom Resource Definition `repository.pgbackrest.dalibo.com`
+  that the Custom Resource Definition `stanza.pgbackrest.dalibo.com`
   is installed.
 
 ### Initiate an instance with pgBackRest
@@ -107,16 +107,16 @@ To use this plugin with a **Cluster**, CNPG users must:
     ACCESS_SECRET_KEY: <secret_to_replace>
   ```
 
-- Add a pgbackrest repository definition:
+- Add a pgbackrest stanza definition:
 
   Example:
 
   ``` yaml
   ---
   apiVersion: pgbackrest.dalibo.com/v1
-  kind: Repository
+  kind: stanza
   metadata:
-    name: repository-sample
+    name: stanza-sample
   spec:
     repoConfiguration:
       stanza: main
@@ -170,7 +170,7 @@ To use this plugin with a **Cluster**, CNPG users must:
     plugins:
       - name: pgbackrest.dalibo.com
         parameters:
-          repositoryRef: repository-sample
+          stanzaRef: stanza-sample
     storage:
       size: 1Gi
   ```

@@ -76,11 +76,11 @@ func (r ReconcilerImplementation) Pre(
 		return nil, err
 	}
 	refPgBackrestObj := conf.GetReferredPgBackrestObjectKey()
-	repositories := make([]apipgbackrest.Repository, 0, len(refPgBackrestObj))
+	stanzas := make([]apipgbackrest.Stanza, 0, len(refPgBackrestObj))
 	for _, rpb := range refPgBackrestObj {
-		var repo apipgbackrest.Repository
+		var stanza apipgbackrest.Stanza
 		contextLogger.Debug("parsing cluster definition", "pgbackrestObjectKey", rpb)
-		if err := r.Client.Get(ctx, rpb, &repo); err != nil {
+		if err := r.Client.Get(ctx, rpb, &stanza); err != nil {
 			if apierrs.IsNotFound(err) {
 				contextLogger.Debug("error enforcing requeue", "error", err)
 				return &reconciler.ReconcilerHooksResult{
@@ -89,9 +89,9 @@ func (r ReconcilerImplementation) Pre(
 			}
 			return nil, err
 		}
-		repositories = append(repositories, repo)
+		stanzas = append(stanzas, stanza)
 	}
-	if err := r.ensureRole(ctx, &cluster, repositories); err != nil {
+	if err := r.ensureRole(ctx, &cluster, stanzas); err != nil {
 		return nil, err
 	}
 	if err := r.ensureRoleBinding(ctx, &cluster); err != nil {
@@ -116,10 +116,10 @@ func (r ReconcilerImplementation) Post(
 func (r ReconcilerImplementation) ensureRole(
 	ctx context.Context,
 	cluster *cnpgv1.Cluster,
-	pgbackrestRepositories []apipgbackrest.Repository,
+	stanza []apipgbackrest.Stanza,
 ) error {
 	contextLogger := log.FromContext(ctx)
-	newRole := BuildK8SRole(cluster.Namespace, cluster.Name, pgbackrestRepositories)
+	newRole := BuildK8SRole(cluster.Namespace, cluster.Name, stanza)
 
 	var role rbacv1.Role
 	if err := r.Client.Get(ctx, client.ObjectKey{

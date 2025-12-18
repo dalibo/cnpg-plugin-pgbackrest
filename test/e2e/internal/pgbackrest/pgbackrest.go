@@ -28,24 +28,24 @@ func Install(
 	return err
 }
 
-func NewRepoConfig(
+func NewStanzaConfig(
 	k8sClient kubernetes.K8sClient,
 	name string,
 	ns string,
-) *apipgbackrest.Repository {
+) *apipgbackrest.Stanza {
 	verifyTls := false
-	repo := &apipgbackrest.Repository{
+	stanza := &apipgbackrest.Stanza{
 		TypeMeta: metav1.TypeMeta{
-			Kind:       "repository",
+			Kind:       "stanza",
 			APIVersion: "pgbacrest.dalibo.com/v1",
 		},
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      name,
 			Namespace: ns,
 		},
-		Spec: apipgbackrest.RepositorySpec{
-			Configuration: pgbackrest.Repository{
-				Stanza: "my_stanza",
+		Spec: apipgbackrest.StanzaSpec{
+			Configuration: pgbackrest.Stanza{
+				Name: "my_stanza",
 				S3Repositories: []pgbackrest.S3Repository{
 					{
 						Bucket:    minio.BUCKET_NAME,
@@ -73,35 +73,35 @@ func NewRepoConfig(
 			},
 		},
 	}
-	return repo
+	return stanza
 }
 
-func CreateRepoConfig(
+func CreateStanzaConfig(
 	ctx context.Context,
 	k8sClient kubernetes.K8sClient,
 	name string,
 	ns string,
-) (*apipgbackrest.Repository, error) {
-	repo := NewRepoConfig(k8sClient, name, ns)
-	if err := k8sClient.Create(ctx, repo); err != nil {
+) (*apipgbackrest.Stanza, error) {
+	stanza := NewStanzaConfig(k8sClient, name, ns)
+	if err := k8sClient.Create(ctx, stanza); err != nil {
 		return nil, err
 	}
-	return repo, nil
+	return stanza, nil
 }
 
-func GetRepo(
+func GetStanza(
 	ctx context.Context,
 	k8sClient *kubernetes.K8sClient,
 	name string,
 	ns string,
-) (*apipgbackrest.Repository, error) {
-	var repo apipgbackrest.Repository
+) (*apipgbackrest.Stanza, error) {
+	var stanza apipgbackrest.Stanza
 	fqdn := types.NamespacedName{
 		Name:      name,
 		Namespace: ns,
 	}
-	if err := k8sClient.Get(ctx, fqdn, &repo); err != nil {
+	if err := k8sClient.Get(ctx, fqdn, &stanza); err != nil {
 		return nil, err
 	}
-	return &repo, nil
+	return &stanza, nil
 }

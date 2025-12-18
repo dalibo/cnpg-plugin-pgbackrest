@@ -20,11 +20,11 @@ import (
 )
 
 type PluginConfiguration struct {
-	Cluster               *cnpgv1.Cluster
-	ServerName            string
-	RepositoryRef         string
-	RecoveryRepositoryRef string
-	ReplicaRepositoryRef  string
+	Cluster           *cnpgv1.Cluster
+	ServerName        string
+	StanzaRef         string
+	RecoveryStanzaRef string
+	ReplicaStanzaRef  string
 }
 
 type Plugin struct {
@@ -103,65 +103,65 @@ func NewFromCluster(cluster *cnpgv1.Cluster) (*PluginConfiguration, error) {
 	serverName := cluster.Name
 	recovObjName := ""
 	if recovParams := getRecovParams(cluster); recovParams != nil {
-		recovObjName = recovParams["repositoryRef"]
+		recovObjName = recovParams["stanzaRef"]
 	}
 	repliObjName := ""
 	if repliParams := getReplicaParams(cluster); repliParams != nil {
-		repliObjName = repliParams["repositoryRef"]
+		repliObjName = repliParams["stanzaRef"]
 	}
 	result := &PluginConfiguration{
-		Cluster:               cluster,
-		ServerName:            serverName,
-		RepositoryRef:         helper.Parameters["repositoryRef"],
-		RecoveryRepositoryRef: recovObjName,
-		ReplicaRepositoryRef:  repliObjName,
+		Cluster:           cluster,
+		ServerName:        serverName,
+		StanzaRef:         helper.Parameters["stanzaRef"],
+		RecoveryStanzaRef: recovObjName,
+		ReplicaStanzaRef:  repliObjName,
 	}
 	return result, nil
 }
 
-func (c *PluginConfiguration) GetReplicaRepositoryRef() (*types.NamespacedName, error) {
-	if len(c.ReplicaRepositoryRef) > 0 {
+func (c *PluginConfiguration) GetReplicaStanzaRef() (*types.NamespacedName, error) {
+	if len(c.ReplicaStanzaRef) > 0 {
 		return &types.NamespacedName{
-			Name:      c.ReplicaRepositoryRef,
+			Name:      c.ReplicaStanzaRef,
 			Namespace: c.Cluster.Namespace,
 		}, nil
 
 	}
-	return nil, fmt.Errorf("replica repository not configured")
+	return nil, fmt.Errorf("replica stanza not configured")
 }
 
-func (c *PluginConfiguration) GetRepositoryRef() (*types.NamespacedName, error) {
-	if len(c.RepositoryRef) > 0 {
+func (c *PluginConfiguration) GetStanzaRef() (*types.NamespacedName, error) {
+	if len(c.StanzaRef) > 0 {
 		return &types.NamespacedName{
-			Name:      c.RepositoryRef,
+			Name:      c.StanzaRef,
 			Namespace: c.Cluster.Namespace,
 		}, nil
 	}
-	return nil, fmt.Errorf("repository not configured")
+	return nil, fmt.Errorf("stanza not configured")
 }
 
-func (c *PluginConfiguration) GetRecoveryRepositoryRef() (*types.NamespacedName, error) {
-	if len(c.RecoveryRepositoryRef) > 0 {
+func (c *PluginConfiguration) GetRecoveryStanzaRef() (*types.NamespacedName, error) {
+	if len(c.RecoveryStanzaRef) > 0 {
 		return &types.NamespacedName{
-			Name:      c.RecoveryRepositoryRef,
+			Name:      c.RecoveryStanzaRef,
 			Namespace: c.Cluster.Namespace,
 		}, nil
 	}
-	return nil, fmt.Errorf("recovery repository not configured")
+	return nil, fmt.Errorf("recovery stanza not configured")
 }
 
 // GetReferredPgBackrestObjectKey the list of pgbackrest objects referred by this
 // plugin configuration
 func (c *PluginConfiguration) GetReferredPgBackrestObjectKey() []types.NamespacedName {
 	objectNames := stringset.New()
-	if len(c.RepositoryRef) > 0 {
-		objectNames.Put(c.RepositoryRef)
+	if len(c.StanzaRef) > 0 {
+		objectNames.Put(c.StanzaRef)
 	}
-	if len(c.RecoveryRepositoryRef) > 0 {
-		objectNames.Put(c.RecoveryRepositoryRef)
+	if len(c.RecoveryStanzaRef) > 0 {
+		objectNames.Put(c.RecoveryStanzaRef)
 	}
-	if len(c.ReplicaRepositoryRef) > 0 {
-		objectNames.Put(c.ReplicaRepositoryRef)
+	if len(c.ReplicaStanzaRef) > 0 {
+		objectNames.Put(c.ReplicaStanzaRef)
 	}
 	res := make([]types.NamespacedName, 0, 3)
 	for _, name := range objectNames.ToSortedList() {
@@ -177,7 +177,7 @@ func (c *PluginConfiguration) GetReferredPgBackrestObjectKey() []types.Namespace
 
 func GetEnvVarConfig(
 	ctx context.Context,
-	r apipgbackrest.Repository,
+	r apipgbackrest.Stanza,
 	c client.Client,
 ) ([]string, error) {
 	conf := r.Spec.Configuration
@@ -219,25 +219,25 @@ type ClusterDefinitionGetter interface {
 	GetClusterDefinition() []byte
 }
 
-type RepoRefGetter func(*PluginConfiguration) (*client.ObjectKey, error)
+type StanzaRefGetter func(*PluginConfiguration) (*client.ObjectKey, error)
 
-func GetRepo(ctx context.Context,
+func GetStanza(ctx context.Context,
 	c ClusterDefinitionGetter,
 	cl client.Client,
-	getRef RepoRefGetter,
-) (*apipgbackrest.Repository, error) {
+	getRef StanzaRefGetter,
+) (*apipgbackrest.Stanza, error) {
 	cDef := c.GetClusterDefinition()
 	pluginConf, err := NewFromClusterJSON(cDef)
 	if err != nil {
 		return nil, err
 	}
-	repositoryFQDN, err := getRef(pluginConf)
+	stanzaFQDN, err := getRef(pluginConf)
 	if err != nil {
 		return nil, err
 	}
-	var repo apipgbackrest.Repository
-	if err := cl.Get(ctx, *repositoryFQDN, &repo); err != nil {
+	var stanza apipgbackrest.Stanza
+	if err := cl.Get(ctx, *stanzaFQDN, &stanza); err != nil {
 		return nil, err
 	}
-	return &repo, nil
+	return &stanza, nil
 }

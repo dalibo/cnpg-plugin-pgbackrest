@@ -22,7 +22,7 @@ resources:
 # default, aiding admins in cluster management. Those roles are
 # not used by the cnpg-i-pgbackrest itself. You can comment the following lines
 # if you do not want those helpers be installed with your Project.
-- repository_admin_role.yaml
-- repository_editor_role.yaml
-- repository_viewer_role.yaml
+- stanza_admin_role.yaml
+- stanza_editor_role.yaml
+- stanza_viewer_role.yaml
 

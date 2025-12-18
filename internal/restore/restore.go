@@ -44,10 +44,10 @@ func (impl JobHookImpl) Restore(
 ) (*restore.RestoreResponse, error) {
 	contextLogger := log.FromContext(ctx)
 	contextLogger.Info("Start restoring backup")
-	r, err := operator.GetRepo(ctx,
+	r, err := operator.GetStanza(ctx,
 		req,
 		impl.Client,
-		(*operator.PluginConfiguration).GetRecoveryRepositoryRef,
+		(*operator.PluginConfiguration).GetRecoveryStanzaRef,
 	)
 	if err != nil {
 		return nil, err

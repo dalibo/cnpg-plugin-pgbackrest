@@ -61,21 +61,21 @@ func (w_impl *WALSrvImplementation) Archive(
 ) (*wal.WALArchiveResult, error) {
 	contextLogger := log.FromContext(ctx)
 	walName := request.GetSourceFileName()
-	repo, err := operator.GetRepo(ctx,
+	stanza, err := operator.GetStanza(ctx,
 		request,
 		w_impl.Client,
-		(*operator.PluginConfiguration).GetRepositoryRef,
+		(*operator.PluginConfiguration).GetStanzaRef,
 	)
 	if err != nil {
 		return nil, err
 	}
-	env, err := operator.GetEnvVarConfig(ctx, *repo, w_impl.Client)
+	env, err := operator.GetEnvVarConfig(ctx, *stanza, w_impl.Client)
 	if err != nil {
 		return nil, err
 	}
 	pgb := pgbackrest.NewPgBackrest(env)
 	if !w_impl.StanzaCreated {
-		ok, err := pgb.EnsureStanzaExists(repo.Spec.Configuration.Stanza)
+		ok, err := pgb.EnsureStanzaExists(stanza.Spec.Configuration.Name)
 		if err != nil {
 			return nil, fmt.Errorf("stanza creation failed: %w", err)
 		}
@@ -111,38 +111,38 @@ func (w WALSrvImplementation) Restore(
 		promotionToken = conf.Cluster.Spec.ReplicaCluster.PromotionToken
 	}
 
-	var repo *apipgbackrest.Repository
-	var getRepoRef func(*operator.PluginConfiguration) (*types.NamespacedName, error)
+	var stanza *apipgbackrest.Stanza
+	var getStanzaRef func(*operator.PluginConfiguration) (*types.NamespacedName, error)
 	switch {
 
 	case promotionToken != "" && conf.Cluster.Status.LastPromotionToken != promotionToken:
-		getRepoRef = func(pc *operator.PluginConfiguration) (*types.NamespacedName, error) {
-			return pc.GetReplicaRepositoryRef()
+		getStanzaRef = func(pc *operator.PluginConfiguration) (*types.NamespacedName, error) {
+			return pc.GetReplicaStanzaRef()
 		}
 
 	case conf.Cluster.IsReplica() && conf.Cluster.Status.CurrentPrimary == w.InstanceName:
-		getRepoRef = func(pc *operator.PluginConfiguration) (*types.NamespacedName, error) {
-			return pc.GetReplicaRepositoryRef()
+		getStanzaRef = func(pc *operator.PluginConfiguration) (*types.NamespacedName, error) {
+			return pc.GetReplicaStanzaRef()
 		}
 
 	case conf.Cluster.Status.CurrentPrimary == "":
-		getRepoRef = func(pc *operator.PluginConfiguration) (*types.NamespacedName, error) {
-			return pc.GetRecoveryRepositoryRef()
+		getStanzaRef = func(pc *operator.PluginConfiguration) (*types.NamespacedName, error) {
+			return pc.GetRecoveryStanzaRef()
 		}
 	}
-	if getRepoRef == nil {
+	if getStanzaRef == nil {
 		return nil, fmt.Errorf("recovery not configured")
 	}
-	repo, err = operator.GetRepo(
+	stanza, err = operator.GetStanza(
 		ctx,
 		request,
 		w.Client,
-		getRepoRef,
+		getStanzaRef,
 	)
 	if err != nil {
 		return nil, err
 	}
-	env, err := operator.GetEnvVarConfig(ctx, *repo, w.Client)
+	env, err := operator.GetEnvVarConfig(ctx, *stanza, w.Client)
 	if err != nil {
 		return nil, err
 	}

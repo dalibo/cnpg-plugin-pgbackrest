@@ -1,13 +1,13 @@
 apiVersion: pgbackrest.dalibo.com/v1
-kind: Repository
+kind: Stanza
 metadata:
   labels:
     app.kubernetes.io/name: cnpg-i-pgbackrest
     app.kubernetes.io/managed-by: kustomize
-  name: repository-sample
+  name: stanza-sample
 spec:
-  repoConfiguration:
-    stanza: main
+  stanzaConfiguration:
+    name: main
     archive:
       async: true
       getQueueMax: 128MiB
@@ -35,15 +35,15 @@ spec:
             key: ACCESS_SECRET_KEY
 ---
 apiVersion: pgbackrest.dalibo.com/v1
-kind: Repository
+kind: Stanza
 metadata:
   labels:
     app.kubernetes.io/name: cnpg-i-pgbackrest
     app.kubernetes.io/managed-by: kustomize
   name: recovery-repository-sample
 spec:
-  repoConfiguration:
-    stanza: main
+  stanzaConfiguration:
+    name: main
     s3Repositories:
       - bucket: demo
         endpoint: s3.minio.svc.cluster.local

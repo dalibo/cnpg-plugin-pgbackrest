@@ -42,19 +42,19 @@ func buildFakeClient() client.Client {
 		WithObjects(aKey, sKey).
 		Build()
 }
-func buildRepo() *apipgbackrest.Repository {
-	return &apipgbackrest.Repository{
+func buildRepo() *apipgbackrest.Stanza {
+	return &apipgbackrest.Stanza{
 		TypeMeta: metav1.TypeMeta{
-			Kind:       "repository",
+			Kind:       "stanza",
 			APIVersion: "pgbacrest.dalibo.com/v1",
 		},
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      "repo",
+			Name:      "stanza",
 			Namespace: "default",
 		},
-		Spec: apipgbackrest.RepositorySpec{
-			Configuration: pgbackrest.Repository{
-				Stanza: "myStanza",
+		Spec: apipgbackrest.StanzaSpec{
+			Configuration: pgbackrest.Stanza{
+				Name: "myStanza",
 				S3Repositories: []pgbackrest.S3Repository{
 					{
 						Bucket:   "mybucket",
