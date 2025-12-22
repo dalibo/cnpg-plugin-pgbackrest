@@ -231,6 +231,13 @@ type Stanza struct {
 	// +kubebuilder:default=true
 	// +optional
 	Delta bool `json:"delta" env:"DELTA"`
+
+	// Level for console logging.
+	//
+	// +kubebuilder:validation:Enum=error;warn;info;detail;debug;trace
+	// +kubebuilder:default=warn
+	// +optional
+	LogLevel string `json:"logLevel,omitempty" env:"LOG_LEVEL_CONSOLE"`
 }
 
 func (r *Stanza) ToEnv() ([]string, error) {

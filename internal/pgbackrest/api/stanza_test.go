@@ -33,6 +33,7 @@ func TestStanzaToEnv(t *testing.T) {
 		"PGBACKREST_lock-path=/controller/tmp/pgbackrest-cnpg-plugin.lock",
 		"PGBACKREST_log-level-file=off",
 		"PGBACKREST_DELTA=y",
+		"PGBACKREST_LOG_LEVEL_CONSOLE=trace",
 	}
 	b := false
 	r := Stanza{
@@ -66,6 +67,7 @@ func TestStanzaToEnv(t *testing.T) {
 		},
 		StartFast: true,
 		Delta:     true,
+		LogLevel:  "trace",
 	}
 	res, err := r.ToEnv()
 	if err != nil {

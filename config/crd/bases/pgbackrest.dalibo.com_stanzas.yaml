@@ -81,6 +81,17 @@ spec:
                       During a backup, this option will use checksums instead of the timestamps to
                       determine if files will be copied.
                     type: boolean
+                  logLevel:
+                    default: warn
+                    description: Level for console logging.
+                    enum:
+                    - error
+                    - warn
+                    - info
+                    - detail
+                    - debug
+                    - trace
+                    type: string
                   name:
                     minLength: 1
                     type: string
