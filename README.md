@@ -123,7 +123,7 @@ To use this plugin with a **Cluster**, CNPG users must:
   ``` yaml
   ---
   apiVersion: pgbackrest.dalibo.com/v1
-  kind: stanza
+  kind: Stanza
   metadata:
     name: stanza-sample
   spec:
