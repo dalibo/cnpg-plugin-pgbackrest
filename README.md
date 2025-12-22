@@ -39,7 +39,7 @@ To install and use this plugin, Kubernetes and CNPG users should:
 
 - Build the Docker images and load them to a registry that is accessible
   by the target Kubernetes cluster. You can build them with the
-  `make images` command, which will execute the appropriate docker build
+  `make build-images` command, which will execute the appropriate docker build
   commands.
 
 - Install the plugin by applying the manifest located in the
