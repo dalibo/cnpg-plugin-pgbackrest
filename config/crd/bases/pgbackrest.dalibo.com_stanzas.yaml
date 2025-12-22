@@ -67,6 +67,29 @@ spec:
                           description: S3 bucket used to store the repository.
                           minLength: 1
                           type: string
+                        cipherConfig:
+                          properties:
+                            encryptionPass:
+                              description: Reference to the secret containing the
+                                encryption key.
+                              properties:
+                                key:
+                                  description: The key to select
+                                  type: string
+                                name:
+                                  description: Name of the referent.
+                                  type: string
+                              required:
+                              - key
+                              - name
+                              type: object
+                            type:
+                              default: aes-256-cbc
+                              description: Cipher used to encrypt the repository.
+                              enum:
+                              - aes-256-cbc
+                              type: string
+                          type: object
                         endpoint:
                           description: S3 repository endpoint.
                           minLength: 1

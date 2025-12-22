@@ -203,8 +203,15 @@ func GetEnvVarConfig(
 		if err != nil {
 			return nil, err
 		}
-		// build env var names
 		prefix := fmt.Sprintf("PGBACKREST_REPO%d_", i+1)
+		if r.Cipher != nil {
+			encKey, err := secretVal(r.Cipher.PassReference)
+			if err != nil {
+				return nil, err
+			}
+			env = append(env, fmt.Sprintf("%sCIPHER_PASS=%s", prefix, encKey))
+		}
+		// build env var names
 		env = append(
 			env,
 			fmt.Sprintf("%sS3_KEY=%s", prefix, aKey),

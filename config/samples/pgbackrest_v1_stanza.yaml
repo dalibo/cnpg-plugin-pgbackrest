@@ -26,6 +26,10 @@ spec:
           archive: 2
           archiveType: full
           history: 30
+        cipherConfig:
+          encryptionPass:
+            name: minio
+            key: ENCRYPTION_PASS
         secretRef:
           accessKeyId:
             name: minio
