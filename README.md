@@ -127,7 +127,7 @@ To use this plugin with a **Cluster**, CNPG users must:
   metadata:
     name: stanza-sample
   spec:
-    repoConfiguration:
+    stanzaConfiguration:
       stanza: main
       s3Repositories:
         - bucket: demo
