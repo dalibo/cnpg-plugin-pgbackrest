@@ -70,6 +70,17 @@ spec:
                         - zst
                         type: string
                     type: object
+                  delta:
+                    default: true
+                    description: |-
+                      Restore or backup using checksums.
+                      During a restore, by default the PostgreSQL data and tablespace directories
+                      are expected to be present but empty. This option performs a delta restore
+                      using checksums.
+
+                      During a backup, this option will use checksums instead of the timestamps to
+                      determine if files will be copied.
+                    type: boolean
                   name:
                     minLength: 1
                     type: string

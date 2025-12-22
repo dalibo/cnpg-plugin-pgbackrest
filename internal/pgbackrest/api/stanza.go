@@ -219,6 +219,18 @@ type Stanza struct {
 	// +kubebuilder:default=true
 	// +optional
 	StartFast bool `json:"startFast" env:"START_FAST"`
+
+	// Restore or backup using checksums.
+	// During a restore, by default the PostgreSQL data and tablespace directories
+	// are expected to be present but empty. This option performs a delta restore
+	// using checksums.
+	//
+	// During a backup, this option will use checksums instead of the timestamps to
+	// determine if files will be copied.
+	//
+	// +kubebuilder:default=true
+	// +optional
+	Delta bool `json:"delta" env:"DELTA"`
 }
 
 func (r *Stanza) ToEnv() ([]string, error) {
