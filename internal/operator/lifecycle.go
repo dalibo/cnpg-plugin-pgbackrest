@@ -106,7 +106,6 @@ func staticEnvVarConfig() []corev1.EnvVar {
 		{Name: "PGBACKREST_log-level-console", Value: "info"},
 		{Name: "PGBACKREST_log-level-file", Value: "off"},
 		{Name: "PGBACKREST_pg1-path", Value: "/var/lib/postgresql/data/pgdata"},
-		{Name: "PGBACKREST_start-fast", Value: "y"},
 		{Name: "PGBACKREST_SPOOL_PATH", Value: "/controller/wal-spool"},
 	}
 }

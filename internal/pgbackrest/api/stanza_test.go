@@ -5,6 +5,7 @@ package api
 
 import (
 	"slices"
+	"sort"
 	"testing"
 
 	"k8s.io/utils/ptr"
@@ -28,6 +29,7 @@ func TestStanzaToEnv(t *testing.T) {
 		"PGBACKREST_ARCHIVE_ASYNC=y",
 		"PGBACKREST_COMPRESS_TYPE=gz",
 		"PGBACKREST_COMPRESS_LEVEL=8",
+		"PGBACKREST_START_FAST=y",
 		"PGBACKREST_lock-path=/controller/tmp/pgbackrest-cnpg-plugin.lock",
 	}
 	b := false
@@ -60,11 +62,14 @@ func TestStanzaToEnv(t *testing.T) {
 			Type:  ptr.To("gz"),
 			Level: 8,
 		},
+		StartFast: true,
 	}
 	res, err := r.ToEnv()
 	if err != nil {
 		t.Errorf("got error when converting to env var, %s", err.Error())
 	}
+	sort.Strings(res)
+	sort.Strings(expected)
 	if !slices.Equal(res, expected) {
 		t.Errorf("Expected %v, but got %v", expected, res)
 	}
