@@ -22,6 +22,11 @@ func getSecrets(r apipgbackrest.Stanza, s *stringset.Data) {
 		if akisr != nil {
 			s.Put(akisr.Name)
 		}
+		if s3r.Cipher != nil {
+			if pr := s3r.Cipher.PassReference; pr != nil {
+				s.Put(pr.Name)
+			}
+		}
 	}
 }
 

@@ -112,6 +112,18 @@ type SecretRef struct {
 	// +optional
 	SecretAccessKeyReference *machineryapi.SecretKeySelector `json:"secretAccessKey,omitempty"`
 }
+
+type CipherConfig struct {
+	// Reference to the secret containing the encryption key.
+	PassReference *machineryapi.SecretKeySelector `json:"encryptionPass,omitempty"`
+
+	// Cipher used to encrypt the repository.
+	// +kubebuilder:validation:Enum="aes-256-cbc"
+	// +kubebuilder:default="aes-256-cbc"
+	// +optional
+	Type string `json:"type,omitempty" env:"TYPE"`
+}
+
 type S3Repository struct {
 	// S3 bucket used to store the repository.
 	// +kubebuilder:validation:MinLength=1
@@ -145,6 +157,9 @@ type S3Repository struct {
 
 	// +optional
 	RetentionPolicy Retention `json:"retentionPolicy" nestedEnvPrefix:"_RETENTION_"`
+
+	// +optional
+	Cipher *CipherConfig `json:"cipherConfig" nestedEnvPrefix:"_CIPHER_"`
 }
 type ArchiveOption struct {
 

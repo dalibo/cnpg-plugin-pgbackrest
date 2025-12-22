@@ -68,6 +68,15 @@ func NewStanzaConfig(
 								Key: "ACCESS_SECRET_KEY",
 							},
 						},
+						Cipher: &pgbackrest.CipherConfig{
+							Type: "aes-256-cbc",
+							PassReference: &api.SecretKeySelector{
+								LocalObjectReference: api.LocalObjectReference{
+									Name: "pgbackrest-s3-secret",
+								},
+								Key: "ENCRYPTION_PASS",
+							},
+						},
 					},
 				},
 			},

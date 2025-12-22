@@ -88,6 +88,7 @@ func createSecret(
 		StringData: map[string]string{
 			"ACCESS_KEY_ID":     minio.ACCESS_KEY,
 			"ACCESS_SECRET_KEY": minio.SECRET_KEY,
+			"ENCRYPTION_PASS":   "3nCrypTi0n",
 		},
 	}
 	return secret, k8sClient.Create(ctx, secret)
