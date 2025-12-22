@@ -269,7 +269,9 @@ func reconcilePodSpec(
 			Exec: &corev1.ExecAction{
 				Command: []string{
 					"/app/bin/cnpg-i-pgbackrest",
-				}, // todo implement health sub-command
+					"healthcheck",
+					"unix",
+				},
 			},
 		},
 	}
