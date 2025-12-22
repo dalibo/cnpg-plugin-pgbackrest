@@ -9,4 +9,4 @@ patches:
 secretGenerator:
   - name: plugin-pgbackrest
     literals:
-      - SIDECAR_IMAGE=registry.hub.docker.com/dalibo/cnpg-pgbackrest-sidecar:v0.0.1a
+      - SIDECAR_IMAGE=registry.hub.docker.com/dalibo/cnpg-pgbackrest-sidecar:0.0.1a
