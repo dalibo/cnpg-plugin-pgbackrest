@@ -16,6 +16,7 @@ spec:
       type: lz4
       level: 7
     startFast: false
+    logLevel: warn
     s3Repositories:
       - bucket: demo
         endpoint: s3.minio.svc.cluster.local

@@ -102,7 +102,6 @@ func (impl LifecycleImplementation) LifecycleHook(
 
 func staticEnvVarConfig() []corev1.EnvVar {
 	return []corev1.EnvVar{
-		{Name: "PGBACKREST_log-level-console", Value: "info"},
 		{Name: "PGBACKREST_pg1-path", Value: "/var/lib/postgresql/data/pgdata"},
 		{Name: "PGBACKREST_SPOOL_PATH", Value: "/controller/wal-spool"},
 	}
