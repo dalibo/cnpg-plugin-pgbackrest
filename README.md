@@ -128,7 +128,7 @@ To use this plugin with a **Cluster**, CNPG users must:
     name: stanza-sample
   spec:
     stanzaConfiguration:
-      stanza: main
+      name: main
       s3Repositories:
         - bucket: demo
           endpoint: s3.minio.svc.cluster.local
