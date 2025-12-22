@@ -209,6 +209,16 @@ type Stanza struct {
 	// Define compression settings for file compression.
 	// +optional
 	Compress *CompressConfig `json:"compressConfig" nestedEnvPrefix:"COMPRESS"`
+
+	// Default behavior to Force a checkpoint to start backup quickly.
+	//
+	// Forces a checkpoint (by passing y to the fast parameter of the backup start
+	// function) so the backup begins immediately. Otherwise the backup will start
+	// after the next regular checkpoint.
+	//
+	// +kubebuilder:default=true
+	// +optional
+	StartFast bool `json:"startFast" env:"START_FAST"`
 }
 
 func (r *Stanza) ToEnv() ([]string, error) {

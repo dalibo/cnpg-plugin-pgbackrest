@@ -233,6 +233,15 @@ spec:
                       - repoPath
                       type: object
                     type: array
+                  startFast:
+                    default: true
+                    description: |-
+                      Default behavior to Force a checkpoint to start backup quickly.
+
+                      Forces a checkpoint (by passing y to the fast parameter of the backup start
+                      function) so the backup begins immediately. Otherwise the backup will start
+                      after the next regular checkpoint.
+                    type: boolean
                 required:
                 - name
                 type: object

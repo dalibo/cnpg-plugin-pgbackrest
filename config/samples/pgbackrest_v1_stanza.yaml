@@ -15,6 +15,7 @@ spec:
     compressConfig:
       type: lz4
       level: 7
+    startFast: false
     s3Repositories:
       - bucket: demo
         endpoint: s3.minio.svc.cluster.local
