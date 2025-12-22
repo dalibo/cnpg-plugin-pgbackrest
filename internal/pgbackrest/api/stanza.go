@@ -176,6 +176,20 @@ type ArchiveOption struct {
 	GetQueueMax *string `json:"getQueueMax" env:"_GET_QUEUE_MAX"`
 }
 
+// Define pgbackrest compress configuration.
+type CompressConfig struct {
+
+	// Type of compression to use.
+	// +kubebuilder:validation:Enum=bz2;gz;lz4;zst
+	// +kubebuilder:default=gz
+	// +optional
+	Type *string `json:"type" env:"_TYPE"`
+
+	// File compression level.
+	// +optional
+	Level int `json:"level" env:"_LEVEL"`
+}
+
 // Define pgbackrest stanza
 type Stanza struct {
 
@@ -191,6 +205,10 @@ type Stanza struct {
 
 	// +optional
 	Archive ArchiveOption `json:"archive" nestedEnvPrefix:"ARCHIVE"`
+
+	// Define compression settings for file compression.
+	// +optional
+	Compress *CompressConfig `json:"compressConfig" nestedEnvPrefix:"COMPRESS"`
 }
 
 func (r *Stanza) ToEnv() ([]string, error) {

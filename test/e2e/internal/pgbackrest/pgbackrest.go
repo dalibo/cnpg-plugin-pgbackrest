@@ -14,6 +14,7 @@ import (
 	"github.com/dalibo/cnpg-i-pgbackrest/test/e2e/internal/minio"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
+	"k8s.io/utils/ptr"
 )
 
 func Install(
@@ -78,6 +79,10 @@ func NewStanzaConfig(
 							},
 						},
 					},
+				},
+				Compress: &pgbackrest.CompressConfig{
+					Type:  ptr.To("lz4"),
+					Level: 7,
 				},
 			},
 		},
