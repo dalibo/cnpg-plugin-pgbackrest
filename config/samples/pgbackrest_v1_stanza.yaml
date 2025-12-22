@@ -12,6 +12,9 @@ spec:
       async: true
       getQueueMax: 128MiB
     processMax: 4
+    compressConfig:
+      type: lz4
+      level: 7
     s3Repositories:
       - bucket: demo
         endpoint: s3.minio.svc.cluster.local

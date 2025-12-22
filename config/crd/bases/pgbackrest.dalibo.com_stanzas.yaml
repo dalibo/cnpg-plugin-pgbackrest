@@ -54,6 +54,22 @@ spec:
                         pattern: ^(0B|[0-9]+(KiB|MiB|GiB|TiB)|([0-4])PiB)$
                         type: string
                     type: object
+                  compressConfig:
+                    description: Define compression settings for file compression.
+                    properties:
+                      level:
+                        description: File compression level.
+                        type: integer
+                      type:
+                        default: gz
+                        description: Type of compression to use.
+                        enum:
+                        - bz2
+                        - gz
+                        - lz4
+                        - zst
+                        type: string
+                    type: object
                   name:
                     minLength: 1
                     type: string
