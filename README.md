@@ -11,8 +11,10 @@ pgBackRest.
 
 ## Features
 
-- Data Directory Backup
-- WALs archiving
+- WALs archiving and restoring (asynchronous, using pgBackRest async feature)
+- Taking and restoring backup
+- PITR AKA Point-in-Time Recovery 
+- Creating secondary based on logshipping
 
 This plugin is currently only compatible with `s3` storage and have been
 tested with:
@@ -25,7 +27,7 @@ tested with:
 To use this plugin, these dependencies should be installed on the target
 Kubernetes cluster:
 
-- [CloudNativePG](https://cloudnative-pg.io/) 1.25 or newer (those
+- [CloudNativePG](https://cloudnative-pg.io/) 1.27 or newer (those
   versions add the cnpg-i support).
 - [Cert-Manager](https://cert-manager.io/)
 
@@ -47,32 +49,39 @@ To install and use this plugin, Kubernetes and CNPG users should:
   $ kubectl apply -k ./kubernetes/dev
   ```
 
-> [!NOTE]  
-> Kustomize layers and overlays are available in the  Kubernetes directory.
-> You can add your own customisation to patch the resources provided by default.
+  > [!NOTE]  
+  > Kustomize layers and overlays are available in the  Kubernetes directory.
+  > You can add your own customisation to patch the resources provided by default.
 
-> [!NOTE]  
-> The image used by the CNPG instance sidecar container can be customised by
-> adding the `SIDECAR_IMAGE` environment variable to the pgbackrest plugin
-> controller container.
->
-> For example, this patch can be used to add the 'SIDECAR_IMAGE' variable:
->
-> ``` yaml
-> apiVersion: apps/v1
-> kind: Deployment
-> metadata:
->   name: pgbackrest-controller
->   namespace: cnpg-system
-> spec:
->   template:
->     spec:
->       containers:
->         - name: pgbackrest-controller
->           env:
->             - name: SIDECAR_IMAGE
->               value: <my_own_image>
-> ```
+
+  > [!NOTE]  
+  > The image used by the CNPG instance sidecar container can be customised by
+  > adding the `SIDECAR_IMAGE` environment variable to the pgbackrest plugin
+  > controller container.
+  >
+  > For example, this patch can be used to add the 'SIDECAR_IMAGE' variable:
+  >
+  > ``` yaml
+  > apiVersion: apps/v1
+  > kind: Deployment
+  > metadata:
+  >   name: pgbackrest-controller
+  >   namespace: cnpg-system
+  > spec:
+  >   template:
+  >     spec:
+  >       containers:
+  >         - name: pgbackrest-controller
+  >           env:
+  >             - name: SIDECAR_IMAGE
+  >               value: <my_own_image>
+  > ```
+
+  > [!NOTE]  
+  > To use the latest testing or unstable version of this plugin,
+  > apply the `test` kustomize overlay. It is configured to pull
+  > the latest alpha/beta images from Docker Hub. You can Simply
+  > run: `kubectl apply -k kubernetes/test`
 
 - The installation can be verified by checking the presence and status
   of the `pgbackrest-controller` deployment in the namespace used by the
