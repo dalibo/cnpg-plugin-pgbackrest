@@ -84,6 +84,7 @@ func NewStanzaConfig(
 					Type:  ptr.To("lz4"),
 					Level: 7,
 				},
+				Delta: false,
 			},
 		},
 	}
