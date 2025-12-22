@@ -19,4 +19,4 @@ spec:
       plugin:
         name: pgbackrest.dalibo.com
         parameters:
-          repositoryRef: repository-sample
+          stanzaRef: stanza-sample

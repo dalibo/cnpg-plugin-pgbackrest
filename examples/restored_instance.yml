@@ -20,7 +20,7 @@ spec:
   plugins:
     - name: pgbackrest.dalibo.com
       parameters:
-        repositoryRef: repository-sample
+        stanzaRef: stanza-sample
   storage:
     size: 1Gi
   bootstrap:
@@ -31,4 +31,4 @@ spec:
       plugin:
         name: pgbackrest.dalibo.com
         parameters:
-          repositoryRef: recovery-repository-sample
+          stanzaRef: stanza-sample
