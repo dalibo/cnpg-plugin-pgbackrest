@@ -12,6 +12,7 @@ path = [
     "PROJECT",
     "manifest.yaml",
     "config/**",
+    "docs/**",
     "examples/**",
     "kubernetes/**",
     ".github/workflows/**",
