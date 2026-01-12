@@ -212,7 +212,7 @@ func TestBackup(t *testing.T) {
 		fExec := execCalls{}
 		t.Run(tc.desc, func(t *testing.T) {
 			pgb := newPgBackrestWithRunner(nil, fExec.fakeCmdRunner(backup, nil))
-			pgb.Backup() //nolint:errcheck
+			pgb.Backup("") //nolint:errcheck
 			if !reflect.DeepEqual(fExec, tc.want) {
 				t.Errorf("error want %v, got %v", fExec, tc.want)
 			}
