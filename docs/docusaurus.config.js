@@ -100,7 +100,7 @@ const config = {
             title: "Docs",
             items: [
               {
-                label: "Tutorial",
+                label: "Introduction",
                 to: "/docs/introduction",
               },
             ],
@@ -131,12 +131,12 @@ const config = {
               },
               {
                 label: "Github",
-                href: "https://github.com/dalibo",
+                href: "https://github.com/dalibo/cnpg-plugin-pgbackrest",
               },
             ],
           },
         ],
-        copyright: `Copyright © ${new Date().getFullYear()} Dalibo. Built with Docusaurus.`,
+        copyright: `Copyright © ${new Date().getFullYear()} Dalibo. Built with Docusaurus. Images by <a href="https://storyset.com">Storyset</a>`,
       },
       prism: {
         theme: prismThemes.github,
