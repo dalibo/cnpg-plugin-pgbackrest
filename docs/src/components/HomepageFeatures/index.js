@@ -11,7 +11,7 @@ const FeatureList = [
   },
   {
     title:
-      "Powered by one of the most reliable PostgreSQL Backup & Restore tool, pgBackRest !",
+      "Powered by the most reliable PostgreSQL Backup & Restore tool, pgBackRest !",
     Svg: require("@site/static/img/tool.svg").default,
     description: <></>,
   },
