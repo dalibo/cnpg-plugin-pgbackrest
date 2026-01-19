@@ -6,27 +6,14 @@ sidebar_position: 2
 
 To install and use this plugin, Kubernetes and CloudNativePG users should :
 
-1. Build the Docker images and load them to a registry that is accessible 
-by your Kubernetes cluster.
-
-You can build them locally with the command :
-```console
-make build-images
-```
-
-It will execute the appropriate `docker build` commands.
-
-2. Install the plugin by applying the manifest located in the 
+1. Install the plugin by applying the manifest located in the 
 `kubernetes` directory :
 
 ``` console
-kubectl apply -k ./kubernetes/dev
+kubectl apply -k ./kubernetes/prod
 ```
 
-:::note
-Kustomize layers and overlays are available in the `kubernetes` directory.
-You can add your own customisation to patch the resources provided by default.
-:::
+This will install the plugin in the same `Namespace` as the operator.
 
 # Verifications
 
@@ -59,6 +46,30 @@ the latest alpha/beta images from Docker Hub. You can simply run :
 ```console
 kubectl apply -k kubernetes/test
 ```
+
+## Dev version
+
+1. Build locally the Docker images and load them to a registry that is accessible 
+by your Kubernetes cluster.
+
+You can build them locally with the command :
+```console
+make build-images
+```
+
+It will execute the appropriate `docker build` commands.
+
+2. Install the plugin by applying the manifest located in the 
+`kubernetes` directory :
+
+``` console
+kubectl apply -k ./kubernetes/dev
+```
+
+:::note
+Kustomize layers and overlays are available in the `kubernetes` directory.
+You can add your own customisation to patch the resources provided by default.
+:::
 
 # Customisation
 

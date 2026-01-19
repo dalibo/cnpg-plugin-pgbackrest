@@ -11,7 +11,7 @@ pgBackRest. We hope this plugin to become production-ready as soon as possible !
 
 The documentation is available at [https://plugin-pgbackrest.readthedocs.io/en/latest/](https://plugin-pgbackrest.readthedocs.io/en/latest/).
 
-pgBackRest is a reliable and restore solution for PostgreSQL. Have a look at the project's Github repository [https://github.com/pgbackrest/pgbackrest](https://github.com/pgbackrest/pgbackrest).
+pgBackRest is a reliable backup and restore solution for PostgreSQL. Have a look at the project's Github repository [https://github.com/pgbackrest/pgbackrest](https://github.com/pgbackrest/pgbackrest).
 
 This pgBackRest plugin for CloudNativePG is currently developed by [Dalibo](https://dalibo.com).
 
