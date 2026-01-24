@@ -5,7 +5,10 @@ metadata:
   name: backup-example
 spec:
   method: plugin
+  target: primary
   pluginConfiguration:
     name: pgbackrest.dalibo.com
+    parameters:
+      backupType: full  # full, diff or incr (default: incr)
   cluster:
     name: cluster-demo
