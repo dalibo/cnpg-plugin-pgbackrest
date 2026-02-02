@@ -259,10 +259,11 @@ func (r *Stanza) ToEnv() ([]string, error) {
 	}
 	envConf = append(envConf, managedEnvConf...)
 
-	envConf = append(envConf, []string{
-		"PGBACKREST_log-level-file=off",
-		"PGBACKREST_lock-path=/controller/tmp/pgbackrest-cnpg-plugin.lock",
-	}...)
+	envConf = append(
+		envConf,
+		"PGBACKREST_LOG_LEVEL_FILE=off",
+		"PGBACKREST_LOCK_PATH=/controller/tmp/pgbackrest-cnpg-plugin.lock",
+	)
 
 	return envConf, nil
 }
