@@ -201,7 +201,7 @@ func (p *PgBackrest) GetWAL(
 
 func (p *PgBackrest) Backup() error {
 	env := make([]string, 1)
-	env = append(env, "PGBACKREST_archive-check=n")
+	env = append(env, "PGBACKREST_ARCHIVE_CHECK=n")
 	cmd := p.run([]string{"backup"}, env)
 	output, err := cmd.CombinedOutput()
 	if err != nil {
@@ -252,6 +252,6 @@ func FirstBackup(backups []pgbackrestapi.BackupInfo) *pgbackrestapi.BackupInfo {
 
 func (p *PgBackrest) Restore(ctx context.Context) <-chan error {
 	env := make([]string, 1)
-	env = append(env, "PGBACKREST_archive-check=n")
+	env = append(env, "PGBACKREST_ARCHIVE_CHECK=n")
 	return p.runBackgroundTask(ctx, []string{"restore"}, env)
 }
