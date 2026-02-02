@@ -20,6 +20,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/intstr"
+	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/kubernetes/scheme"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/config"
@@ -164,41 +165,80 @@ func (cl K8sClient) DeploymentIsReady(
 	)
 }
 
-func (cl K8sClient) PodsIsReady(
+type PodConditionFunc func(pod *corev1.Pod, err error) (done bool, errOut error)
+
+func (cl K8sClient) waitForPod(
+	ctx context.Context,
+	podName types.NamespacedName,
+	maxRetry uint,
+	retryInterval uint,
+	condition PodConditionFunc,
+) error {
+	if maxRetry == 0 {
+		return fmt.Errorf("maxRetry should be non-zero value")
+	}
+
+	pod := &corev1.Pod{}
+	timeout := time.Duration(maxRetry) * time.Duration(retryInterval) * time.Second
+	// may be replace by PollUntilContextTimeout and let the call build the adequate ctx
+	err := wait.PollUntilContextTimeout(
+		ctx,
+		time.Duration(retryInterval)*time.Second,
+		timeout,
+		true,
+		func(ctx context.Context) (bool, error) {
+			err := cl.client.Get(ctx, podName, pod)
+			return condition(pod, err)
+		},
+	)
+
+	if err != nil {
+		return fmt.Errorf(
+			"timeout waiting for pod %s in namespace %s: %w",
+			podName.Name,
+			podName.Namespace,
+			err,
+		)
+	}
+
+	return nil
+}
+
+func (cl K8sClient) PodIsReady(
 	ctx context.Context,
 	namespace string,
 	name string,
 	maxRetry uint,
 	retryInterval uint,
 ) (bool, error) {
-	waitedRessource := &corev1.Pod{}
-	podFqdn := types.NamespacedName{Name: name, Namespace: namespace}
-	if maxRetry == 0 {
-		return false, fmt.Errorf("maxRetry should be non-zero value")
-	}
-	for range maxRetry {
-		err := cl.client.Get(ctx, podFqdn, waitedRessource)
-		if errors.IsNotFound(err) {
-			time.Sleep(2 * time.Second) // Deployment not created yet, wait and retry
-			continue
-		}
-		if err != nil {
-			return false, fmt.Errorf("error to get deployment information %w", err)
-		}
-		switch waitedRessource.Status.Phase {
-		case corev1.PodRunning:
-			return true, nil
-		case corev1.PodFailed:
-			return false, fmt.Errorf("pod in failed status")
-		}
-		time.Sleep(time.Duration(retryInterval) * time.Second)
-	}
-	return false, fmt.Errorf(
-		"max retry %d reached, when monitoring %s on namespace %s",
+	podName := types.NamespacedName{Name: name, Namespace: namespace}
+
+	err := cl.waitForPod(
+		ctx,
+		podName,
 		maxRetry,
-		name,
-		namespace,
+		retryInterval,
+		func(pod *corev1.Pod, err error) (bool, error) {
+			if err != nil {
+				if errors.IsNotFound(err) {
+					return false, nil
+				}
+				return true, err
+			}
+			switch pod.Status.Phase {
+			case corev1.PodRunning:
+				return true, nil
+			case corev1.PodFailed:
+				return true, fmt.Errorf("pod in failed status")
+			default:
+				return false, nil
+			}
+		},
 	)
+	if err != nil {
+		return false, err
+	}
+	return true, nil
 }
 
 func (cl K8sClient) CreateSelfsignedIssuer(

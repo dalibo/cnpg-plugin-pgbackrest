@@ -220,7 +220,7 @@ func TestDeployInstance(t *testing.T) {
 			t.Fatal("can't delete cluster")
 		}
 	}()
-	if ready, err := k8sClient.PodsIsReady(ctx, ns, clusterName+"-1", 80, 3); err != nil {
+	if ready, err := k8sClient.PodIsReady(ctx, ns, clusterName+"-1", 80, 3); err != nil {
 		t.Fatalf("error when requesting pod status, %s", err.Error())
 	} else if !ready {
 		t.Fatal("pod not ready")
