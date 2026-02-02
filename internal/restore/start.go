@@ -10,6 +10,7 @@ import (
 	"github.com/cloudnative-pg/cnpg-i-machinery/pkg/pluginhelper/http"
 	restore "github.com/cloudnative-pg/cnpg-i/pkg/restore/job"
 	"github.com/cloudnative-pg/cnpg-i/pkg/wal"
+	"github.com/dalibo/cnpg-i-pgbackrest/internal/utils"
 	wal_pgbackrest "github.com/dalibo/cnpg-i-pgbackrest/internal/wal"
 	"google.golang.org/grpc"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -39,6 +40,9 @@ func (c *CNPGI) Start(ctx context.Context) error {
 			PgDataPath:           c.PGDataPath,
 			PgWalFolderToSymlink: "/var/lib/postgresql/wal/pg_wal",
 		})
+
+		utils.AddHealthCheck(server)
+
 		return nil
 	}
 
