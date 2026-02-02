@@ -34,6 +34,7 @@ func TestStanzaToEnv(t *testing.T) {
 		"PGBACKREST_log-level-file=off",
 		"PGBACKREST_DELTA=y",
 		"PGBACKREST_LOG_LEVEL_CONSOLE=trace",
+		"machin=truc",
 	}
 	b := false
 	r := Stanza{
@@ -68,6 +69,9 @@ func TestStanzaToEnv(t *testing.T) {
 		StartFast: true,
 		Delta:     true,
 		LogLevel:  "trace",
+		CustomEnvVar: map[string]string{
+			"machin": "truc",
+		},
 	}
 	res, err := r.ToEnv()
 	if err != nil {

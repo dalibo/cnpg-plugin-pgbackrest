@@ -17,6 +17,8 @@ spec:
       level: 7
     startFast: false
     logLevel: warn
+    customEnvVar:
+      PGBACKREST_ARCHIVE_TIMEOUT: "30"
     s3Repositories:
       - bucket: demo
         endpoint: s3.minio.svc.cluster.local

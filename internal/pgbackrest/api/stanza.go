@@ -8,6 +8,8 @@
 package api
 
 import (
+	"fmt"
+
 	machineryapi "github.com/cloudnative-pg/machinery/pkg/api"
 	"github.com/dalibo/cnpg-i-pgbackrest/internal/utils"
 )
@@ -238,16 +240,29 @@ type Stanza struct {
 	// +kubebuilder:default=warn
 	// +optional
 	LogLevel string `json:"logLevel,omitempty" env:"LOG_LEVEL_CONSOLE"`
+
+	// Custom environnement variables to use when running pgbackrest.
+	// +optional
+	CustomEnvVar map[string]string `json:"customEnvVar,omitempty"`
 }
 
 func (r *Stanza) ToEnv() ([]string, error) {
-	envConf, err := utils.StructToEnvVars(*r, "PGBACKREST_")
+	envConf := make([]string, 0, len(r.CustomEnvVar))
+
+	for k, v := range r.CustomEnvVar {
+		envConf = append(envConf, fmt.Sprintf("%s=%s", k, v))
+	}
+
+	managedEnvConf, err := utils.StructToEnvVars(*r, "PGBACKREST_")
 	if err != nil {
 		return nil, err
 	}
+	envConf = append(envConf, managedEnvConf...)
+
 	envConf = append(envConf, []string{
 		"PGBACKREST_log-level-file=off",
 		"PGBACKREST_lock-path=/controller/tmp/pgbackrest-cnpg-plugin.lock",
 	}...)
+
 	return envConf, nil
 }
