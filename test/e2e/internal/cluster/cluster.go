@@ -27,8 +27,14 @@ func New(
 	nbrInstances int,
 	size string,
 	pluginParam map[string]string,
+	restore bool,
 ) *cloudnativepgv1.Cluster {
-
+	pluginConfig := []cloudnativepgv1.PluginConfiguration{
+		{
+			Name:       "pgbackrest.dalibo.com",
+			Parameters: pluginParam,
+		},
+	}
 	cluster := &cloudnativepgv1.Cluster{
 		TypeMeta: metav1.TypeMeta{
 			Kind:       "Cluster",
@@ -41,19 +47,29 @@ func New(
 		Spec: cloudnativepgv1.ClusterSpec{
 			Instances:       nbrInstances,
 			ImagePullPolicy: corev1.PullIfNotPresent,
-			Plugins: []cloudnativepgv1.PluginConfiguration{
-				{
-					Name:       "pgbackrest.dalibo.com",
-					Parameters: pluginParam,
-				},
-			},
+			Plugins:         pluginConfig,
 			PostgresConfiguration: cloudnativepgv1.PostgresConfiguration{
 				Parameters: map[string]string{},
 			},
 			StorageConfiguration: cloudnativepgv1.StorageConfiguration{
 				Size: size,
 			},
-		}}
+		},
+	}
+	if restore {
+		externalName := "origin"
+		cluster.Spec.Bootstrap = &cloudnativepgv1.BootstrapConfiguration{
+			Recovery: &cloudnativepgv1.BootstrapRecovery{
+				Source: externalName,
+			},
+		}
+		cluster.Spec.ExternalClusters = []cloudnativepgv1.ExternalCluster{
+			{
+				Name:                externalName,
+				PluginConfiguration: &pluginConfig[0],
+			},
+		}
+	}
 	return cluster
 }
 
@@ -65,8 +81,9 @@ func Create(
 	nbrInstances int,
 	size string,
 	pluginParam map[string]string,
+	recovery bool,
 ) (*cloudnativepgv1.Cluster, error) {
-	m := New(namespace, name, nbrInstances, size, pluginParam)
+	m := New(namespace, name, nbrInstances, size, pluginParam, recovery)
 	if err := k8sClient.Create(ctx, m); err != nil {
 		return nil, err
 	}

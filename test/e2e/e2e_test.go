@@ -211,7 +211,7 @@ func TestDeployInstance(t *testing.T) {
 	// create a test CloudNativePG Cluster
 	clusterName := "cluster-demo"
 	p := maps.Clone(cluster.DefaultParamater)
-	c, err := cluster.Create(ctx, k8sClient, ns, clusterName, 1, "100M", p)
+	c, err := cluster.Create(ctx, k8sClient, ns, clusterName, 1, "100M", p, false)
 	if err != nil {
 		t.Fatalf("failed to create cluster: %v", err)
 	}
@@ -260,5 +260,20 @@ func TestDeployInstance(t *testing.T) {
 	// After the second backup, both ends of the window should NOT match the first case
 	if fBackup.Timestamp.Start == 0 || fBackup == lBackup {
 		t.Fatal("registered backup data are invalid after second backup")
+	}
+	// delete cluster, we will recreate it from backup
+	if err := k8sClient.Delete(ctx, c); err != nil {
+		t.Fatal("can't delete cluster")
+	}
+	if _, err = k8sClient.PodIsAbsent(ctx, ns, clusterName+"-1", 10, 3); err != nil {
+		t.Fatal("can't ensure cluster is absent")
+	}
+	if _, err = cluster.Create(ctx, k8sClient, ns, clusterName, 1, "100M", p, true); err != nil {
+		t.Fatal("can't recreate cluster from backup")
+	}
+	if ready, err := k8sClient.PodIsReady(ctx, ns, clusterName+"-1", 80, 3); err != nil {
+		t.Fatalf("error when requesting pod status, %s", err.Error())
+	} else if !ready {
+		t.Fatal("pod not ready")
 	}
 }

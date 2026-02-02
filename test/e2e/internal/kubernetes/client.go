@@ -241,6 +241,38 @@ func (cl K8sClient) PodIsReady(
 	return true, nil
 }
 
+func (cl K8sClient) PodIsAbsent(
+	ctx context.Context,
+	namespace string,
+	name string,
+	maxRetry uint,
+	retryInterval uint,
+) (bool, error) {
+	podName := types.NamespacedName{Name: name, Namespace: namespace}
+
+	err := cl.waitForPod(
+		ctx,
+		podName,
+		maxRetry,
+		retryInterval,
+		func(_ *corev1.Pod, err error) (bool, error) {
+			if err != nil {
+				if errors.IsNotFound(err) {
+					return true, nil // pod is gone
+				}
+				return true, err
+			}
+			return false, nil // still exists
+		},
+	)
+
+	if err != nil {
+		return false, err
+	}
+
+	return true, nil
+}
+
 func (cl K8sClient) CreateSelfsignedIssuer(
 	ctx context.Context,
 	namespace string,
