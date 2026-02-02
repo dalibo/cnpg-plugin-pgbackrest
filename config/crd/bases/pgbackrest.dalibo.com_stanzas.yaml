@@ -70,6 +70,12 @@ spec:
                         - zst
                         type: string
                     type: object
+                  customEnvVar:
+                    additionalProperties:
+                      type: string
+                    description: Custom environnement variables to use when running
+                      pgbackrest.
+                    type: object
                   delta:
                     default: true
                     description: |-

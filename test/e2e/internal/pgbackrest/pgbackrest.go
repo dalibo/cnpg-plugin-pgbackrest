@@ -85,6 +85,9 @@ func NewStanzaConfig(
 					Level: 7,
 				},
 				Delta: false,
+				CustomEnvVar: map[string]string{
+					"PGBACKREST_ARCHIVE_TIMEOUT": "30",
+				},
 			},
 		},
 	}
