@@ -21,6 +21,7 @@ func StructToEnvVars(cfg any, prefix string) ([]string, error) {
 		return nil, fmt.Errorf("StructToEnvVars expects a struct, got %s", typ.Kind())
 	}
 	env := make([]string, 0, typ.NumField())
+	indicesForNestedTag := make(map[string]int)
 	for i := range typ.NumField() {
 		field := typ.Field(i)
 		value := val.Field(i)
@@ -42,7 +43,7 @@ func StructToEnvVars(cfg any, prefix string) ([]string, error) {
 		var strVal string
 		switch value.Kind() {
 		case reflect.Slice:
-			sliceEnvVars := handleSliceField(value, prefix, envTag, nestedTag)
+			sliceEnvVars := handleSliceField(value, prefix, envTag, nestedTag, indicesForNestedTag)
 			env = append(env, sliceEnvVars...)
 			continue
 		case reflect.Struct:
@@ -68,13 +69,22 @@ func StructToEnvVars(cfg any, prefix string) ([]string, error) {
 	return env, nil
 }
 
-func handleSliceField(value reflect.Value, prefix, envTag, nestedTag string) []string {
+func handleSliceField(
+	value reflect.Value,
+	prefix, envTag, nestedTag string,
+	indiceForNestedTag map[string]int,
+) []string {
 	var env []string
 	if value.Len() == 0 {
 		return env
 	}
 
 	for i := range value.Len() {
+		pos := i + 1
+		if val, ok := indiceForNestedTag[nestedTag]; ok {
+			pos = val + 1
+		}
+		indiceForNestedTag[nestedTag] = pos
 		elem := value.Index(i)
 		elemPrefix := prefix + nestedTag
 		if nestedTag == "" {
@@ -82,7 +92,7 @@ func handleSliceField(value reflect.Value, prefix, envTag, nestedTag string) []s
 		}
 
 		// Include index if more than one element
-		elemPrefix = fmt.Sprintf("%s%d", elemPrefix, i+1)
+		elemPrefix = fmt.Sprintf("%s%d", elemPrefix, pos)
 
 		switch elem.Kind() {
 		case reflect.Struct:
