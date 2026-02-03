@@ -14,6 +14,7 @@ import (
 
 	cloudnativepgv1 "github.com/cloudnative-pg/api/pkg/api/v1"
 	apipgbackrest "github.com/dalibo/cnpg-i-pgbackrest/api/v1"
+	"github.com/dalibo/cnpg-i-pgbackrest/test/e2e/internal/azurite"
 	"github.com/dalibo/cnpg-i-pgbackrest/test/e2e/internal/certmanager"
 	"github.com/dalibo/cnpg-i-pgbackrest/test/e2e/internal/cluster"
 	"github.com/dalibo/cnpg-i-pgbackrest/test/e2e/internal/cnpg"
@@ -35,6 +36,10 @@ var _S3_DATA_SECRET map[string]string = map[string]string{
 	"ACCESS_SECRET_KEY": minio.SECRET_KEY,
 	"ENCRYPTION_PASS":   "3nCrypTi0n",
 }
+var _AZURE_DATA_SECRET map[string]string = map[string]string{
+	"KEY": azurite.ACCOUNT_SECRET,
+}
+
 // Deploy CNGP operator, certmanager, minio and our plugins
 func setup() {
 	k8sClient, err := kubernetes.Client()
@@ -57,6 +62,9 @@ func setup() {
 	}
 	if err = minio.Install(ctx, *k8sClient); err != nil {
 		panic("can't install minio")
+	}
+	if err = azurite.Install(ctx, *k8sClient); err != nil {
+		panic("can't install azurite")
 	}
 	// install our pgbackrest plugin from kubernetes directory at the root
 	// of the repository
@@ -218,6 +226,7 @@ func TestDeployInstance(t *testing.T) {
 		"stanza",
 		"default",
 		minio.NewS3Repositories("stanza"),
+		nil,
 	)
 	if err != nil {
 		panic(err.Error())
@@ -277,6 +286,7 @@ func TestCreateAndRestoreInstance(t *testing.T) {
 		"stanza-restored",
 		"default",
 		minio.NewS3Repositories("stanza-restored"),
+		nil,
 	)
 	if err != nil {
 		panic(err.Error())
@@ -443,4 +453,73 @@ func TestCreateAndRestoreInstance(t *testing.T) {
 		)
 	}
 
+}
+
+func TestAzure(t *testing.T) {
+	ctx := context.Background()
+	k8sClient, err := kubernetes.Client()
+	clusterName := "cluster-azure"
+	podName := clusterName + "-1"
+	stanza := "stanza-azure"
+	azContainer := "azcontainer"
+	ns := "default"
+	if err != nil {
+		panic("can't init kubernetes client")
+	}
+	if err := azurite.CreateAzContainer(ctx, *k8sClient, "azurite", azContainer); err != nil {
+		panic(err.Error())
+	}
+	secret, err := createSecret(ctx, k8sClient, ns, "pgbackrest-azure-secret", _AZURE_DATA_SECRET)
+	if err != nil {
+		panic(err.Error())
+
+	}
+	defer func() {
+		if err := k8sClient.Delete(ctx, secret); err != nil {
+			t.Fatal("can't delete secret")
+		}
+	}()
+
+	s, err := pgbackrest.CreateStanzaConfig(
+		ctx,
+		*k8sClient,
+		stanza,
+		ns,
+		nil,
+		azurite.NewAzureRepositories(azContainer),
+	)
+	if err != nil {
+		panic(err.Error())
+	}
+	defer func() {
+		if err := k8sClient.Delete(ctx, s); err != nil {
+			t.Fatal("can't delete stanza")
+		}
+	}()
+
+	p := map[string]string{
+		"stanzaRef": stanza,
+	}
+
+	c, err := cluster.Create(ctx, k8sClient, ns, clusterName, 1, "100M", p, nil)
+	if err != nil {
+		t.Fatalf("failed to create cluster: %v", err)
+	}
+	defer func() {
+		if err := k8sClient.Delete(ctx, c); err != nil {
+			t.Fatal("can't delete cluster")
+		}
+	}()
+	if ready, err := k8sClient.PodIsReady(ctx, ns, podName, 80, 3); err != nil {
+		t.Fatalf("error when requesting pod status, %s", err.Error())
+	} else if !ready {
+		t.Fatal("pod not ready")
+	}
+
+	b := takeBackup(ctx, t, k8sClient, ns, clusterName, "azure-backup-01", p)
+	defer func() {
+		if err := k8sClient.Delete(ctx, b); err != nil {
+			t.Fatal("can't delete cluster")
+		}
+	}()
 }

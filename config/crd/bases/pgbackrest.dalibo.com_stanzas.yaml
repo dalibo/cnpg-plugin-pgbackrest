@@ -54,6 +54,134 @@ spec:
                         pattern: ^(0B|[0-9]+(KiB|MiB|GiB|TiB)|([0-4])PiB)$
                         type: string
                     type: object
+                  azureRepositories:
+                    items:
+                      properties:
+                        account:
+                          description: Azure repository account.
+                          minLength: 1
+                          type: string
+                        container:
+                          description: Azure container used to store the repository.
+                          minLength: 1
+                          type: string
+                        endpoint:
+                          description: Azure repository endpoint.
+                          minLength: 1
+                          type: string
+                        keyType:
+                          description: Azure repository key type.
+                          enum:
+                          - shared
+                          - sas
+                          - auto
+                          minLength: 1
+                          type: string
+                        repoPath:
+                          description: Path where backups and archives are stored.
+                          minLength: 1
+                          type: string
+                        retentionPolicy:
+                          description: Define retention strategy for a repository.
+                          properties:
+                            archive:
+                              description: |-
+                                Number of backups worth of continuous WAL to retain.
+                                Can be used to aggressively expire WAL segments and save disk space.
+                                However, doing so negates the ability to perform PITR from the backups
+                                with expired WAL and is therefore not recommended.
+                              format: int32
+                              maximum: 9999999
+                              minimum: 1
+                              type: integer
+                            archiveType:
+                              description: |-
+                                Backup type for WAL retention.
+                                It is recommended that this setting not be changed from the default which
+                                will only expire WAL in conjunction with expiring full backups.
+                                Available options are `full` (default), `diff` or `incr`.
+                              enum:
+                              - full
+                              - diff
+                              - incr
+                              type: string
+                            diff:
+                              description: |-
+                                Number of differential backups to retain.
+                                When a differential backup expires, all incremental backups associated
+                                with the differential backup will also expire. When not defined all
+                                differential backups will be kept until the full backups they depend on expire.
+                              format: int32
+                              maximum: 9999999
+                              minimum: 1
+                              type: integer
+                            full:
+                              description: |-
+                                Full backup retention count/time (in days)
+                                When a full backup expires, all differential and incremental backups associated
+                                with the full backup will also expire.
+                              format: int32
+                              maximum: 9999999
+                              minimum: 1
+                              type: integer
+                            fullType:
+                              description: |-
+                                Retention type for full backups.
+                                 Determines whether the repo-retention-full setting represents a time period
+                                (days) or count of full backups to keep.
+                                Available options are `count` (default) and `time`.
+                              enum:
+                              - count
+                              - time
+                              type: string
+                            history:
+                              description: |-
+                                Days of backup history manifests to retain.
+                                Set history to define the number of days of backup history manifests to
+                                retain. Unexpired backups are always kept in the backup history. Specify
+                                history=0 to retain the backup history only for unexpired backups. When
+                                a full backup history manifest is expired, all differential and
+                                incremental backup history manifests associated with the full backup also
+                                expire.
+                              format: int32
+                              maximum: 9999999
+                              minimum: 0
+                              type: integer
+                          type: object
+                        secretRef:
+                          description: Reference to a Kubernetes Secret containing
+                            the Azure repository key.
+                          properties:
+                            keyReference:
+                              description: The reference to the Azure key.
+                              properties:
+                                key:
+                                  description: The key to select
+                                  type: string
+                                name:
+                                  description: Name of the referent.
+                                  type: string
+                              required:
+                              - key
+                              - name
+                              type: object
+                          type: object
+                        uriStyle:
+                          description: Azure URI Style.
+                          enum:
+                          - host
+                          - path
+                          type: string
+                        verifyTLS:
+                          default: true
+                          description: Repository storage certificate verify.
+                          type: boolean
+                      required:
+                      - account
+                      - container
+                      - repoPath
+                      type: object
+                    type: array
                   compressConfig:
                     description: Define compression settings for file compression.
                     properties:
