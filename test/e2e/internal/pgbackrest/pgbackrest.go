@@ -32,6 +32,7 @@ func NewStanzaConfig(
 	name string,
 	ns string,
 	s3Repo []pgbackrest.S3Repository,
+	azRepo []pgbackrest.AzureRepository,
 ) *apipgbackrest.Stanza {
 	stanza := &apipgbackrest.Stanza{
 		TypeMeta: metav1.TypeMeta{
@@ -44,8 +45,9 @@ func NewStanzaConfig(
 		},
 		Spec: apipgbackrest.StanzaSpec{
 			Configuration: pgbackrest.Stanza{
-				Name:           "my_stanza",
-				S3Repositories: s3Repo,
+				Name:              "my_stanza",
+				S3Repositories:    s3Repo,
+				AzureRepositories: azRepo,
 				Compress: &pgbackrest.CompressConfig{
 					Type:  ptr.To("lz4"),
 					Level: 7,
@@ -66,8 +68,9 @@ func CreateStanzaConfig(
 	name string,
 	ns string,
 	s3Repo []pgbackrest.S3Repository,
+	azRepo []pgbackrest.AzureRepository,
 ) (*apipgbackrest.Stanza, error) {
-	stanza := NewStanzaConfig(k8sClient, name, ns, s3Repo)
+	stanza := NewStanzaConfig(k8sClient, name, ns, s3Repo, azRepo)
 	if err := k8sClient.Create(ctx, stanza); err != nil {
 		return nil, err
 	}

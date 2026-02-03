@@ -14,6 +14,7 @@ import (
 	cloudnativepgv1 "github.com/cloudnative-pg/api/pkg/api/v1"
 	apipgbackrest "github.com/dalibo/cnpg-i-pgbackrest/api/v1"
 	appsv1 "k8s.io/api/apps/v1"
+	batchv1 "k8s.io/api/batch/v1"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/resource"
@@ -374,4 +375,59 @@ func (cl K8sClient) CreateService(
 		return fmt.Errorf("failed to create service: %w", err)
 	}
 	return nil
+}
+
+func (cl K8sClient) JobIsCompleted(
+	ctx context.Context,
+	namespace string,
+	name string,
+	maxRetry uint,
+	retryInterval uint,
+) (bool, error) {
+
+	jobName := types.NamespacedName{
+		Name:      name,
+		Namespace: namespace,
+	}
+
+	job := &batchv1.Job{}
+
+	err := cl.waitForObj(
+		ctx,
+		jobName,
+		maxRetry,
+		retryInterval,
+		job,
+		func(_ client.Object, err error) (bool, error) {
+			if err != nil {
+				if errors.IsNotFound(err) {
+					return false, nil
+				}
+				return false, err
+			}
+
+			// Check for successful completion
+			if job.Status.Succeeded > 0 {
+				return true, nil
+			}
+
+			// Check for failure (respecting backoffLimit if defined)
+			if job.Status.Failed > 0 {
+				return false, fmt.Errorf("job failed")
+			}
+
+			return false, nil
+		},
+	)
+
+	if err != nil {
+		return false, fmt.Errorf(
+			"timeout waiting for job %s in namespace %s: %w",
+			name,
+			namespace,
+			err,
+		)
+	}
+
+	return true, nil
 }

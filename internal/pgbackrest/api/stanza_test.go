@@ -34,6 +34,8 @@ func TestStanzaToEnv(t *testing.T) {
 		"PGBACKREST_LOG_LEVEL_FILE=off",
 		"PGBACKREST_DELTA=y",
 		"PGBACKREST_LOG_LEVEL_CONSOLE=trace",
+		"PGBACKREST_REPO3_AZURE_ACCOUNT=myaccount",
+		"PGBACKREST_REPO3_AZURE_CONTAINER=mycontainer",
 		"machin=truc",
 	}
 	b := false
@@ -57,6 +59,12 @@ func TestStanzaToEnv(t *testing.T) {
 				Cipher: &CipherConfig{
 					Type: "aes-256-cbc",
 				},
+			},
+		},
+		AzureRepositories: []AzureRepository{
+			{
+				Account:   "myaccount",
+				Container: "mycontainer",
 			},
 		},
 		Archive: ArchiveOption{

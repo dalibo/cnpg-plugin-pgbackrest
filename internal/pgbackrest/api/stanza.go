@@ -163,6 +163,55 @@ type S3Repository struct {
 	// +optional
 	Cipher *CipherConfig `json:"cipherConfig" nestedEnvPrefix:"_CIPHER_"`
 }
+
+// AzureSecretRef defines a reference to a Kubernetes Secret
+type AzureSecretRef struct {
+	// The reference to the Azure key.
+	// +optional
+	KeyReference *machineryapi.SecretKeySelector `json:"keyReference,omitempty"`
+}
+
+type AzureRepository struct {
+
+	// Azure repository account.
+	// +kubebuilder:validation:MinLength=1
+	Account string `json:"account" env:"_AZURE_ACCOUNT"`
+
+	// Azure container used to store the repository.
+	// +kubebuilder:validation:MinLength=1
+	Container string `json:"container" env:"_AZURE_CONTAINER"`
+
+	// Azure repository endpoint.
+	// +kubebuilder:validation:MinLength=1
+	// +optional
+	Endpoint string `json:"endpoint" env:"_AZURE_ENDPOINT"`
+
+	// Reference to a Kubernetes Secret containing the Azure repository key.
+	SecretRef *AzureSecretRef `json:"secretRef,omitempty"`
+
+	// Azure repository key type.
+	// +kubebuilder:validation:MinLength=1
+	// +kubebuilder:validation:Enum=shared;sas;auto
+	// +optional
+	KeyType string `json:"keyType" env:"_AZURE_KEY_TYPE"`
+
+	// Azure URI Style.
+	// +kubebuilder:validation:Enum=host;path
+	// +optional
+	UriStyle string `json:"uriStyle" env:"_AZURE_URI_STYLE"`
+
+	// Repository storage certificate verify.
+	// +kubebuilder:default=true
+	// +optional
+	VerifyTLS *bool `json:"verifyTLS" env:"_STORAGE_VERIFY_TLS"`
+
+	// Path where backups and archives are stored.
+	// +kubebuilder:validation:MinLength=1
+	RepoPath string `json:"repoPath" env:"_PATH"`
+
+	// +optional
+	RetentionPolicy Retention `json:"retentionPolicy" nestedEnvPrefix:"_RETENTION_"`
+}
 type ArchiveOption struct {
 
 	// +kubebuilder:default=false
@@ -197,6 +246,9 @@ type Stanza struct {
 
 	// +optional
 	S3Repositories []S3Repository `json:"s3Repositories" nestedEnvPrefix:"REPO"`
+
+	// +optional
+	AzureRepositories []AzureRepository `json:"azureRepositories" nestedEnvPrefix:"REPO"`
 
 	// +kubebuilder:validation:MinLength=1
 	Name string `json:"name" env:"STANZA"`

@@ -12,8 +12,8 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-func getSecrets(r apipgbackrest.Stanza, s *stringset.Data) {
-	for _, s3r := range r.Spec.Configuration.S3Repositories {
+func getSecrets(stanza apipgbackrest.Stanza, s *stringset.Data) {
+	for _, s3r := range stanza.Spec.Configuration.S3Repositories {
 		akidr := s3r.SecretRef.AccessKeyIDReference
 		akisr := s3r.SecretRef.SecretAccessKeyReference
 		if akidr != nil {
@@ -26,6 +26,11 @@ func getSecrets(r apipgbackrest.Stanza, s *stringset.Data) {
 			if pr := s3r.Cipher.PassReference; pr != nil {
 				s.Put(pr.Name)
 			}
+		}
+	}
+	for _, azr := range stanza.Spec.Configuration.AzureRepositories {
+		if azk := azr.SecretRef.KeyReference; azk != nil {
+			s.Put(azk.Name)
 		}
 	}
 }
