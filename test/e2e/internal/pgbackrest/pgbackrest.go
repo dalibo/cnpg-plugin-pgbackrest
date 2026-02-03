@@ -55,7 +55,7 @@ func NewStanzaConfig(
 						VerifyTLS: &verifyTls,
 						UriStyle:  "path",
 						RepoPath:  "/repo01",
-						SecretRef: &pgbackrest.SecretRef{
+						SecretRef: &pgbackrest.S3SecretRef{
 							AccessKeyIDReference: &api.SecretKeySelector{
 								LocalObjectReference: api.LocalObjectReference{
 									Name: "pgbackrest-s3-secret",
