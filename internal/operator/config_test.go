@@ -37,9 +37,18 @@ func buildFakeClient() client.Client {
 			"key": []byte("SECRET123"),
 		},
 	}
+	azureKey := &corev1.Secret{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "azure-key-secret",
+			Namespace: "default",
+		},
+		Data: map[string][]byte{
+			"key": []byte("MYAZURESECRET123"),
+		},
+	}
 	return fake.NewClientBuilder().
 		WithScheme(scheme).
-		WithObjects(aKey, sKey).
+		WithObjects(aKey, sKey, azureKey).
 		Build()
 }
 func buildRepo() *apipgbackrest.Stanza {
@@ -77,6 +86,20 @@ func buildRepo() *apipgbackrest.Stanza {
 						},
 					},
 				},
+				AzureRepositories: []pgbackrest.AzureRepository{
+					{
+						Account:   "my_account",
+						Container: "my_container",
+						SecretRef: &pgbackrest.AzureSecretRef{
+							KeyReference: &machineryapi.SecretKeySelector{
+								LocalObjectReference: machineryapi.LocalObjectReference{
+									Name: "azure-key-secret",
+								},
+								Key: "key",
+							},
+						},
+					},
+				},
 			},
 		},
 	}
@@ -94,6 +117,10 @@ func TestGetEnvVarConfig(t *testing.T) {
 		"PGBACKREST_REPO1_S3_KEY=AKIA123",
 		"PGBACKREST_REPO1_S3_KEY_SECRET=SECRET123",
 		"PGBACKREST_REPO1_TYPE=s3",
+		"PGBACKREST_REPO2_TYPE=azure",
+		"PGBACKREST_REPO2_AZURE_ACCOUNT=my_account",
+		"PGBACKREST_REPO2_AZURE_CONTAINER=my_container",
+		"PGBACKREST_REPO2_AZURE_KEY=MYAZURESECRET123",
 	}
 	for _, e := range expected {
 		if !slices.Contains(env, e) {

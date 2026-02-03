@@ -206,6 +206,17 @@ func GetEnvVarConfig(
 		return nil, err
 	}
 	env = append(env, s3env...)
+	azureEnv, err := getEnvVarForAzure(
+		ctx,
+		c,
+		ns,
+		conf.AzureRepositories,
+		len(conf.S3Repositories)+1,
+	)
+	if err != nil {
+		return nil, err
+	}
+	env = append(env, azureEnv...)
 	return env, nil
 }
 
@@ -244,6 +255,30 @@ func getEnvVarForS3(
 		)
 	}
 	return s3env, nil
+}
+
+func getEnvVarForAzure(
+	ctx context.Context,
+	c client.Client,
+	ns string,
+	repositories []pgbackrestapi.AzureRepository,
+	startId int,
+) ([]string, error) {
+	azureEnv := make([]string, 0, len(repositories))
+	for i, r := range repositories {
+		sRef := r.SecretRef
+		sKey, err := decodeSecretVal(ctx, c, ns, sRef.KeyReference)
+		if err != nil {
+			return nil, err
+		}
+		prefix := fmt.Sprintf("PGBACKREST_REPO%d_", (startId + i))
+		azureEnv = append(
+			azureEnv,
+			fmt.Sprintf("%sAZURE_KEY=%s", prefix, sKey),
+			fmt.Sprintf("%sTYPE=%s", prefix, "azure"),
+		)
+	}
+	return azureEnv, nil
 }
 
 type ClusterDefinitionGetter interface {

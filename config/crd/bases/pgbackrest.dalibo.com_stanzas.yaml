@@ -54,6 +54,60 @@ spec:
                         pattern: ^(0B|[0-9]+(KiB|MiB|GiB|TiB)|([0-4])PiB)$
                         type: string
                     type: object
+                  azureRepositories:
+                    items:
+                      properties:
+                        account:
+                          description: Azure repository account.
+                          minLength: 1
+                          type: string
+                        container:
+                          description: Azure container used to store the repository.
+                          minLength: 1
+                          type: string
+                        endpoint:
+                          default: blob.core.windows.net
+                          description: Azure repository endpoint.
+                          minLength: 1
+                          type: string
+                        keyType:
+                          default: shared
+                          description: Azure repository key type.
+                          enum:
+                          - shared
+                          - sas
+                          - auto
+                          minLength: 1
+                          type: string
+                        secretRef:
+                          description: Reference to a Kubernetes Secret containing
+                            the Azure repository key.
+                          properties:
+                            keyReference:
+                              description: The reference to the Azure key.
+                              properties:
+                                key:
+                                  description: The key to select.
+                                  type: string
+                                name:
+                                  description: Name of the referent.
+                                  type: string
+                              required:
+                              - key
+                              - name
+                              type: object
+                          type: object
+                        uriStyle:
+                          description: Azure URI Style.
+                          enum:
+                          - host
+                          - path
+                          type: string
+                      required:
+                      - account
+                      - container
+                      type: object
+                    type: array
                   compressConfig:
                     description: Define compression settings for file compression.
                     properties:
