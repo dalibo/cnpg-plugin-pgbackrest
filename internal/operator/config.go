@@ -14,6 +14,7 @@ import (
 	"github.com/cloudnative-pg/machinery/pkg/stringset"
 	apipgbackrest "github.com/dalibo/cnpg-i-pgbackrest/api/v1"
 	"github.com/dalibo/cnpg-i-pgbackrest/internal/metadata"
+	pgbackrestapi "github.com/dalibo/cnpg-i-pgbackrest/internal/pgbackrest/api"
 	"github.com/dalibo/cnpg-i-pgbackrest/internal/utils"
 	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -175,51 +176,74 @@ func (c *PluginConfiguration) GetReferredPgBackrestObjectKey() []types.Namespace
 	return res
 }
 
+// helper to decode secret values
+func decodeSecretVal(
+	ctx context.Context,
+	c client.Client,
+	ns string,
+	ref *machineryapi.SecretKeySelector,
+) (string, error) {
+	raw, err := utils.GetValueFromSecret(ctx, c, ns, ref)
+	if err != nil {
+		return "", err
+	}
+	return string(raw), nil
+}
+
 func GetEnvVarConfig(
 	ctx context.Context,
-	r apipgbackrest.Stanza,
+	stanza apipgbackrest.Stanza,
 	c client.Client,
 ) ([]string, error) {
-	conf := r.Spec.Configuration
+	conf := stanza.Spec.Configuration
+	ns := stanza.Namespace
 	env, err := conf.ToEnv()
 	if err != nil {
 		return nil, err
 	}
-	// helper to fetch secret values
-	secretVal := func(ref *machineryapi.SecretKeySelector) (string, error) {
-		raw, err := utils.GetValueFromSecret(ctx, c, r.Namespace, ref)
-		if err != nil {
-			return "", err
-		}
-		return string(raw), nil
+	s3env, err := getEnvVarForS3(ctx, c, ns, conf.S3Repositories, 1)
+	if err != nil {
+		return nil, err
 	}
-	for i, r := range conf.S3Repositories {
+	env = append(env, s3env...)
+	return env, nil
+}
+
+func getEnvVarForS3(
+	ctx context.Context,
+	c client.Client,
+	ns string,
+	repositories []pgbackrestapi.S3Repository,
+	startId int,
+) ([]string, error) {
+	s3env := make([]string, 0, len(repositories))
+	for i, r := range repositories {
 		sRef := r.SecretRef
-		aKey, err := secretVal(sRef.AccessKeyIDReference)
+		aKey, err := decodeSecretVal(ctx, c, ns, sRef.AccessKeyIDReference)
 		if err != nil {
 			return nil, err
 		}
-		sKey, err := secretVal(sRef.SecretAccessKeyReference)
+		sKey, err := decodeSecretVal(ctx, c, ns, sRef.SecretAccessKeyReference)
 		if err != nil {
 			return nil, err
 		}
-		prefix := fmt.Sprintf("PGBACKREST_REPO%d_", i+1)
+		prefix := fmt.Sprintf("PGBACKREST_REPO%d_", startId+i)
 		if r.Cipher != nil {
-			encKey, err := secretVal(r.Cipher.PassReference)
+			encKey, err := decodeSecretVal(ctx, c, ns, r.Cipher.PassReference)
 			if err != nil {
 				return nil, err
 			}
-			env = append(env, fmt.Sprintf("%sCIPHER_PASS=%s", prefix, encKey))
+			s3env = append(s3env, fmt.Sprintf("%sCIPHER_PASS=%s", prefix, encKey))
 		}
 		// build env var names
-		env = append(
-			env,
+		s3env = append(
+			s3env,
 			fmt.Sprintf("%sS3_KEY=%s", prefix, aKey),
 			fmt.Sprintf("%sS3_KEY_SECRET=%s", prefix, sKey),
 			fmt.Sprintf("%sTYPE=%s", prefix, "s3"),
 		)
 	}
-	return env, nil
+	return s3env, nil
 }
 
 type ClusterDefinitionGetter interface {
