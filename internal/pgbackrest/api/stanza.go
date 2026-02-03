@@ -104,8 +104,8 @@ type Retention struct {
 	History int32 `json:"history,omitempty" ENV:"HISTORY"`
 }
 
-// SecretRef defines a reference to a Kubernetes Secret
-type SecretRef struct {
+// S3SecretRef defines a reference to a Kubernetes Secret
+type S3SecretRef struct {
 	// The reference to the access key ID
 	// +optional
 	AccessKeyIDReference *machineryapi.SecretKeySelector `json:"accessKeyId,omitempty"`
@@ -151,7 +151,7 @@ type S3Repository struct {
 
 	// Reference to a Kubernetes Secret containing S3 credentials.
 	// +optional
-	SecretRef *SecretRef `json:"secretRef,omitempty"`
+	SecretRef *S3SecretRef `json:"secretRef,omitempty"`
 
 	// Path where backups and archive are stored.
 	// +kubebuilder:validation:MinLength=1

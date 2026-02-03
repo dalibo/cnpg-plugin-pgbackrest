@@ -59,7 +59,7 @@ func NewStanzaConfig(
 							FullType: "count",
 							Full:     7,
 						},
-						SecretRef: &pgbackrest.SecretRef{
+						SecretRef: &pgbackrest.S3SecretRef{
 							AccessKeyIDReference: &api.SecretKeySelector{
 								LocalObjectReference: api.LocalObjectReference{
 									Name: "pgbackrest-s3-secret",

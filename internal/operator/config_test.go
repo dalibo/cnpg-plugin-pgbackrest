@@ -61,7 +61,7 @@ func buildRepo() *apipgbackrest.Stanza {
 						Endpoint: "https://s3.example.com",
 						Region:   "us-east-1",
 						RepoPath: "/backups",
-						SecretRef: &pgbackrest.SecretRef{
+						SecretRef: &pgbackrest.S3SecretRef{
 							AccessKeyIDReference: &machineryapi.SecretKeySelector{
 								LocalObjectReference: machineryapi.LocalObjectReference{
 									Name: "access-key-secret",
