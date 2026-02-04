@@ -198,34 +198,37 @@ func TestDeployInstance(t *testing.T) {
 	ctx := context.Background()
 	log.FromContext(ctx)
 	// first create a secret
-	secret, err := createSecret(ctx, k8sClient, ns)
+	_, err = createSecret(ctx, k8sClient, ns)
 	if err != nil {
 		t.Fatalf("failed to create secret: %v", err)
 	}
-	defer func() {
-		if err := k8sClient.Delete(ctx, secret); err != nil {
-			t.Fatal("can't delete secret")
-		}
-	}()
 
 	// create a test CloudNativePG Cluster
 	clusterName := "cluster-demo"
 	p := maps.Clone(cluster.DefaultParamater)
-	c, err := cluster.Create(ctx, k8sClient, ns, clusterName, 1, "100M", p, false)
+	_, err = cluster.Create(ctx, k8sClient, ns, clusterName, 1, "100M", p, false)
 	if err != nil {
 		t.Fatalf("failed to create cluster: %v", err)
 	}
-	defer func() {
-		if err := k8sClient.Delete(ctx, c); err != nil {
-			t.Fatal("can't delete cluster")
-		}
-	}()
 	if ready, err := k8sClient.PodIsReady(ctx, ns, clusterName+"-1", 80, 3); err != nil {
 		t.Fatalf("error when requesting pod status, %s", err.Error())
 	} else if !ready {
 		t.Fatal("pod not ready")
 	}
+}
 
+func TestBackupInstance(t *testing.T) {
+	log.SetLogger(zap.New(zap.WriteTo(os.Stdout), zap.UseDevMode(true)))
+	k8sClient, err := kubernetes.Client()
+	if k8sClient == nil || err != nil {
+		t.Fatalf("kubernetes client not initialized: %v", err)
+	}
+	ns := "default"
+	ctx := context.Background()
+	log.FromContext(ctx)
+
+	clusterName := "cluster-demo"
+	p := maps.Clone(cluster.DefaultParamater)
 	// take a first backup
 	b := takeBackup(ctx, t, k8sClient, ns, clusterName, "backup-01", p)
 	defer func() {
@@ -261,6 +264,22 @@ func TestDeployInstance(t *testing.T) {
 	if fBackup.Timestamp.Start == 0 || fBackup == lBackup {
 		t.Fatal("registered backup data are invalid after second backup")
 	}
+}
+
+func TestDeleteInstance(t *testing.T) {
+	log.SetLogger(zap.New(zap.WriteTo(os.Stdout), zap.UseDevMode(true)))
+	k8sClient, err := kubernetes.Client()
+	if k8sClient == nil || err != nil {
+		t.Fatalf("kubernetes client not initialized: %v", err)
+	}
+	ns := "default"
+	ctx := context.Background()
+	log.FromContext(ctx)
+
+	clusterName := "cluster-demo"
+	p := maps.Clone(cluster.DefaultParamater)
+	c := cluster.New(ns, clusterName, 1, "100M", p, false)
+
 	// delete cluster, we will recreate it from backup
 	if err := k8sClient.Delete(ctx, c); err != nil {
 		t.Fatal("can't delete cluster")
@@ -268,12 +287,50 @@ func TestDeployInstance(t *testing.T) {
 	if _, err = k8sClient.PodIsAbsent(ctx, ns, clusterName+"-1", 10, 3); err != nil {
 		t.Fatal("can't ensure cluster is absent")
 	}
-	if _, err = cluster.Create(ctx, k8sClient, ns, clusterName, 1, "100M", p, true); err != nil {
+}
+
+func TestRestoreInstance(t *testing.T) {
+	log.SetLogger(zap.New(zap.WriteTo(os.Stdout), zap.UseDevMode(true)))
+	k8sClient, err := kubernetes.Client()
+	if k8sClient == nil || err != nil {
+		t.Fatalf("kubernetes client not initialized: %v", err)
+	}
+	ns := "default"
+	ctx := context.Background()
+	log.FromContext(ctx)
+
+	clusterName := "cluster-demo"
+	p := maps.Clone(cluster.DefaultParamater)
+
+	c, err := cluster.Create(ctx, k8sClient, ns, clusterName, 1, "100M", p, true)
+	if err != nil {
 		t.Fatal("can't recreate cluster from backup")
 	}
 	if ready, err := k8sClient.PodIsReady(ctx, ns, clusterName+"-1", 80, 3); err != nil {
 		t.Fatalf("error when requesting pod status, %s", err.Error())
 	} else if !ready {
 		t.Fatal("pod not ready")
+	}
+	// delete the restored cluster
+	if err := k8sClient.Delete(ctx, c); err != nil {
+		t.Fatal("can't delete cluster")
+	}
+	if _, err = k8sClient.PodIsAbsent(ctx, ns, clusterName+"-1", 10, 3); err != nil {
+		t.Fatal("can't ensure cluster is absent")
+	}
+
+	secret := &corev1.Secret{
+		TypeMeta: metav1.TypeMeta{
+			APIVersion: "v1",
+			Kind:       "Secret",
+		},
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "pgbackrest-s3-secret",
+			Namespace: ns,
+		},
+	}
+	// delete the secret
+	if err := k8sClient.Delete(ctx, secret); err != nil {
+		t.Fatal("can't delete secret")
 	}
 }
