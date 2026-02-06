@@ -2,7 +2,7 @@
 apiVersion: postgresql.cnpg.io/v1
 kind: Cluster
 metadata:
-  name: cluster-sample
+  name: cluster-multi-repositories
 spec:
   # set to Never, because we use kind and image should be loaded on
   # the Kubernetes cluster and not pulled from an external registry.
@@ -13,6 +13,6 @@ spec:
       enabled: true
       isWALArchiver: true
       parameters:
-        stanzaRef: stanza-sample
+        stanzaRef: stanza-multi-repositories
   storage:
     size: 1Gi
