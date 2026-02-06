@@ -2,18 +2,21 @@
 apiVersion: postgresql.cnpg.io/v1
 kind: Cluster
 metadata:
-  name: cluster-demo-replica
+  name: cluster-restored
 spec:
+  # set to Never, because we use kind and image should be loaded on
+  # the Kubernetes cluster and not pulled from an external registry.
   imagePullPolicy: IfNotPresent
-  instances: 2
+  instances: 1
+  plugins:
+    - name: pgbackrest.dalibo.com
+      parameters:
+        stanzaRef: stanza-sample
   storage:
     size: 1Gi
   bootstrap:
     recovery:
       source: origin
-  replica:
-    enabled: true
-    source: origin
   externalClusters:
     - name: origin
       plugin:
