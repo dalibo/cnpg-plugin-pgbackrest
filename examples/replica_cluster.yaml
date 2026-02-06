@@ -2,7 +2,7 @@
 apiVersion: postgresql.cnpg.io/v1
 kind: Cluster
 metadata:
-  name: cluster-demo-replica
+  name: cluster-replica
 spec:
   imagePullPolicy: IfNotPresent
   instances: 2

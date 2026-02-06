@@ -1,0 +1,49 @@
+---
+apiVersion: pgbackrest.dalibo.com/v1
+kind: Stanza
+metadata:
+  name: stanza-multi-repositories
+spec:
+  stanzaConfiguration:
+    name: main
+    s3Repositories:
+      - bucket: bucket-01
+        endpoint: https://172.18.0.2:9000
+        region: fr-par
+        repoPath: /repo-01
+        uriStyle: path
+        verifyTLS: false
+        retentionPolicy:
+          full: 7
+          fullType: count
+          diff: 14
+          archive: 2
+          archiveType: full
+          history: 30
+        secretRef:
+          accessKeyId:
+            name: minio
+            key: ACCESS_KEY_ID
+          secretAccessKey:
+            name: minio
+            key: ACCESS_SECRET_KEY
+      - bucket: bucket-02
+        endpoint: https://172.18.0.2:9000
+        region: fr-par
+        repoPath: /repo-02
+        uriStyle: path
+        verifyTLS: false
+        retentionPolicy:
+          full: 2
+          fullType: count
+          diff: 7
+          archive: 1
+          archiveType: full
+          history: 30
+        secretRef:
+          accessKeyId:
+            name: minio
+            key: ACCESS_KEY_ID
+          secretAccessKey:
+            name: minio
+            key: ACCESS_SECRET_KEY
