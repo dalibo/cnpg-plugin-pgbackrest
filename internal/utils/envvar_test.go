@@ -18,7 +18,7 @@ func TestStructToEnvVar(t *testing.T) {
 	type Owner struct {
 		FirstName   string `env:"firstName"`
 		AlsoIgnored string
-		Address     Place    `nestedEnvPrefix:"addr_"`
+		Address     Place    `                  nestedEnvPrefix:"addr_"`
 		Age         uint     `env:"age"`
 		Phones      []string `env:"phone"`
 		InProgress  *bool    `env:"in_progress"`
@@ -28,11 +28,12 @@ func TestStructToEnvVar(t *testing.T) {
 		Qty  uint   `env:"qty"`
 	}
 	type Animal struct {
-		Name          string `env:"name"`
-		NbrLegs       int    `env:"nbr_legs"`
-		IgnoreField   string
-		Owner         Owner          `nestedEnvPrefix:"OWNER_"`
-		FavoriteFoods []FavoriteFood `env:"fav_food"`
+		Name               string `env:"name"`
+		NbrLegs            int    `env:"nbr_legs"`
+		IgnoreField        string
+		Owner              Owner          `               nestedEnvPrefix:"OWNER_"`
+		FavoriteFoods      []FavoriteFood `nestedEnvPrefix:"fav_food"`
+		OtherFavoriteFoods []FavoriteFood `nestedEnvPrefix:"fav_food"`
 	}
 	type TestCase struct {
 		desc    string
@@ -104,6 +105,12 @@ func TestStructToEnvVar(t *testing.T) {
 						Qty:  3,
 					},
 				},
+				OtherFavoriteFoods: []FavoriteFood{
+					{
+						Type: "barf",
+						Qty:  12,
+					},
+				},
 			},
 			[]string{
 				"PGBACKREST_name=john_Doe",
@@ -115,6 +122,8 @@ func TestStructToEnvVar(t *testing.T) {
 				"PGBACKREST_fav_food1qty=2",
 				"PGBACKREST_fav_food2type=hard",
 				"PGBACKREST_fav_food2qty=3",
+				"PGBACKREST_fav_food3type=barf",
+				"PGBACKREST_fav_food3qty=12",
 			},
 		},
 	}

@@ -104,8 +104,8 @@ type Retention struct {
 	History int32 `json:"history,omitempty" ENV:"HISTORY"`
 }
 
-// SecretRef defines a reference to a Kubernetes Secret
-type SecretRef struct {
+// S3SecretRef defines a reference to a Kubernetes Secret
+type S3SecretRef struct {
 	// The reference to the access key ID
 	// +optional
 	AccessKeyIDReference *machineryapi.SecretKeySelector `json:"accessKeyId,omitempty"`
@@ -151,7 +151,7 @@ type S3Repository struct {
 
 	// Reference to a Kubernetes Secret containing S3 credentials.
 	// +optional
-	SecretRef *SecretRef `json:"secretRef,omitempty"`
+	SecretRef *S3SecretRef `json:"secretRef,omitempty"`
 
 	// Path where backups and archive are stored.
 	// +kubebuilder:validation:MinLength=1
@@ -162,6 +162,45 @@ type S3Repository struct {
 
 	// +optional
 	Cipher *CipherConfig `json:"cipherConfig" nestedEnvPrefix:"_CIPHER_"`
+}
+
+// AzureSecretRef defines a reference to a Kubernetes Secret
+type AzureSecretRef struct {
+	// The reference to the Azure key
+	// +optional
+	KeyReference *machineryapi.SecretKeySelector `json:"keyReference,omitempty"`
+}
+
+type AzureRepository struct {
+
+	// Azure repository account.
+	// +kubebuilder:validation:MinLength=1
+	Account string `json:"account" env:"_AZURE_ACCOUNT"`
+
+	// Azure container used to store the repository.
+	// +kubebuilder:validation:MinLength=1
+	Container string `json:"container" env:"_AZURE_CONTAINER"`
+
+	// Azure repository endpoint.
+	// +kubebuilder:validation:MinLength=1
+	// +optional
+	// +kubebuilder:default=blob.core.windows.net
+	Endpoint string `json:"endpoint" env:"_AZURE_ENDPOINT"`
+
+	// Reference to a Kubernetes Secret containing the Azure repository key.
+	SecretRef *AzureSecretRef `json:"secretRef,omitempty"`
+
+	// Azure repository key type.
+	// +kubebuilder:validation:MinLength=1
+	// +kubebuilder:validation:Enum=shared;sas;auto
+	// +kubebuilder:default=shared
+	// +optional
+	KeyType string `json:"keyType" env:"_AZURE_KEY_TYPE"`
+
+	// Azure URI Style.
+	// +kubebuilder:validation:Enum=host;path
+	// +optional
+	UriStyle string `json:"uriStyle" env:"_AZURE_URI_STYLE"`
 }
 type ArchiveOption struct {
 
@@ -197,6 +236,9 @@ type Stanza struct {
 
 	// +optional
 	S3Repositories []S3Repository `json:"s3Repositories" nestedEnvPrefix:"REPO"`
+
+	// +optional
+	AzureRepositories []AzureRepository `json:"azureRepositories" nestedEnvPrefix:"REPO"`
 
 	// +kubebuilder:validation:MinLength=1
 	Name string `json:"name" env:"STANZA"`
