@@ -350,3 +350,48 @@ func TestRunBackgroundTask_CommandFails(t *testing.T) {
 		t.Errorf("expected BASE=1 and EXTRA=1 in env, got %v", mockCmd.env)
 	}
 }
+
+func TestRestoreOptionToEnv(t *testing.T) {
+	testCases := []struct {
+		desc string
+		data RestoreOptions
+		want []string
+		err  error
+	}{
+		{
+			desc: "all field provided",
+			data: RestoreOptions{
+				Target: "2015-01-30 14:15:11 EST",
+				Type:   "time",
+			},
+			want: []string{
+				"PGBACKREST_TARGET=2015-01-30 14:15:11 EST",
+				"PGBACKREST_TYPE=time",
+			},
+			err: nil,
+		},
+		{
+			desc: "few fields missing",
+			data: RestoreOptions{
+				Type: "time",
+			},
+			want: []string{
+				"PGBACKREST_TYPE=time",
+			},
+			err: nil,
+		},
+	}
+	for _, tc := range testCases {
+		f := func(t *testing.T) {
+
+			got, err := tc.data.ToEnv()
+			if err != tc.err {
+				t.Errorf("error want: %v, got: %v", tc.err, err)
+			}
+			if !reflect.DeepEqual(got, tc.want) {
+				t.Errorf("error want: %v, got: %v", tc.want, got)
+			}
+		}
+		t.Run(tc.desc, f)
+	}
+}

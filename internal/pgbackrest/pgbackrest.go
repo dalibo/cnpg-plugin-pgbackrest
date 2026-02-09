@@ -16,8 +16,19 @@ import (
 	"sync"
 
 	pgbackrestapi "github.com/dalibo/cnpg-i-pgbackrest/internal/pgbackrest/api"
+	"github.com/dalibo/cnpg-i-pgbackrest/internal/utils"
 	"sigs.k8s.io/controller-runtime/pkg/log"
 )
+
+type RestoreOptions struct {
+	Target         string `json:"target,omitempty"         env:"TARGET"`
+	TargetTimeline string `json:"targetTimeline,omitempty" env:"TARGET_TIMELINE"`
+	Type           string `json:"type,omitempty"           env:"TYPE"`
+}
+
+func (r RestoreOptions) ToEnv() ([]string, error) {
+	return utils.StructToEnvVars(r, "PGBACKREST_")
+}
 
 type BackupData struct {
 	Backup []pgbackrestapi.BackupInfo `json:"backup"`
