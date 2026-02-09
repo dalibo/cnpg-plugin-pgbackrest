@@ -44,7 +44,7 @@ func (impl JobHookImpl) Restore(
 ) (*restore.RestoreResponse, error) {
 	contextLogger := log.FromContext(ctx)
 	contextLogger.Info("Start restoring backup")
-	r, err := operator.GetStanza(ctx,
+	stanza, err := operator.GetStanza(ctx,
 		req,
 		impl.Client,
 		(*operator.PluginConfiguration).GetRecoveryStanzaRef,
@@ -52,7 +52,7 @@ func (impl JobHookImpl) Restore(
 	if err != nil {
 		return nil, err
 	}
-	env, err := operator.GetEnvVarConfig(ctx, *r, impl.Client)
+	env, err := operator.GetEnvVarConfig(ctx, *stanza, impl.Client)
 	if err != nil {
 		return nil, err
 	}
