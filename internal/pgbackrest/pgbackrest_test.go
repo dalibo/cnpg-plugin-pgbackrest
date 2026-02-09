@@ -45,7 +45,8 @@ var backupInfo = []pgbackrestapi.BackupInfo{
 			Start: 1710000000,
 			Stop:  1710003600,
 		},
-		Type: "full"},
+		Type: "full",
+	},
 }
 
 func TestLatestBackup(t *testing.T) {
@@ -108,17 +109,36 @@ func TestLatestBackup(t *testing.T) {
 }
 
 func TestParseDataForStanzaStatusCode(t *testing.T) {
-	type TestCase struct {
+	testCases := []struct {
 		desc string
 		data string
 		want bool
-	}
-	testCases := []TestCase{
-		{"code error", `[{"repo": [{"status": {"code": 2, "message": "BLA" }}]}]`, false},
-		{"code missing", `[{"repo": [{"status": {"message": "Machin" }}]}]`, false},
-		{"code ok", `[{"repo": [{"status": {"code": 0, "message": "OK" }}]}]`, true},
-		{"empty repo", `[{"repo": []}]`, false},
-		{"empty list", `[]`, false},
+	}{
+		{
+			"code error",
+			`[{"repo": [{"status": {"code": 2, "message": "BLA" }}]}]`,
+			false,
+		},
+		{
+			"code missing",
+			`[{"repo": [{"status": {"message": "Machin" }}]}]`,
+			false,
+		},
+		{
+			"code ok",
+			`[{"repo": [{"status": {"code": 0, "message": "OK" }}]}]`,
+			true,
+		},
+		{
+			"empty repo",
+			`[{"repo": []}]`,
+			false,
+		},
+		{
+			"empty list",
+			`[]`,
+			false,
+		},
 	}
 	for _, tc := range testCases {
 		f := func(t *testing.T) {
