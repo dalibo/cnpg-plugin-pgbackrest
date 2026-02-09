@@ -160,7 +160,7 @@ func (p *PgBackrest) runBackgroundTask(
 	return result
 }
 
-func (p *PgBackrest) StanzaExists() (bool, error) {
+func (p *PgBackrest) RepositoriesConfigured() (bool, error) {
 	cmd := p.run([]string{"info", "--output=json"}, nil)
 	stdout, err := cmd.CombinedOutput()
 	if err != nil {
@@ -170,26 +170,32 @@ func (p *PgBackrest) StanzaExists() (bool, error) {
 	if err := json.Unmarshal(stdout, &info); err != nil {
 		return false, fmt.Errorf("can't parse pgbackrest JSON: %w", err)
 	}
-	return parseDataForStatusCode(info), nil
+	return allReposHaveZeroStatusCode(info), nil
 }
 
-func parseDataForStatusCode(pgbackrestInfo []PgBackRestInfo) bool {
+func allReposHaveZeroStatusCode(pgbackrestInfo []PgBackRestInfo) bool {
+	if len(pgbackrestInfo) == 0 {
+		return false
+	}
 	for _, entry := range pgbackrestInfo {
-		for _, repo := range entry.Repo {
-			if repo.Status.Code != nil && *(repo.Status.Code) == 0 {
-				return true
+		if len(entry.Repo) == 0 {
+			return false
+		}
+		for _, r := range entry.Repo {
+			if r.Status.Code == nil || *(r.Status.Code) != 0 {
+				return false
 			}
 		}
 	}
-	return false
+	return true
 }
 
 func (p *PgBackrest) EnsureStanzaExists(stanza string) (bool, error) {
-	stanzaExist, err := p.StanzaExists()
+	repoConfigured, err := p.RepositoriesConfigured()
 	if err != nil {
 		return false, fmt.Errorf("can't determine if stanza exists, error %w", err)
 	}
-	if stanzaExist {
+	if repoConfigured {
 		return false, nil
 	}
 	cmd := p.run([]string{"stanza-create", "--stanza=" + stanza}, nil)
