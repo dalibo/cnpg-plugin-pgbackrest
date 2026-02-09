@@ -108,7 +108,7 @@ func TestLatestBackup(t *testing.T) {
 	}
 }
 
-func TestParseDataForStanzaStatusCode(t *testing.T) {
+func TestAllReposHaveZeroStatusCode(t *testing.T) {
 	testCases := []struct {
 		desc string
 		data string
@@ -130,6 +130,11 @@ func TestParseDataForStanzaStatusCode(t *testing.T) {
 			true,
 		},
 		{
+			"multiple repo, one is not yet configured",
+			`[{"repo":[{"key":1,"status":{"code":0,"message":"ok"}},{"key":2,"status":{"code":1,"message":"missing stanza path"}}]}]`,
+			false,
+		},
+		{
 			"empty repo",
 			`[{"repo": []}]`,
 			false,
@@ -148,7 +153,7 @@ func TestParseDataForStanzaStatusCode(t *testing.T) {
 				fmt.Println(err)
 				panic("should not happen")
 			}
-			got := parseDataForStatusCode(pgbackrestInfo)
+			got := allReposHaveZeroStatusCode(pgbackrestInfo)
 			if got != tc.want {
 				t.Errorf("error want: %v, got %v", tc.want, got)
 			}
