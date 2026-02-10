@@ -111,8 +111,13 @@ made.
 
 Stanzas are initialized when archiving the first WAL. Since the stanza
 initialization state is tracked internally, restarting the sidecar
-container will require running the `pgbackrest create-stanza` command
+container will cause the `pgbackrest create-stanza` command to run
 again.
+
+Adding a new repository to a stanza can require running the
+`create-stanza` command again. Currently, this is not done
+automatically. Restarting the `pgbackrest-plugin` container will launch
+the create-stanza command.
 
 ## WAL Archiving
 
