@@ -53,6 +53,10 @@ func recoveryTargetToRestoreOptions(
 	rt := b.Recovery.RecoveryTarget
 	res := pgbackrest.RestoreOptions{}
 
+	if rt.BackupID != "" {
+		res.Set = rt.BackupID
+	}
+
 	// only one target can be used
 	// TODO: handle TLI target ?
 	// more information about exclusivity:

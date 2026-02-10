@@ -24,6 +24,7 @@ type RestoreOptions struct {
 	Target         string `json:"target,omitempty"         env:"TARGET"`
 	TargetTimeline string `json:"targetTimeline,omitempty" env:"TARGET_TIMELINE"`
 	Type           string `json:"type,omitempty"           env:"TYPE"`
+	Set            string `json:"set,omitempty"            env:"SET"`
 }
 
 func (r RestoreOptions) ToEnv() ([]string, error) {
