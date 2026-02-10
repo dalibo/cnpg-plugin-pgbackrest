@@ -7,83 +7,82 @@ sidebar_position: 3
 ## Create an instance with pgBackRest
 
 The `examples` directory contains several pre-configured manifests
-designed to work with [`kind`](https://kind.sigs.k8s.io/)
-(Eg: the pull policy is set to `Never`). 
-These files may require modifications to run on other types of
-Kubernetes clusters.
+designed to work with [`kind`](https://kind.sigs.k8s.io/) (Eg: the pull
+policy is set to `Never`). These files may require modifications to run
+on other types of Kubernetes clusters.
 
 To use this plugin with a `Cluster`, CloudNativePG users must :
 
-1. Create a secret named `pgbackrest-s3-secret` in the namespace of the
-  PostgreSQL `Cluster`. This secret must contain the `key` and
-  `secret-key` of the `s3` bucket.
-
-  Example:
-
-  ```yaml title="secret.yaml"
-  ---
-  apiVersion: v1
-  kind: Secret
-  metadata:
-    name: pgbackrest-s3-secret
-  type: Opaque
-  stringData:
-    ACCESS_KEY_ID: <key_to_replace>
-    ACCESS_SECRET_KEY: <secret_to_replace>
-  ```
-
-2. Create a pgBackRest `stanza` :
-
-  Example:
-
-  ```yaml title="stanza.yaml"
-  ---
-  apiVersion: pgbackrest.dalibo.com/v1
-  kind: Stanza
-  metadata:
-    name: stanza-sample
-  spec:
-    stanzaConfiguration:
-      name: main
-      s3Repositories:
-        - bucket: demo
-          endpoint: s3.minio.svc.cluster.local
-          region: us-east-1
-          repoPath: /cluster-demo
-          uriStyle: path
-          verifyTLS: false
-          retentionPolicy:
-            full: 7
-            fullType: count
-            diff: 14
-            archive: 2
-            archiveType: full
-            history: 30
-          secretRef:
-            accessKeyId:
-              name: pgbackrest-s3-secret
-              key: ACCESS_KEY_ID
-            secretAccessKey:
-              name: pgbackrest-s3-secret
-              key: ACCESS_SECRET_KEY
-  ```
-
-:::note
-The `s3Repositories` variable is a list. You can
-configure multiple repositories. You can then select the repository to
-which your backup will be performed. By default :
-* the first repository is selected for backup ;
-* WAL archiving always occurs on all repositories.
-:::
-
-3. Create the PostgreSQL `Cluster` and adapt the manifest by :
-  * adding the plugin definition `pgbackrest.dalibo.com` under the
-    `plugins` entry;
-  * referencing the pgBackRest `stanza` resource with `stanzaRef`.
+1.  Create a `Secret` named `pgbackrest-s3-secret` in the namespace of
+    the PostgreSQL `Cluster`. This secret must contain the `key` and
+    `secret-key` of the `s3` bucket.
 
 Example:
 
-```yaml title="cluster.yaml"
+``` yaml
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: pgbackrest-s3-secret
+type: Opaque
+stringData:
+  ACCESS_KEY_ID: <key_to_replace>
+  ACCESS_SECRET_KEY: <secret_to_replace>
+```
+
+2.  Create a pgBackRest `stanza` :
+
+Example:
+
+``` yaml
+---
+apiVersion: pgbackrest.dalibo.com/v1
+kind: Stanza
+metadata:
+  name: stanza-sample
+spec:
+  stanzaConfiguration:
+    name: main
+    s3Repositories:
+      - bucket: demo
+        endpoint: s3.minio.svc.cluster.local
+        region: us-east-1
+        repoPath: /cluster-demo
+        uriStyle: path
+        verifyTLS: false
+        retentionPolicy:
+          full: 7
+          fullType: count
+          diff: 14
+          archive: 2
+          archiveType: full
+          history: 30
+        secretRef:
+          accessKeyId:
+            name: pgbackrest-s3-secret
+            key: ACCESS_KEY_ID
+          secretAccessKey:
+            name: pgbackrest-s3-secret
+            key: ACCESS_SECRET_KEY
+```
+
+:::note The `s3Repositories` variable is a list. You can configure
+multiple repositories. You can then select the repository to which your
+backup will be performed. By default :
+
+- the first repository is selected for backup ;
+- WAL archiving always occurs on all repositories. :::
+
+3.  Create the PostgreSQL `Cluster` and adapt the manifest by :
+
+- adding the plugin definition `pgbackrest.dalibo.com` under the
+  `plugins` entry;
+- referencing the pgBackRest `stanza` resource with `stanzaRef`.
+
+Example:
+
+``` yaml
 ---
 apiVersion: postgresql.cnpg.io/v1
 kind: Cluster
@@ -100,12 +99,12 @@ spec:
     size: 1Gi
 ```
 
-If it runs without errors, the `Pod` dedicated to the PostgreSQL `Cluster`
-should have now two containers. One for the `postgres` service (which is
-the default setup), an other one for the pgbackrest plugin, named
-`pgbackrest-plugin`. The injected container now holds the responsibility
-for archiving the WALs and triggering backups when a backup request is
-made.
+If it runs without errors, the `Pod` dedicated to the PostgreSQL
+`Cluster` should have now two containers. One for the `postgres` service
+(which is the default setup), an other one for the pgbackrest plugin,
+named `pgbackrest-plugin`. The injected container now holds the
+responsibility for archiving the WALs and triggering backups when a
+backup request is made.
 
 ## Stanza Initialization
 
