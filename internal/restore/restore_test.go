@@ -78,6 +78,23 @@ func TestRecoveryTargetToRestoreOption(t *testing.T) {
 			},
 		},
 		{
+			desc: "cluster with bootstrap section, target LSN and backupID",
+			cluster: newCluster(&cnpgv1.BootstrapConfiguration{
+				Recovery: &cnpgv1.BootstrapRecovery{
+					Source: "mysource",
+					RecoveryTarget: &cnpgv1.RecoveryTarget{
+						TargetLSN: "0/169EC40",
+						BackupID:  "mybackup",
+					},
+				},
+			}),
+			want: pgbackrest.RestoreOptions{
+				Target: "0/169EC40",
+				Type:   "lsn",
+				Set:    "mybackup",
+			},
+		},
+		{
 			desc: "cluster with bootstrap section and specific timeline",
 			cluster: newCluster(&cnpgv1.BootstrapConfiguration{
 				Recovery: &cnpgv1.BootstrapRecovery{
