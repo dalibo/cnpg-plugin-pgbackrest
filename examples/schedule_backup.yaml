@@ -5,6 +5,7 @@ metadata:
   name: scheduled-backup-example
 spec:
   method: plugin
+  target: primary
   pluginConfiguration:
     name: pgbackrest.dalibo.com
   cluster:
