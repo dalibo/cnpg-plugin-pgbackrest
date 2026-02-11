@@ -14,6 +14,7 @@ import (
 	"github.com/cloudnative-pg/machinery/pkg/stringset"
 	apipgbackrest "github.com/dalibo/cnpg-i-pgbackrest/api/v1"
 	"github.com/dalibo/cnpg-i-pgbackrest/internal/metadata"
+	"github.com/dalibo/cnpg-i-pgbackrest/internal/pgbackrest/api"
 	"github.com/dalibo/cnpg-i-pgbackrest/internal/utils"
 	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -185,6 +186,7 @@ func GetEnvVarConfig(
 	if err != nil {
 		return nil, err
 	}
+
 	// helper to fetch secret values
 	secretVal := func(ref *machineryapi.SecretKeySelector) (string, error) {
 		raw, err := utils.GetValueFromSecret(ctx, c, r.Namespace, ref)
@@ -204,6 +206,7 @@ func GetEnvVarConfig(
 			return nil, err
 		}
 		prefix := fmt.Sprintf("PGBACKREST_REPO%d_", i+1)
+
 		if r.Cipher != nil {
 			encKey, err := secretVal(r.Cipher.PassReference)
 			if err != nil {
@@ -218,6 +221,7 @@ func GetEnvVarConfig(
 			fmt.Sprintf("%sS3_KEY_SECRET=%s", prefix, sKey),
 			fmt.Sprintf("%sTYPE=%s", prefix, "s3"),
 		)
+
 	}
 	return env, nil
 }
@@ -238,6 +242,7 @@ func GetStanza(ctx context.Context,
 	if err != nil {
 		return nil, err
 	}
+	serverName := pluginConf.ServerName
 	stanzaFQDN, err := getRef(pluginConf)
 	if err != nil {
 		return nil, err
@@ -246,5 +251,11 @@ func GetStanza(ctx context.Context,
 	if err := cl.Get(ctx, *stanzaFQDN, &stanza); err != nil {
 		return nil, err
 	}
+
+	// add the cluster name in the repo-path
+	for r := range stanza.Spec.Configuration.S3Repositories {
+		api.AppendToRepoPath(&stanza.Spec.Configuration.S3Repositories[r], serverName)
+	}
+
 	return &stanza, nil
 }

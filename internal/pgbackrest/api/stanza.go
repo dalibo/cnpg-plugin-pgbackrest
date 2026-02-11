@@ -153,7 +153,7 @@ type S3Repository struct {
 	// +optional
 	SecretRef *SecretRef `json:"secretRef,omitempty"`
 
-	// Path where backups and archive are stored.
+	// Path where backups and archives are stored.
 	// +kubebuilder:validation:MinLength=1
 	RepoPath string `json:"repoPath" env:"_PATH"`
 
@@ -266,4 +266,8 @@ func (r *Stanza) ToEnv() ([]string, error) {
 	)
 
 	return envConf, nil
+}
+
+func AppendToRepoPath(r *S3Repository, serverName string) {
+	r.RepoPath = r.RepoPath + "/" + serverName
 }

@@ -348,3 +348,79 @@ func TestCreateAndRestoreInstance(t *testing.T) {
 	}
 
 }
+
+func TestDeployInstancesSameStanza(t *testing.T) {
+	log.SetLogger(zap.New(zap.WriteTo(os.Stdout), zap.UseDevMode(true)))
+	k8sClient, err := kubernetes.Client()
+	if k8sClient == nil || err != nil {
+		t.Fatalf("kubernetes client not initialized: %v", err)
+	}
+	ns := "default"
+	ctx := context.Background()
+	log.FromContext(ctx)
+	// first create a secret
+	secret, err := createSecret(ctx, k8sClient, ns)
+	if err != nil {
+		t.Fatalf("failed to create secret: %v", err)
+	}
+	defer func() {
+		if err := k8sClient.Delete(ctx, secret); err != nil {
+			t.Fatal("can't delete secret")
+		}
+	}()
+
+	// Create a new stanza
+	s, err := pgbackrest.CreateStanzaConfig(ctx, *k8sClient, "shared-stanza", "default")
+	if err != nil {
+		panic(err.Error())
+	}
+	defer func() {
+		if err := k8sClient.Delete(ctx, s); err != nil {
+			t.Fatal("can't delete stanza")
+		}
+	}()
+
+	// create a test CloudNativePG Cluster
+	clusterName := "cluster-shared"
+	p := map[string]string{
+		"stanzaRef": "shared-stanza",
+	}
+
+	c, err := cluster.Create(ctx, k8sClient, ns, clusterName, 1, "100M", p, false)
+	if err != nil {
+		t.Fatalf("failed to create cluster: %v", err)
+	}
+	defer func() {
+		if err := k8sClient.Delete(ctx, c); err != nil {
+			t.Fatal("can't delete cluster")
+		}
+	}()
+
+	if ready, err := k8sClient.PodIsReady(ctx, ns, clusterName+"-1", 80, 3); err != nil {
+		t.Fatalf("error when requesting pod status, %s", err.Error())
+	} else if !ready {
+		t.Fatal("pod not ready")
+	}
+
+	// create a second CloudNativePG Cluster that uses shared-stanza
+	clusterName2 := "cluster2-shared"
+
+	p2 := map[string]string{
+		"stanzaRef": "shared-stanza",
+	}
+	c2, err := cluster.Create(ctx, k8sClient, ns, clusterName2, 1, "100M", p2, false)
+	if err != nil {
+		t.Fatalf("failed to create cluster: %v", err)
+	}
+	defer func() {
+		if err := k8sClient.Delete(ctx, c2); err != nil {
+			t.Fatal("can't delete cluster")
+		}
+	}()
+
+	if ready, err := k8sClient.PodIsReady(ctx, ns, clusterName2+"-1", 80, 3); err != nil {
+		t.Fatalf("error when requesting pod status, %s", err.Error())
+	} else if !ready {
+		t.Fatal("pod not ready")
+	}
+}

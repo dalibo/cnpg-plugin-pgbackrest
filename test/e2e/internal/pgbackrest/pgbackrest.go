@@ -54,7 +54,7 @@ func NewStanzaConfig(
 						Region:    "us-east-1",
 						VerifyTLS: &verifyTls,
 						UriStyle:  "path",
-						RepoPath:  "/repo01" + name,
+						RepoPath:  "/repo01",
 						RetentionPolicy: pgbackrest.Retention{
 							FullType: "count",
 							Full:     7,
