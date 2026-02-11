@@ -217,10 +217,17 @@ func (p *PgBackrest) GetWAL(
 	return p.runBackgroundTask(ctx, []string{"archive-get", walName, dstPath}, nil)
 }
 
-func (p *PgBackrest) Backup() error {
+func (p *PgBackrest) Backup(backupType string) error {
 	env := make([]string, 1)
 	env = append(env, "PGBACKREST_ARCHIVE_CHECK=n")
-	cmd := p.run([]string{"backup"}, env)
+	if backupType != "" {
+		if backupType != "full" && backupType != "diff" && backupType != "incr" {
+			return fmt.Errorf("invalid backup type %q: must be one of full, diff, incr", backupType)
+		}
+		env = append(env, "PGBACKREST_TYPE="+backupType)
+	}
+	args := []string{"backup"}
+	cmd := p.run(args, env)
 	output, err := cmd.CombinedOutput()
 	if err != nil {
 		return fmt.Errorf("can't backup: %s, error : %w", string(output), err)

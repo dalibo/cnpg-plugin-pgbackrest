@@ -237,7 +237,7 @@ func TestBackup(t *testing.T) {
 		fExec := execCalls{}
 		t.Run(tc.desc, func(t *testing.T) {
 			pgb := newPgBackrestWithRunner(nil, fExec.fakeCmdRunner(backup, nil))
-			pgb.Backup() //nolint:errcheck
+			pgb.Backup("") //nolint:errcheck
 			if !reflect.DeepEqual(fExec, tc.want) {
 				t.Errorf("error want %v, got %v", fExec, tc.want)
 			}
@@ -418,5 +418,35 @@ func TestRestoreOptionToEnv(t *testing.T) {
 			}
 		}
 		t.Run(tc.desc, f)
+	}
+}
+
+func TestBackupValidation(t *testing.T) {
+	testCases := []struct {
+		desc       string
+		backupType string
+		wantErr    bool
+	}{
+		{"empty string is valid", "", false},
+		{"full is valid", "full", false},
+		{"diff is valid", "diff", false},
+		{"incr is valid", "incr", false},
+		{"typo ful is invalid", "ful", true},
+		{"uppercase FULL is invalid", "FULL", true},
+		{"incremental is invalid", "incremental", true},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.desc, func(t *testing.T) {
+			fExec := execCalls{}
+			pgb := newPgBackrestWithRunner(nil, fExec.fakeCmdRunner("", nil))
+			err := pgb.Backup(tc.backupType)
+			if tc.wantErr && err == nil {
+				t.Errorf("expected error for backup type %q, got nil", tc.backupType)
+			}
+			if !tc.wantErr && err != nil {
+				t.Errorf("unexpected error for backup type %q: %v", tc.backupType, err)
+			}
+		})
 	}
 }

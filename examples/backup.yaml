@@ -7,5 +7,7 @@ spec:
   method: plugin
   pluginConfiguration:
     name: pgbackrest.dalibo.com
+    parameters:
+      backupType: full  # full, diff or incr (default: incr)
   cluster:
     name: cluster-sample
