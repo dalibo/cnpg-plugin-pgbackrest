@@ -219,6 +219,7 @@ func TestDeployInstance(t *testing.T) {
 
 	// create a test CloudNativePG Cluster
 	clusterName := "cluster-demo"
+	podName := clusterName + "-1"
 
 	p := maps.Clone(cluster.DefaultParamater)
 	c, err := cluster.Create(ctx, k8sClient, ns, clusterName, 1, "100M", p, false)
@@ -231,7 +232,7 @@ func TestDeployInstance(t *testing.T) {
 		}
 	}()
 
-	if ready, err := k8sClient.PodIsReady(ctx, ns, clusterName+"-1", 80, 3); err != nil {
+	if ready, err := k8sClient.PodIsReady(ctx, ns, podName, 80, 3); err != nil {
 		t.Fatalf("error when requesting pod status, %s", err.Error())
 	} else if !ready {
 		t.Fatal("pod not ready")
@@ -274,6 +275,7 @@ func TestCreateAndRestoreInstance(t *testing.T) {
 	// in pgBackRest stanza
 
 	clusterName := "cluster-restored"
+	podName := clusterName + "-1"
 
 	p := map[string]string{
 		"stanzaRef": "stanza-restored",
@@ -288,7 +290,7 @@ func TestCreateAndRestoreInstance(t *testing.T) {
 			t.Fatal("can't delete cluster")
 		}
 	}()
-	if ready, err := k8sClient.PodIsReady(ctx, ns, clusterName+"-1", 80, 3); err != nil {
+	if ready, err := k8sClient.PodIsReady(ctx, ns, podName, 80, 3); err != nil {
 		t.Fatalf("error when requesting pod status, %s", err.Error())
 	} else if !ready {
 		t.Fatal("pod not ready")
@@ -333,7 +335,7 @@ func TestCreateAndRestoreInstance(t *testing.T) {
 	if err := k8sClient.Delete(ctx, c); err != nil {
 		t.Fatal("can't delete cluster")
 	}
-	if _, err = k8sClient.PodIsAbsent(ctx, ns, clusterName+"-1", 10, 3); err != nil {
+	if _, err = k8sClient.PodIsAbsent(ctx, ns, podName, 10, 3); err != nil {
 		t.Fatal("can't ensure cluster is absent")
 	}
 
@@ -341,7 +343,7 @@ func TestCreateAndRestoreInstance(t *testing.T) {
 	if _, err = cluster.Create(ctx, k8sClient, ns, clusterName, 1, "100M", p, true); err != nil {
 		t.Fatal("can't recreate cluster from backup")
 	}
-	if ready, err := k8sClient.PodIsReady(ctx, ns, clusterName+"-1", 80, 3); err != nil {
+	if ready, err := k8sClient.PodIsReady(ctx, ns, podName, 80, 3); err != nil {
 		t.Fatalf("error when requesting pod status, %s", err.Error())
 	} else if !ready {
 		t.Fatal("pod not ready")
