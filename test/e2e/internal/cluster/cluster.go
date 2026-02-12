@@ -36,8 +36,9 @@ func New(
 ) *cloudnativepgv1.Cluster {
 	pluginConfig := []cloudnativepgv1.PluginConfiguration{
 		{
-			Name:       "pgbackrest.dalibo.com",
-			Parameters: pluginParam,
+			Name:          "pgbackrest.dalibo.com",
+			IsWALArchiver: ptr.To(true),
+			Parameters:    pluginParam,
 		},
 	}
 	cluster := &cloudnativepgv1.Cluster{
