@@ -9,6 +9,7 @@ import (
 	"io"
 	"maps"
 	"os"
+	"strings"
 	"testing"
 
 	cloudnativepgv1 "github.com/cloudnative-pg/api/pkg/api/v1"
@@ -16,6 +17,7 @@ import (
 	"github.com/dalibo/cnpg-i-pgbackrest/test/e2e/internal/certmanager"
 	"github.com/dalibo/cnpg-i-pgbackrest/test/e2e/internal/cluster"
 	"github.com/dalibo/cnpg-i-pgbackrest/test/e2e/internal/cnpg"
+	"github.com/dalibo/cnpg-i-pgbackrest/test/e2e/internal/command"
 	"github.com/dalibo/cnpg-i-pgbackrest/test/e2e/internal/common"
 	"github.com/dalibo/cnpg-i-pgbackrest/test/e2e/internal/kubernetes"
 	"github.com/dalibo/cnpg-i-pgbackrest/test/e2e/internal/minio"
@@ -161,7 +163,7 @@ func takeBackup(
 	if err != nil {
 		t.Fatalf("error when executing backup %v", err)
 	}
-	retrier, err := common.NewRetrier(80)
+	retrier, err := common.NewRetrier(115)
 	if err != nil {
 		panic("can't initiate retrier")
 	}
@@ -222,7 +224,7 @@ func TestDeployInstance(t *testing.T) {
 	podName := clusterName + "-1"
 
 	p := maps.Clone(cluster.DefaultParamater)
-	c, err := cluster.Create(ctx, k8sClient, ns, clusterName, 1, "100M", p, false)
+	c, err := cluster.Create(ctx, k8sClient, ns, clusterName, 1, "100M", p, nil)
 	if err != nil {
 		t.Fatalf("failed to create cluster: %v", err)
 	}
@@ -281,7 +283,7 @@ func TestCreateAndRestoreInstance(t *testing.T) {
 		"stanzaRef": "stanza-restored",
 	}
 
-	c, err := cluster.Create(ctx, k8sClient, ns, clusterName, 1, "100M", p, false)
+	c, err := cluster.Create(ctx, k8sClient, ns, clusterName, 1, "100M", p, nil)
 	if err != nil {
 		t.Fatalf("failed to create cluster: %v", err)
 	}
@@ -312,6 +314,60 @@ func TestCreateAndRestoreInstance(t *testing.T) {
 		t.Fatal("registered backup data are invalid after first backup")
 	}
 
+	// few helpers func to create table, insert data,...
+	createDumpData := func() {
+		stdout, stderr, err := command.ExecutePSQLInPostgresContainer(
+			ctx,
+			*k8sClient.ClientSet,
+			k8sClient.Cfg,
+			ns,
+			podName,
+			`CREATE TABLE IF NOT EXISTS wal_test_insert (id SERIAL PRIMARY KEY, data TEXT);
+			SELECT pg_switch_wal();
+			INSERT INTO wal_test_insert(data) SELECT repeat('x', 1000) FROM generate_series(1, 5000);`,
+		)
+		if err != nil {
+			t.Fatalf(
+				"could not execute command, output %v, stderr %v, err %v",
+				stdout,
+				stderr,
+				err.Error(),
+			)
+		}
+	}
+	countRow := func() string {
+		stdout, stderr, err := command.ExecutePSQLInPostgresContainer(
+			ctx,
+			*k8sClient.ClientSet,
+			k8sClient.Cfg,
+			ns,
+			podName,
+			"SELECT count(*) FROM wal_test_insert;",
+		)
+		if err != nil {
+			t.Fatalf("could not execute command, output %v, stderr %v", stdout, stderr)
+		}
+		return stdout
+	}
+
+	createDumpData()
+
+	// get current date and number of row. now() result  will be used to restore to
+	// this point
+	curDate, stderr, err := command.ExecutePSQLInPostgresContainer(
+		ctx,
+		*k8sClient.ClientSet,
+		k8sClient.Cfg,
+		ns,
+		podName,
+		"SELECT now();",
+	)
+	if err != nil {
+		t.Fatalf("could not execute command, output %v, stderr %v", curDate, stderr)
+	}
+	curDate = strings.TrimSpace(curDate)
+	numOfRowAfterFirstInsert := countRow()
+
 	// take a second backup
 	b2 := takeBackup(ctx, t, k8sClient, ns, clusterName, "backup-02", p)
 	defer func() {
@@ -319,6 +375,9 @@ func TestCreateAndRestoreInstance(t *testing.T) {
 			t.Fatalf("can't delete backup-02: %v", delErr)
 		}
 	}()
+
+	// then re-instert data to ensure we have some activity on the cluster
+	createDumpData()
 
 	// check stored backup info / status
 	stanza = getStanza(ctx, t, k8sClient, ns, "stanza-restored")
@@ -340,13 +399,33 @@ func TestCreateAndRestoreInstance(t *testing.T) {
 	}
 
 	// recreate cluster from backup (recovery: true)
-	if _, err = cluster.Create(ctx, k8sClient, ns, clusterName, 1, "100M", p, true); err != nil {
-		t.Fatal("can't recreate cluster from backup")
+	_, err = cluster.Create(
+		ctx,
+		k8sClient,
+		ns,
+		clusterName,
+		1,
+		"100M",
+		p,
+		&cluster.RestoreOption{
+			RecoveryTarget: &cloudnativepgv1.RecoveryTarget{TargetTime: curDate},
+		},
+	)
+	if err != nil {
+		t.Fatalf("can't recreate cluster from backup, %v", err)
 	}
 	if ready, err := k8sClient.PodIsReady(ctx, ns, podName, 80, 3); err != nil {
 		t.Fatalf("error when requesting pod status, %s", err.Error())
 	} else if !ready {
 		t.Fatal("pod not ready")
+	}
+	numberOfRowAferRestore := countRow()
+	if numOfRowAfterFirstInsert != numberOfRowAferRestore {
+		t.Fatalf(
+			"restore error, number of row does not match %v, %v",
+			numOfRowAfterFirstInsert,
+			numberOfRowAferRestore,
+		)
 	}
 
 }

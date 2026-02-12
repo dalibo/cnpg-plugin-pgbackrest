@@ -21,14 +21,18 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/intstr"
 	"k8s.io/apimachinery/pkg/util/wait"
+	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/kubernetes/scheme"
+	"k8s.io/client-go/rest"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/config"
 )
 
 // may be we should use go-client instead ?!
 type K8sClient struct {
-	client client.Client
+	client    client.Client
+	Cfg       *rest.Config
+	ClientSet *kubernetes.Clientset
 }
 
 func init() {
@@ -43,11 +47,15 @@ func Client() (*K8sClient, error) {
 	if err != nil {
 		return nil, err
 	}
+	clientset, err := kubernetes.NewForConfig(conf)
+	if err != nil {
+		return nil, fmt.Errorf("can't create k8s clientset %w", err)
+	}
 	c, err := client.New(conf, client.Options{})
 	if err != nil {
 		return nil, fmt.Errorf("can't create k8s client %w", err)
 	}
-	return &K8sClient{client: c}, nil
+	return &K8sClient{client: c, ClientSet: clientset, Cfg: conf}, nil
 }
 
 func (cl K8sClient) Get(

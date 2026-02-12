@@ -15,10 +15,15 @@ import (
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
+	"k8s.io/utils/ptr"
 )
 
 var DefaultParamater map[string]string = map[string]string{
 	"stanzaRef": "stanza",
+}
+
+type RestoreOption struct {
+	RecoveryTarget *cloudnativepgv1.RecoveryTarget
 }
 
 func New(
@@ -27,7 +32,7 @@ func New(
 	nbrInstances int,
 	size string,
 	pluginParam map[string]string,
-	restore bool,
+	restore *RestoreOption,
 ) *cloudnativepgv1.Cluster {
 	pluginConfig := []cloudnativepgv1.PluginConfiguration{
 		{
@@ -56,12 +61,15 @@ func New(
 			},
 		},
 	}
-	if restore {
+	if restore != nil {
 		externalName := "origin"
 		cluster.Spec.Bootstrap = &cloudnativepgv1.BootstrapConfiguration{
 			Recovery: &cloudnativepgv1.BootstrapRecovery{
 				Source: externalName,
 			},
+		}
+		if restore.RecoveryTarget != nil {
+			cluster.Spec.Bootstrap.Recovery.RecoveryTarget = restore.RecoveryTarget
 		}
 		cluster.Spec.ExternalClusters = []cloudnativepgv1.ExternalCluster{
 			{
@@ -81,9 +89,9 @@ func Create(
 	nbrInstances int,
 	size string,
 	pluginParam map[string]string,
-	recovery bool,
+	restore *RestoreOption,
 ) (*cloudnativepgv1.Cluster, error) {
-	m := New(namespace, name, nbrInstances, size, pluginParam, recovery)
+	m := New(namespace, name, nbrInstances, size, pluginParam, restore)
 	if err := k8sClient.Create(ctx, m); err != nil {
 		return nil, err
 	}
