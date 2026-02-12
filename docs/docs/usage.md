@@ -125,3 +125,70 @@ possible to define the WAL archiving strategy (e.g. [using the
 `asynchronous`
 mode](https://pgbackrest.org/configuration.html#section-archive/option-archive-async))
 as well as configure the `pgbackrest` queue size.
+
+## Restoring a Cluster
+
+To restore a `Cluster` from a backup, create a new `Cluster` that
+references the `Stanza` containing the backup. Below is an example:
+
+``` yaml
+---
+apiVersion: postgresql.cnpg.io/v1
+kind: Cluster
+metadata:
+  name: cluster-restored
+spec:
+  instances: 1
+  plugins:
+    - name: pgbackrest.dalibo.com
+      parameters:
+        stanzaRef: stanza-sample
+  storage:
+    size: 1Gi
+  bootstrap:
+    recovery:
+      source: origin
+  externalClusters:
+    - name: origin
+      plugin:
+        name: pgbackrest.dalibo.com
+        parameters:
+          stanzaRef: stanza-sample
+```
+
+When using the recovery options, the `recoveryTarget` can be specified
+to perform point-in-time recovery using a specific strategy (based on
+time, LSN, etc.). If it is not specified, the recovery will continue up
+to the latest available WAL.
+
+``` yaml
+---
+apiVersion: postgresql.cnpg.io/v1
+kind: Cluster
+metadata:
+  name: cluster-restored
+spec:
+  instances: 1
+  plugins:
+    - name: pgbackrest.dalibo.com
+      parameters:
+        stanzaRef: stanza-sample
+  storage:
+    size: 1Gi
+  bootstrap:
+    recovery:
+      source: origin
+      recoveryTarget:
+        backupID: 20260210-101333F
+  externalClusters:
+    - name: origin
+      plugin:
+        name: pgbackrest.dalibo.com
+        parameters:
+          stanzaRef: stanza-sample
+```
+
+If no specific backup (BackupID) is specified, the plugin lets
+pgBackRest automatically choose the optimal backup using its standard
+algorithm. For more details, see the [pgBackRest restore
+documentation](https://pgbackrest.org/command.html#command-restore).
