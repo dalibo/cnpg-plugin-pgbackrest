@@ -106,7 +106,23 @@ named `pgbackrest-plugin`. The injected container now holds the
 responsibility for archiving the WALs and triggering backups when a
 backup request is made.
 
-## Stanza Initialization
+## Stanza Consideration
+
+We chose to adhere to the concepts of the pgBackRest project, especially
+regarding the scope of a `Stanza` object.
+
+As stated in the
+[documentation](https://pgbackrest.org/user-guide.html#quickstart/configure-stanza),
+a *stanza* is specific to a PostgreSQL instance cluster.
+
+> A stanza is the configuration for a PostgreSQL database cluster that
+> defines where it is located, how it will be backed up, archiving
+> options, etc.
+
+Therefore, you will need to create as many `Stanza` objects as you have
+deployed `Cluster`.
+
+### Stanza Initialization
 
 Stanzas are initialized when archiving the first WAL. Since the stanza
 initialization state is tracked internally, restarting the sidecar
