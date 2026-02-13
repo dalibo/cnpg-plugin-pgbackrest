@@ -122,7 +122,7 @@ a *stanza* is specific to a PostgreSQL instance cluster.
 Therefore, you will need to create as many `Stanza` objects as you have
 deployed `Cluster`.
 
-### Stanza Initialization
+### Stanza Initialization (or create-stanza operation)
 
 Stanzas are initialized when archiving the first WAL. Since the stanza
 initialization state is tracked internally, restarting the sidecar
