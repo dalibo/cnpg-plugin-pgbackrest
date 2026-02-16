@@ -2,6 +2,13 @@
 sidebar_position: 3
 ---
 
+import CodeBlock from '@theme/CodeBlock';
+import Secret from '!!raw-loader!../../examples/secret.yaml';
+import Stanza from '!!raw-loader!../../examples/stanza.yaml';
+import Cluster from '!!raw-loader!../../examples/cluster.yaml';
+import ClusterRestored from '!!raw-loader!../../examples/cluster_restored.yaml';
+import ClusterRestoredBackupID from '!!raw-loader!../../examples/cluster_restored_backupid.yaml';
+
 # Using the plugin
 
 ## Create an instance with pgBackRest
@@ -19,60 +26,21 @@ To use this plugin with a `Cluster`, CloudNativePG users must :
 
 Example:
 
-``` yaml
----
-apiVersion: v1
-kind: Secret
-metadata:
-  name: pgbackrest-s3-secret
-type: Opaque
-stringData:
-  ACCESS_KEY_ID: <key_to_replace>
-  ACCESS_SECRET_KEY: <secret_to_replace>
-```
+<CodeBlock language="yaml">{Secret}</CodeBlock>
 
 2.  Create a pgBackRest `stanza` :
 
 Example:
 
-``` yaml
----
-apiVersion: pgbackrest.dalibo.com/v1
-kind: Stanza
-metadata:
-  name: stanza-sample
-spec:
-  stanzaConfiguration:
-    name: main
-    s3Repositories:
-      - bucket: demo
-        endpoint: s3.minio.svc.cluster.local
-        region: us-east-1
-        repoPath: /cluster-demo
-        uriStyle: path
-        verifyTLS: false
-        retentionPolicy:
-          full: 7
-          fullType: count
-          diff: 14
-          archive: 2
-          archiveType: full
-          history: 30
-        secretRef:
-          accessKeyId:
-            name: pgbackrest-s3-secret
-            key: ACCESS_KEY_ID
-          secretAccessKey:
-            name: pgbackrest-s3-secret
-            key: ACCESS_SECRET_KEY
-```
+<CodeBlock language="yaml">{Stanza}</CodeBlock>
 
 :::note The `s3Repositories` variable is a list. You can configure
 multiple repositories. You can then select the repository to which your
 backup will be performed. By default :
 
 - the first repository is selected for backup ;
-- WAL archiving always occurs on all repositories. :::
+- WAL archiving always occurs on all repositories.
+:::
 
 3.  Create the PostgreSQL `Cluster` and adapt the manifest by :
 
@@ -82,22 +50,7 @@ backup will be performed. By default :
 
 Example:
 
-``` yaml
----
-apiVersion: postgresql.cnpg.io/v1
-kind: Cluster
-metadata:
-  name: cluster-demo
-spec:
-  instances: 1
-  plugins:
-    - name: pgbackrest.dalibo.com
-      isWALArchiver: true
-      parameters:
-        stanzaRef: stanza-sample
-  storage:
-    size: 1Gi
-```
+<CodeBlock language="yaml">{Cluster}</CodeBlock>
 
 If it runs without errors, the `Pod` dedicated to the PostgreSQL
 `Cluster` should have now two containers. One for the `postgres` service
@@ -147,62 +100,14 @@ as well as configure the `pgbackrest` queue size.
 To restore a `Cluster` from a backup, create a new `Cluster` that
 references the `Stanza` containing the backup. Below is an example:
 
-``` yaml
----
-apiVersion: postgresql.cnpg.io/v1
-kind: Cluster
-metadata:
-  name: cluster-restored
-spec:
-  instances: 1
-  plugins:
-    - name: pgbackrest.dalibo.com
-      parameters:
-        stanzaRef: stanza-sample
-  storage:
-    size: 1Gi
-  bootstrap:
-    recovery:
-      source: origin
-  externalClusters:
-    - name: origin
-      plugin:
-        name: pgbackrest.dalibo.com
-        parameters:
-          stanzaRef: stanza-sample
-```
+<CodeBlock language="yaml">{ClusterRestored}</CodeBlock>
 
 When using the recovery options, the `recoveryTarget` can be specified
 to perform point-in-time recovery using a specific strategy (based on
 time, LSN, etc.). If it is not specified, the recovery will continue up
 to the latest available WAL.
 
-``` yaml
----
-apiVersion: postgresql.cnpg.io/v1
-kind: Cluster
-metadata:
-  name: cluster-restored
-spec:
-  instances: 1
-  plugins:
-    - name: pgbackrest.dalibo.com
-      parameters:
-        stanzaRef: stanza-sample
-  storage:
-    size: 1Gi
-  bootstrap:
-    recovery:
-      source: origin
-      recoveryTarget:
-        backupID: 20260210-101333F
-  externalClusters:
-    - name: origin
-      plugin:
-        name: pgbackrest.dalibo.com
-        parameters:
-          stanzaRef: stanza-sample
-```
+<CodeBlock language="yaml">{ClusterRestoredBackupID}</CodeBlock>
 
 If no specific backup (BackupID) is specified, the plugin lets
 pgBackRest automatically choose the optimal backup using its standard
