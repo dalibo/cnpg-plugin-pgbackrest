@@ -4,7 +4,7 @@ sidebar_position: 5
 
 import CodeBlock from '@theme/CodeBlock';
 import Backup from '!!raw-loader!../../examples/backup.yaml';
-import ScheduledBackup from '!!raw-loader!../../examples/schedule_backup.yaml';
+import ScheduleBackup from '!!raw-loader!../../examples/schedule_backup.yaml';
 
 # Backuping an instance
 
