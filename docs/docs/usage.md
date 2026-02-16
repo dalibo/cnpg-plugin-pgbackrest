@@ -4,6 +4,13 @@ sidebar_position: 3
 
 # Using the plugin
 
+## Importing test
+
+import CodeBlock from '@theme/CodeBlock';
+import Secret from '!!raw-loader!../../examples/secret.yaml';
+import Stanza from '!!raw-loader!../../examples/stanza.yaml';
+import Cluster from '!!raw-loader!../../examples/cluster.yaml';
+
 ## Create an instance with pgBackRest
 
 The `examples` directory contains several pre-configured manifests
@@ -19,53 +26,13 @@ To use this plugin with a `Cluster`, CloudNativePG users must :
 
 Example:
 
-``` yaml
----
-apiVersion: v1
-kind: Secret
-metadata:
-  name: pgbackrest-s3-secret
-type: Opaque
-stringData:
-  ACCESS_KEY_ID: <key_to_replace>
-  ACCESS_SECRET_KEY: <secret_to_replace>
-```
+<CodeBlock language="yaml">{Secret}</CodeBlock>
 
 2.  Create a pgBackRest `stanza` :
 
 Example:
 
-``` yaml
----
-apiVersion: pgbackrest.dalibo.com/v1
-kind: Stanza
-metadata:
-  name: stanza-sample
-spec:
-  stanzaConfiguration:
-    name: main
-    s3Repositories:
-      - bucket: demo
-        endpoint: s3.minio.svc.cluster.local
-        region: us-east-1
-        repoPath: /cluster-demo
-        uriStyle: path
-        verifyTLS: false
-        retentionPolicy:
-          full: 7
-          fullType: count
-          diff: 14
-          archive: 2
-          archiveType: full
-          history: 30
-        secretRef:
-          accessKeyId:
-            name: pgbackrest-s3-secret
-            key: ACCESS_KEY_ID
-          secretAccessKey:
-            name: pgbackrest-s3-secret
-            key: ACCESS_SECRET_KEY
-```
+<CodeBlock language="yaml">{Stanza}</CodeBlock>
 
 :::note The `s3Repositories` variable is a list. You can configure
 multiple repositories. You can then select the repository to which your
@@ -82,22 +49,7 @@ backup will be performed. By default :
 
 Example:
 
-``` yaml
----
-apiVersion: postgresql.cnpg.io/v1
-kind: Cluster
-metadata:
-  name: cluster-demo
-spec:
-  instances: 1
-  plugins:
-    - name: pgbackrest.dalibo.com
-      isWALArchiver: true
-      parameters:
-        stanzaRef: stanza-sample
-  storage:
-    size: 1Gi
-```
+<CodeBlock language="yaml">{Cluster}</CodeBlock>
 
 If it runs without errors, the `Pod` dedicated to the PostgreSQL
 `Cluster` should have now two containers. One for the `postgres` service
