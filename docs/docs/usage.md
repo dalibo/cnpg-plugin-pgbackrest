@@ -2,14 +2,14 @@
 sidebar_position: 3
 ---
 
-# Using the plugin
-
-## Importing test
-
 import CodeBlock from '@theme/CodeBlock';
 import Secret from '!!raw-loader!../../examples/secret.yaml';
 import Stanza from '!!raw-loader!../../examples/stanza.yaml';
 import Cluster from '!!raw-loader!../../examples/cluster.yaml';
+import ClusterRestored from '!!raw-loader!../../examples/cluster_restored.yaml';
+import ClusterRestoredBackupID from '!!raw-loader!../../examples/cluster_restored_backupid.yaml';
+
+# Using the plugin
 
 ## Create an instance with pgBackRest
 
@@ -39,7 +39,8 @@ multiple repositories. You can then select the repository to which your
 backup will be performed. By default :
 
 - the first repository is selected for backup ;
-- WAL archiving always occurs on all repositories. :::
+- WAL archiving always occurs on all repositories.
+:::
 
 3.  Create the PostgreSQL `Cluster` and adapt the manifest by :
 
@@ -99,62 +100,14 @@ as well as configure the `pgbackrest` queue size.
 To restore a `Cluster` from a backup, create a new `Cluster` that
 references the `Stanza` containing the backup. Below is an example:
 
-``` yaml
----
-apiVersion: postgresql.cnpg.io/v1
-kind: Cluster
-metadata:
-  name: cluster-restored
-spec:
-  instances: 1
-  plugins:
-    - name: pgbackrest.dalibo.com
-      parameters:
-        stanzaRef: stanza-sample
-  storage:
-    size: 1Gi
-  bootstrap:
-    recovery:
-      source: origin
-  externalClusters:
-    - name: origin
-      plugin:
-        name: pgbackrest.dalibo.com
-        parameters:
-          stanzaRef: stanza-sample
-```
+<CodeBlock language="yaml">{ClusterRestored}</CodeBlock>
 
 When using the recovery options, the `recoveryTarget` can be specified
 to perform point-in-time recovery using a specific strategy (based on
 time, LSN, etc.). If it is not specified, the recovery will continue up
 to the latest available WAL.
 
-``` yaml
----
-apiVersion: postgresql.cnpg.io/v1
-kind: Cluster
-metadata:
-  name: cluster-restored
-spec:
-  instances: 1
-  plugins:
-    - name: pgbackrest.dalibo.com
-      parameters:
-        stanzaRef: stanza-sample
-  storage:
-    size: 1Gi
-  bootstrap:
-    recovery:
-      source: origin
-      recoveryTarget:
-        backupID: 20260210-101333F
-  externalClusters:
-    - name: origin
-      plugin:
-        name: pgbackrest.dalibo.com
-        parameters:
-          stanzaRef: stanza-sample
-```
+<CodeBlock language="yaml">{ClusterRestoredBackupID}</CodeBlock>
 
 If no specific backup (BackupID) is specified, the plugin lets
 pgBackRest automatically choose the optimal backup using its standard
