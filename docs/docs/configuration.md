@@ -2,6 +2,9 @@
 sidebar_position: 6
 ---
 
+import CodeBlock from '@theme/CodeBlock';
+import StanzaCustom from '!!raw-loader!../../examples/stanza_custom.yaml';
+
 # Configuration
 
 This pgBackRest plugin supports three levels of configuration:
