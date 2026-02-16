@@ -2,6 +2,10 @@
 sidebar_position: 5
 ---
 
+import CodeBlock from '@theme/CodeBlock';
+import Backup from '!!raw-loader!../../examples/backup.yaml';
+import ScheduledBackup from '!!raw-loader!../../examples/schedule_backup.yaml';
+
 # Backuping an instance
 
 There are two ways to backup a PostgreSQL Cluster with this plugin through the CloudNativePG operator :
@@ -29,19 +33,7 @@ when declaring the `Backup` object. The `method` should be set to
 Here is a full example of a backup definition using the pgBackRest
 plugin :
 
-```yaml title="backup.yaml"
----
-apiVersion: postgresql.cnpg.io/v1
-kind: Backup
-metadata:
-  name: backup-example
-spec:
-  method: plugin
-  cluster:
-    name: cluster-demo
-  pluginConfiguration:
-    name: pgbackrest.dalibo.com
-```
+<CodeBlock language="yaml">{Backup}</CodeBlock>
 
 It's also possible to use the `cnpg` plugin for `kubectl` to perform 
 your backup :
@@ -78,17 +70,4 @@ also be defined under the specification (`spec`).
 Here is a full example of a scheduled backup definition using the
 pgbackrest plugin :
 
-```yaml title="scheduled-backup.yaml"
----
-apiVersion: postgresql.cnpg.io/v1
-kind: ScheduledBackup
-metadata:
-  name: backup-example
-spec:
-  schedule: "0 30 * * * *"
-  method: plugin
-  cluster:
-    name: cluster-demo
-  pluginConfiguration:
-    name: pgbackrest.dalibo.com
-```
+<CodeBlock language="yaml">{ScheduleBackup}</CodeBlock>
