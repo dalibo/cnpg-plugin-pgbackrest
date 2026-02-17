@@ -30,6 +30,11 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
 )
 
+var _S3_DATA_SECRET map[string]string = map[string]string{
+	"ACCESS_KEY_ID":     minio.ACCESS_KEY,
+	"ACCESS_SECRET_KEY": minio.SECRET_KEY,
+	"ENCRYPTION_PASS":   "3nCrypTi0n",
+}
 // Deploy CNGP operator, certmanager, minio and our plugins
 func setup() {
 	k8sClient, err := kubernetes.Client()
@@ -71,7 +76,9 @@ func setup() {
 func createSecret(
 	ctx context.Context,
 	k8sClient *kubernetes.K8sClient,
-	namespace string,
+	namespace,
+	name string,
+	data map[string]string,
 ) (*corev1.Secret, error) {
 	// TODO: move that ?
 	secret := &corev1.Secret{
@@ -80,15 +87,11 @@ func createSecret(
 			Kind:       "Secret",
 		},
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      "pgbackrest-s3-secret",
+			Name:      name,
 			Namespace: namespace,
 		},
-		Type: corev1.SecretTypeOpaque,
-		StringData: map[string]string{
-			"ACCESS_KEY_ID":     minio.ACCESS_KEY,
-			"ACCESS_SECRET_KEY": minio.SECRET_KEY,
-			"ENCRYPTION_PASS":   "3nCrypTi0n",
-		},
+		Type:       corev1.SecretTypeOpaque,
+		StringData: data,
 	}
 	return secret, k8sClient.Create(ctx, secret)
 }
@@ -198,7 +201,7 @@ func TestDeployInstance(t *testing.T) {
 	ctx := context.Background()
 	log.FromContext(ctx)
 	// first create a secret
-	secret, err := createSecret(ctx, k8sClient, ns)
+	secret, err := createSecret(ctx, k8sClient, ns, "pgbackrest-s3-secret", _S3_DATA_SECRET)
 	if err != nil {
 		t.Fatalf("failed to create secret: %v", err)
 	}
@@ -257,7 +260,7 @@ func TestCreateAndRestoreInstance(t *testing.T) {
 	ctx := context.Background()
 	log.FromContext(ctx)
 	// first create a secret
-	secret, err := createSecret(ctx, k8sClient, ns)
+	secret, err := createSecret(ctx, k8sClient, ns, "pgbackrest-s3-secret", _S3_DATA_SECRET)
 	if err != nil {
 		t.Fatalf("failed to create secret: %v", err)
 	}
