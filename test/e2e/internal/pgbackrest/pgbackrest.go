@@ -7,11 +7,9 @@ package pgbackrest
 import (
 	"context"
 
-	"github.com/cloudnative-pg/machinery/pkg/api"
 	apipgbackrest "github.com/dalibo/cnpg-i-pgbackrest/api/v1"
 	pgbackrest "github.com/dalibo/cnpg-i-pgbackrest/internal/pgbackrest/api"
 	"github.com/dalibo/cnpg-i-pgbackrest/test/e2e/internal/kubernetes"
-	"github.com/dalibo/cnpg-i-pgbackrest/test/e2e/internal/minio"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/utils/ptr"
@@ -33,8 +31,8 @@ func NewStanzaConfig(
 	k8sClient kubernetes.K8sClient,
 	name string,
 	ns string,
+	s3Repo []pgbackrest.S3Repository,
 ) *apipgbackrest.Stanza {
-	verifyTls := false
 	stanza := &apipgbackrest.Stanza{
 		TypeMeta: metav1.TypeMeta{
 			Kind:       "stanza",
@@ -46,44 +44,8 @@ func NewStanzaConfig(
 		},
 		Spec: apipgbackrest.StanzaSpec{
 			Configuration: pgbackrest.Stanza{
-				Name: "my_stanza",
-				S3Repositories: []pgbackrest.S3Repository{
-					{
-						Bucket:    minio.BUCKET_NAME,
-						Endpoint:  minio.SVC_NAME,
-						Region:    "us-east-1",
-						VerifyTLS: &verifyTls,
-						UriStyle:  "path",
-						RepoPath:  "/repo01" + name,
-						RetentionPolicy: pgbackrest.Retention{
-							FullType: "count",
-							Full:     7,
-						},
-						SecretRef: &pgbackrest.S3SecretRef{
-							AccessKeyIDReference: &api.SecretKeySelector{
-								LocalObjectReference: api.LocalObjectReference{
-									Name: "pgbackrest-s3-secret",
-								},
-								Key: "ACCESS_KEY_ID",
-							},
-							SecretAccessKeyReference: &api.SecretKeySelector{
-								LocalObjectReference: api.LocalObjectReference{
-									Name: "pgbackrest-s3-secret",
-								},
-								Key: "ACCESS_SECRET_KEY",
-							},
-						},
-						Cipher: &pgbackrest.CipherConfig{
-							Type: "aes-256-cbc",
-							PassReference: &api.SecretKeySelector{
-								LocalObjectReference: api.LocalObjectReference{
-									Name: "pgbackrest-s3-secret",
-								},
-								Key: "ENCRYPTION_PASS",
-							},
-						},
-					},
-				},
+				Name:           "my_stanza",
+				S3Repositories: s3Repo,
 				Compress: &pgbackrest.CompressConfig{
 					Type:  ptr.To("lz4"),
 					Level: 7,
@@ -103,8 +65,9 @@ func CreateStanzaConfig(
 	k8sClient kubernetes.K8sClient,
 	name string,
 	ns string,
+	s3Repo []pgbackrest.S3Repository,
 ) (*apipgbackrest.Stanza, error) {
-	stanza := NewStanzaConfig(k8sClient, name, ns)
+	stanza := NewStanzaConfig(k8sClient, name, ns, s3Repo)
 	if err := k8sClient.Create(ctx, stanza); err != nil {
 		return nil, err
 	}
