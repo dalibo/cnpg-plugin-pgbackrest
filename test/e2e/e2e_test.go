@@ -209,7 +209,13 @@ func TestDeployInstance(t *testing.T) {
 	}()
 
 	// Create a new stanza
-	s, err := pgbackrest.CreateStanzaConfig(ctx, *k8sClient, "stanza", "default")
+	s, err := pgbackrest.CreateStanzaConfig(
+		ctx,
+		*k8sClient,
+		"stanza",
+		"default",
+		minio.NewS3Repositories("stanza"),
+	)
 	if err != nil {
 		panic(err.Error())
 	}
@@ -262,7 +268,13 @@ func TestCreateAndRestoreInstance(t *testing.T) {
 	}()
 
 	// Create a new stanza
-	s, err := pgbackrest.CreateStanzaConfig(ctx, *k8sClient, "stanza-restored", "default")
+	s, err := pgbackrest.CreateStanzaConfig(
+		ctx,
+		*k8sClient,
+		"stanza-restored",
+		"default",
+		minio.NewS3Repositories("stanza-restored"),
+	)
 	if err != nil {
 		panic(err.Error())
 	}
