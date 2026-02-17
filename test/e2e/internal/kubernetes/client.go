@@ -173,20 +173,20 @@ func (cl K8sClient) DeploymentIsReady(
 	)
 }
 
-type PodConditionFunc func(pod *corev1.Pod, err error) (done bool, errOut error)
+type ConditionFunc func(obj client.Object, err error) (done bool, errOut error)
 
-func (cl K8sClient) waitForPod(
+func (cl K8sClient) waitForObj(
 	ctx context.Context,
 	podName types.NamespacedName,
 	maxRetry uint,
 	retryInterval uint,
-	condition PodConditionFunc,
+	obj client.Object,
+	condition ConditionFunc,
 ) error {
 	if maxRetry == 0 {
 		return fmt.Errorf("maxRetry should be non-zero value")
 	}
 
-	pod := &corev1.Pod{}
 	timeout := time.Duration(maxRetry) * time.Duration(retryInterval) * time.Second
 	// may be replace by PollUntilContextTimeout and let the call build the adequate ctx
 	err := wait.PollUntilContextTimeout(
@@ -195,8 +195,8 @@ func (cl K8sClient) waitForPod(
 		timeout,
 		true,
 		func(ctx context.Context) (bool, error) {
-			err := cl.client.Get(ctx, podName, pod)
-			return condition(pod, err)
+			err := cl.client.Get(ctx, podName, obj)
+			return condition(obj, err)
 		},
 	)
 
@@ -220,13 +220,14 @@ func (cl K8sClient) PodIsReady(
 	retryInterval uint,
 ) (bool, error) {
 	podName := types.NamespacedName{Name: name, Namespace: namespace}
-
-	err := cl.waitForPod(
+	pod := &corev1.Pod{}
+	err := cl.waitForObj(
 		ctx,
 		podName,
 		maxRetry,
 		retryInterval,
-		func(pod *corev1.Pod, err error) (bool, error) {
+		pod,
+		func(_ client.Object, err error) (bool, error) {
 			if err != nil {
 				if errors.IsNotFound(err) {
 					return false, nil
@@ -257,13 +258,14 @@ func (cl K8sClient) PodIsAbsent(
 	retryInterval uint,
 ) (bool, error) {
 	podName := types.NamespacedName{Name: name, Namespace: namespace}
-
-	err := cl.waitForPod(
+	pod := &corev1.Pod{}
+	err := cl.waitForObj(
 		ctx,
 		podName,
 		maxRetry,
 		retryInterval,
-		func(_ *corev1.Pod, err error) (bool, error) {
+		pod,
+		func(_ client.Object, err error) (bool, error) {
 			if err != nil {
 				if errors.IsNotFound(err) {
 					return true, nil // pod is gone
