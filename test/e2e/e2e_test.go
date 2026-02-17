@@ -31,6 +31,10 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
 )
 
+const (
+	NS string = "default"
+)
+
 var _S3_DATA_SECRET map[string]string = map[string]string{
 	"ACCESS_KEY_ID":     minio.ACCESS_KEY,
 	"ACCESS_SECRET_KEY": minio.SECRET_KEY,
@@ -205,11 +209,10 @@ func TestDeployInstance(t *testing.T) {
 	if k8sClient == nil || err != nil {
 		t.Fatalf("kubernetes client not initialized: %v", err)
 	}
-	ns := "default"
 	ctx := context.Background()
 	log.FromContext(ctx)
 	// first create a secret
-	secret, err := createSecret(ctx, k8sClient, ns, "pgbackrest-s3-secret", _S3_DATA_SECRET)
+	secret, err := createSecret(ctx, k8sClient, NS, "pgbackrest-s3-secret", _S3_DATA_SECRET)
 	if err != nil {
 		t.Fatalf("failed to create secret: %v", err)
 	}
@@ -224,7 +227,7 @@ func TestDeployInstance(t *testing.T) {
 		ctx,
 		*k8sClient,
 		"stanza",
-		"default",
+		NS,
 		minio.NewS3Repositories("stanza"),
 		nil,
 	)
@@ -242,7 +245,7 @@ func TestDeployInstance(t *testing.T) {
 	podName := clusterName + "-1"
 
 	p := maps.Clone(cluster.DefaultParamater)
-	c, err := cluster.Create(ctx, k8sClient, ns, clusterName, 1, "100M", p, nil)
+	c, err := cluster.Create(ctx, k8sClient, NS, clusterName, 1, "100M", p, nil)
 	if err != nil {
 		t.Fatalf("failed to create cluster: %v", err)
 	}
@@ -252,7 +255,7 @@ func TestDeployInstance(t *testing.T) {
 		}
 	}()
 
-	if ready, err := k8sClient.PodIsReady(ctx, ns, podName, 80, 3); err != nil {
+	if ready, err := k8sClient.PodIsReady(ctx, NS, podName, 80, 3); err != nil {
 		t.Fatalf("error when requesting pod status, %s", err.Error())
 	} else if !ready {
 		t.Fatal("pod not ready")
@@ -265,11 +268,10 @@ func TestCreateAndRestoreInstance(t *testing.T) {
 	if k8sClient == nil || err != nil {
 		t.Fatalf("kubernetes client not initialized: %v", err)
 	}
-	ns := "default"
 	ctx := context.Background()
 	log.FromContext(ctx)
 	// first create a secret
-	secret, err := createSecret(ctx, k8sClient, ns, "pgbackrest-s3-secret", _S3_DATA_SECRET)
+	secret, err := createSecret(ctx, k8sClient, NS, "pgbackrest-s3-secret", _S3_DATA_SECRET)
 	if err != nil {
 		t.Fatalf("failed to create secret: %v", err)
 	}
@@ -284,7 +286,7 @@ func TestCreateAndRestoreInstance(t *testing.T) {
 		ctx,
 		*k8sClient,
 		"stanza-restored",
-		"default",
+		NS,
 		minio.NewS3Repositories("stanza-restored"),
 		nil,
 	)
@@ -308,7 +310,7 @@ func TestCreateAndRestoreInstance(t *testing.T) {
 		"stanzaRef": "stanza-restored",
 	}
 
-	c, err := cluster.Create(ctx, k8sClient, ns, clusterName, 1, "100M", p, nil)
+	c, err := cluster.Create(ctx, k8sClient, NS, clusterName, 1, "100M", p, nil)
 	if err != nil {
 		t.Fatalf("failed to create cluster: %v", err)
 	}
@@ -317,14 +319,14 @@ func TestCreateAndRestoreInstance(t *testing.T) {
 			t.Fatal("can't delete cluster")
 		}
 	}()
-	if ready, err := k8sClient.PodIsReady(ctx, ns, podName, 80, 3); err != nil {
+	if ready, err := k8sClient.PodIsReady(ctx, NS, podName, 80, 3); err != nil {
 		t.Fatalf("error when requesting pod status, %s", err.Error())
 	} else if !ready {
 		t.Fatal("pod not ready")
 	}
 
 	// take a first backup
-	b := takeBackup(ctx, t, k8sClient, ns, clusterName, "backup-01", p)
+	b := takeBackup(ctx, t, k8sClient, NS, clusterName, "backup-01", p)
 	defer func() {
 		if delErr := k8sClient.Delete(ctx, b); delErr != nil {
 			t.Fatalf("can't delete backup-01: %v", delErr)
@@ -332,7 +334,7 @@ func TestCreateAndRestoreInstance(t *testing.T) {
 	}()
 
 	// check stored backup info / status
-	stanza := getStanza(ctx, t, k8sClient, ns, "stanza-restored")
+	stanza := getStanza(ctx, t, k8sClient, NS, "stanza-restored")
 	fBackup := stanza.Status.RecoveryWindow.FirstBackup
 	lBackup := stanza.Status.RecoveryWindow.LastBackup
 	if fBackup.Timestamp.Start == 0 || fBackup != lBackup {
@@ -345,7 +347,7 @@ func TestCreateAndRestoreInstance(t *testing.T) {
 			ctx,
 			*k8sClient.ClientSet,
 			k8sClient.Cfg,
-			ns,
+			NS,
 			podName,
 			`CREATE TABLE IF NOT EXISTS wal_test_insert (id SERIAL PRIMARY KEY, data TEXT);
 			SELECT pg_switch_wal();
@@ -365,7 +367,7 @@ func TestCreateAndRestoreInstance(t *testing.T) {
 			ctx,
 			*k8sClient.ClientSet,
 			k8sClient.Cfg,
-			ns,
+			NS,
 			podName,
 			"SELECT count(*) FROM wal_test_insert;",
 		)
@@ -383,7 +385,7 @@ func TestCreateAndRestoreInstance(t *testing.T) {
 		ctx,
 		*k8sClient.ClientSet,
 		k8sClient.Cfg,
-		ns,
+		NS,
 		podName,
 		"SELECT now();",
 	)
@@ -394,7 +396,7 @@ func TestCreateAndRestoreInstance(t *testing.T) {
 	numOfRowAfterFirstInsert := countRow()
 
 	// take a second backup
-	b2 := takeBackup(ctx, t, k8sClient, ns, clusterName, "backup-02", p)
+	b2 := takeBackup(ctx, t, k8sClient, NS, clusterName, "backup-02", p)
 	defer func() {
 		if delErr := k8sClient.Delete(ctx, b2); delErr != nil {
 			t.Fatalf("can't delete backup-02: %v", delErr)
@@ -405,7 +407,7 @@ func TestCreateAndRestoreInstance(t *testing.T) {
 	createDumpData()
 
 	// check stored backup info / status
-	stanza = getStanza(ctx, t, k8sClient, ns, "stanza-restored")
+	stanza = getStanza(ctx, t, k8sClient, NS, "stanza-restored")
 	if err != nil {
 		t.Fatalf("failed to get stanza after second backup: %v", err)
 	}
@@ -419,7 +421,7 @@ func TestCreateAndRestoreInstance(t *testing.T) {
 	if err := k8sClient.Delete(ctx, c); err != nil {
 		t.Fatal("can't delete cluster")
 	}
-	if _, err = k8sClient.PodIsAbsent(ctx, ns, podName, 10, 3); err != nil {
+	if _, err = k8sClient.PodIsAbsent(ctx, NS, podName, 10, 3); err != nil {
 		t.Fatal("can't ensure cluster is absent")
 	}
 
@@ -427,7 +429,7 @@ func TestCreateAndRestoreInstance(t *testing.T) {
 	_, err = cluster.Create(
 		ctx,
 		k8sClient,
-		ns,
+		NS,
 		clusterName,
 		1,
 		"100M",
@@ -439,7 +441,7 @@ func TestCreateAndRestoreInstance(t *testing.T) {
 	if err != nil {
 		t.Fatalf("can't recreate cluster from backup, %v", err)
 	}
-	if ready, err := k8sClient.PodIsReady(ctx, ns, podName, 80, 3); err != nil {
+	if ready, err := k8sClient.PodIsReady(ctx, NS, podName, 80, 3); err != nil {
 		t.Fatalf("error when requesting pod status, %s", err.Error())
 	} else if !ready {
 		t.Fatal("pod not ready")
@@ -462,14 +464,13 @@ func TestAzure(t *testing.T) {
 	podName := clusterName + "-1"
 	stanza := "stanza-azure"
 	azContainer := "azcontainer"
-	ns := "default"
 	if err != nil {
 		panic("can't init kubernetes client")
 	}
 	if err := azurite.CreateAzContainer(ctx, *k8sClient, "azurite", azContainer); err != nil {
 		panic(err.Error())
 	}
-	secret, err := createSecret(ctx, k8sClient, ns, "pgbackrest-azure-secret", _AZURE_DATA_SECRET)
+	secret, err := createSecret(ctx, k8sClient, NS, "pgbackrest-azure-secret", _AZURE_DATA_SECRET)
 	if err != nil {
 		panic(err.Error())
 
@@ -484,7 +485,7 @@ func TestAzure(t *testing.T) {
 		ctx,
 		*k8sClient,
 		stanza,
-		ns,
+		NS,
 		nil,
 		azurite.NewAzureRepositories(azContainer),
 	)
@@ -501,7 +502,7 @@ func TestAzure(t *testing.T) {
 		"stanzaRef": stanza,
 	}
 
-	c, err := cluster.Create(ctx, k8sClient, ns, clusterName, 1, "100M", p, nil)
+	c, err := cluster.Create(ctx, k8sClient, NS, clusterName, 1, "100M", p, nil)
 	if err != nil {
 		t.Fatalf("failed to create cluster: %v", err)
 	}
@@ -510,13 +511,13 @@ func TestAzure(t *testing.T) {
 			t.Fatal("can't delete cluster")
 		}
 	}()
-	if ready, err := k8sClient.PodIsReady(ctx, ns, podName, 80, 3); err != nil {
+	if ready, err := k8sClient.PodIsReady(ctx, NS, podName, 80, 3); err != nil {
 		t.Fatalf("error when requesting pod status, %s", err.Error())
 	} else if !ready {
 		t.Fatal("pod not ready")
 	}
 
-	b := takeBackup(ctx, t, k8sClient, ns, clusterName, "azure-backup-01", p)
+	b := takeBackup(ctx, t, k8sClient, NS, clusterName, "azure-backup-01", p)
 	defer func() {
 		if err := k8sClient.Delete(ctx, b); err != nil {
 			t.Fatal("can't delete cluster")
