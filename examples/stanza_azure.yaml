@@ -1,0 +1,17 @@
+---
+apiVersion: pgbackrest.dalibo.com/v1
+kind: Stanza
+metadata:
+  name: stanza-azure
+spec:
+  stanzaConfiguration:
+    name: main
+    s3Repositories:
+      - container: backups
+        endpoint: blob.core.windows.net
+        repoPath: /cluster-sample
+        keyType: shared
+        secretRef:
+          keyReference:
+            name: azure
+            key: KEY
