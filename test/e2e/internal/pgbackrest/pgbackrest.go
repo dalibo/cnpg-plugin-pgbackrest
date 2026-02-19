@@ -10,6 +10,8 @@ import (
 	apipgbackrest "github.com/dalibo/cnpg-i-pgbackrest/api/v1"
 	pgbackrest "github.com/dalibo/cnpg-i-pgbackrest/internal/pgbackrest/api"
 	"github.com/dalibo/cnpg-i-pgbackrest/test/e2e/internal/kubernetes"
+	corev1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/utils/ptr"
@@ -92,4 +94,37 @@ func GetStanza(
 		return nil, err
 	}
 	return &stanza, nil
+}
+
+func NewPluginConfig(ns, name, cpu_limit, memory_limit string) *apipgbackrest.PluginConfig {
+	return &apipgbackrest.PluginConfig{
+		TypeMeta: metav1.TypeMeta{
+			Kind:       "PluginConfig",
+			APIVersion: "pgbackrest.dalibo.com/v1",
+		},
+		ObjectMeta: metav1.ObjectMeta{
+			Namespace: ns,
+			Name:      name,
+		},
+		Spec: apipgbackrest.PluginConfigSpec{
+			Resources: &corev1.ResourceRequirements{
+				Limits: corev1.ResourceList{
+					corev1.ResourceCPU:    resource.MustParse(cpu_limit),
+					corev1.ResourceMemory: resource.MustParse(memory_limit),
+				},
+			},
+		},
+	}
+}
+
+func CreatePluginConfig(
+	ctx context.Context,
+	k8sClient kubernetes.K8sClient,
+	ns, name, cpu_limit, memory_limit string,
+) (*apipgbackrest.PluginConfig, error) {
+	pc := NewPluginConfig(ns, name, cpu_limit, memory_limit)
+	if err := k8sClient.Create(ctx, pc); err != nil {
+		return nil, err
+	}
+	return pc, nil
 }

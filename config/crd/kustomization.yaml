@@ -3,6 +3,7 @@
 # It should be run by config/default
 resources:
 - bases/pgbackrest.dalibo.com_stanzas.yaml
+- bases/pgbackrest.dalibo.com_pluginconfigs.yaml
 # +kubebuilder:scaffold:crdkustomizeresource
 
 patches:
