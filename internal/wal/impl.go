@@ -84,7 +84,7 @@ func (w_impl *WALSrvImplementation) Archive(
 			contextLogger.Info("stanza created while archiving", "WAL", walName)
 		}
 	} else {
-		contextLogger.Info("stanza already exist, le'ts archive", "WAL", walName)
+		contextLogger.Info("stanza already exists, let's archive", "WAL", walName)
 	}
 	errCh := pgb.PushWal(context.Background(), walName)
 	if err := <-errCh; err != nil {
