@@ -40,7 +40,7 @@ type StanzaSpec struct {
 
 // StanzaStatus defines the observed state of Stanza.
 type StanzaStatus struct {
-	// INSERT ADDITIONAL STATUS FIELD - define observed state of cluster
+	// INSERT ADDITIONAL STATUS FIELD - define observed state of Stanza
 	// Important: Run "make" to regenerate code after modifying this file
 
 	// For Kubernetes API conventions, see:
@@ -62,6 +62,9 @@ type StanzaStatus struct {
 
 	// +optional
 	RecoveryWindow pgbackrestapi.RecoveryWindow `json:"recoveryWindow"`
+
+	// +optional
+	Backups pgbackrestapi.BackupsCount `json:"backupsCount"`
 }
 
 // +kubebuilder:object:root=true

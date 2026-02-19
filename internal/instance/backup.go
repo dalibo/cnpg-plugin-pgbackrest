@@ -67,6 +67,22 @@ func updateBackupInfo(
 	})
 }
 
+func updateBackupsCount(
+	ctx context.Context,
+	c client.Client,
+	stanza *apipgbackrestv1.Stanza,
+	full uint16,
+	incr uint16,
+	diff uint16,
+) error {
+	return retry.RetryOnConflict(retry.DefaultBackoff, func() error {
+		stanza.Status.Backups.Full = full
+		stanza.Status.Backups.Incr = incr
+		stanza.Status.Backups.Diff = diff
+		return c.Status().Update(ctx, stanza)
+	})
+}
+
 func (b BackupServiceImplementation) Backup(
 	ctx context.Context,
 	request *backup.BackupRequest,
@@ -110,6 +126,15 @@ func (b BackupServiceImplementation) Backup(
 	firstBackup := pgbackrest.FirstBackup(backupsList)
 	if err != updateBackupInfo(ctx, b.Client, stanza, *firstBackup, *lastBackup) {
 		contextLogger.Error(err, "can't update backup info")
+		return nil, err
+	}
+
+	full := pgbackrest.CountFull(backupsList)
+	incr := pgbackrest.CountIncr(backupsList)
+	diff := pgbackrest.CountDiff(backupsList)
+
+	if err != updateBackupsCount(ctx, b.Client, stanza, full, incr, diff) {
+		contextLogger.Error(err, "can't update backups count info")
 		return nil, err
 	}
 	contextLogger.Info("Backup done!")
