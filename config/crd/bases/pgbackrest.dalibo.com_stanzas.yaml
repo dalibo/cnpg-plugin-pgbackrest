@@ -407,6 +407,19 @@ spec:
           status:
             description: status defines the observed state of Stanza
             properties:
+              backupsCount:
+                properties:
+                  Diff:
+                    type: integer
+                  Full:
+                    type: integer
+                  Incr:
+                    type: integer
+                required:
+                - Diff
+                - Full
+                - Incr
+                type: object
               conditions:
                 description: |-
                   conditions represent the current state of the Stanza resource.

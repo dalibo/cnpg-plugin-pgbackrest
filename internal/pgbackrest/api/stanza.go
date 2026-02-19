@@ -47,6 +47,12 @@ type RecoveryWindow struct {
 	LastBackup  BackupInfo `json:"lastBackup"`
 }
 
+type BackupsCount struct {
+	Full uint16 `json:"Full"`
+	Incr uint16 `json:"Incr"`
+	Diff uint16 `json:"Diff"`
+}
+
 // Define retention strategy for a repository.
 type Retention struct {
 	// Number of backups worth of continuous WAL to retain.

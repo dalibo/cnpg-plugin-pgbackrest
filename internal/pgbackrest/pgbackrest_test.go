@@ -10,6 +10,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"maps"
 	"os/exec"
 	"reflect"
 	"strings"
@@ -446,6 +447,50 @@ func TestBackupValidation(t *testing.T) {
 			}
 			if !tc.wantErr && err != nil {
 				t.Errorf("unexpected error for backup type %q: %v", tc.backupType, err)
+			}
+		})
+	}
+}
+
+func TestCountByType(t *testing.T) {
+	testCases := []struct {
+		desc    string
+		backups []pgbackrestapi.BackupInfo
+		want    map[string]uint16
+	}{
+		{
+			desc:    "no backup",
+			backups: []pgbackrestapi.BackupInfo{},
+			want:    make(map[string]uint16, 3),
+		},
+		{
+			desc: "few full backups",
+			backups: []pgbackrestapi.BackupInfo{
+				{Type: "full"},
+				{Type: "full"},
+				{Type: "full"},
+			},
+			want: map[string]uint16{"full": 3},
+		},
+		{
+			desc: "different types of backups",
+			backups: []pgbackrestapi.BackupInfo{
+				{Type: "full"},
+				{Type: "full"},
+				{Type: "full"},
+				{Type: "diff"},
+				{Type: "diff"},
+				{Type: "incr"},
+			},
+			want: map[string]uint16{"full": 3, "diff": 2, "incr": 1},
+		},
+	}
+	for _, tc := range testCases {
+		t.Run(tc.desc, func(t *testing.T) {
+
+			got := CountByType(tc.backups)
+			if !maps.Equal(tc.want, got) {
+				t.Errorf("count is invalid, want: %v, got: %v", tc.want, got)
 			}
 		})
 	}
