@@ -62,6 +62,9 @@ type StanzaStatus struct {
 
 	// +optional
 	RecoveryWindow pgbackrestapi.RecoveryWindow `json:"recoveryWindow"`
+
+	// +optional
+	Backups pgbackrestapi.BackupsCount `json:"backupsCount"`
 }
 
 // +kubebuilder:object:root=true

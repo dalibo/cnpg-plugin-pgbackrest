@@ -249,6 +249,14 @@ func (p *PgBackrest) GetBackupInfo() ([]pgbackrestapi.BackupInfo, error) {
 
 }
 
+func CountByType(backups []pgbackrestapi.BackupInfo) map[string]uint16 {
+	count := make(map[string]uint16, 3)
+	for _, backup := range backups {
+		count[backup.Type]++
+	}
+	return count
+}
+
 func LatestBackup(backups []pgbackrestapi.BackupInfo) *pgbackrestapi.BackupInfo {
 	if len(backups) < 1 {
 		return nil

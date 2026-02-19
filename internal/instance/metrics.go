@@ -53,6 +53,9 @@ var (
 	firstRecoverabilityPointMetricName     = buildFqName("first_recoverability_point")
 	lastAvailableBackupTimestampMetricName = buildFqName("last_available_backup_timestamp")
 	lastFailedBackupTimestampMetricName    = buildFqName("last_failed_backup_timestamp")
+	fullCountMetricName                    = buildFqName("full_count")
+	incrCountMetricName                    = buildFqName("incr_count")
+	diffCountMetricName                    = buildFqName("diff_count")
 )
 
 func (m metricsImpl) GetCapabilities(
@@ -99,6 +102,21 @@ func (m metricsImpl) Define(
 				Help:      "Last failed pgBackRest backup",
 				ValueType: &metrics.MetricType{Type: metrics.MetricType_TYPE_GAUGE},
 			},
+			{
+				FqName:    fullCountMetricName,
+				Help:      "Number of backup of Full type",
+				ValueType: &metrics.MetricType{Type: metrics.MetricType_TYPE_COUNTER},
+			},
+			{
+				FqName:    incrCountMetricName,
+				Help:      "Number of backup of Incr type",
+				ValueType: &metrics.MetricType{Type: metrics.MetricType_TYPE_COUNTER},
+			},
+			{
+				FqName:    diffCountMetricName,
+				Help:      "Number of backup of Diff type",
+				ValueType: &metrics.MetricType{Type: metrics.MetricType_TYPE_COUNTER},
+			},
 		},
 	}, nil
 }
@@ -131,6 +149,18 @@ func (m metricsImpl) Collect(
 			{
 				FqName: lastFailedBackupTimestampMetricName,
 				Value:  float64(0),
+			},
+			{
+				FqName: fullCountMetricName,
+				Value:  float64(stanza.Status.Backups.Full),
+			},
+			{
+				FqName: incrCountMetricName,
+				Value:  float64(stanza.Status.Backups.Incr),
+			},
+			{
+				FqName: diffCountMetricName,
+				Value:  float64(stanza.Status.Backups.Diff),
 			},
 		},
 	}, nil
