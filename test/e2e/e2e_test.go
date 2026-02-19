@@ -23,6 +23,7 @@ import (
 	"github.com/dalibo/cnpg-i-pgbackrest/test/e2e/internal/pgbackrest"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/log"
@@ -240,11 +241,32 @@ func TestDeployInstance(t *testing.T) {
 		}
 	}()
 
+	reqCpuLimit := "500m"
+	reqMemoryLimit := "64Mi"
+	pc, err := pgbackrest.CreatePluginConfig(
+		ctx,
+		*k8sClient,
+		NS,
+		"plugin-config",
+		reqCpuLimit,
+		reqMemoryLimit,
+	)
+	if err != nil {
+		panic(err.Error())
+	}
+	defer func() {
+		if err := k8sClient.Delete(ctx, pc); err != nil {
+			t.Fatal("can't delete plugin configuration")
+		}
+	}()
+
 	// create a test CloudNativePG Cluster
 	clusterName := "cluster-demo"
 	podName := clusterName + "-1"
 
 	p := maps.Clone(cluster.DefaultParamater)
+	p["pluginConfigRef"] = "plugin-config"
+
 	c, err := cluster.Create(ctx, k8sClient, NS, clusterName, 1, "100M", p, nil)
 	if err != nil {
 		t.Fatalf("failed to create cluster: %v", err)
@@ -254,11 +276,47 @@ func TestDeployInstance(t *testing.T) {
 			t.Fatal("can't delete cluster")
 		}
 	}()
-
 	if ready, err := k8sClient.PodIsReady(ctx, NS, podName, 150, 3); err != nil {
 		t.Fatalf("error when requesting pod status, %s", err.Error())
 	} else if !ready {
 		t.Fatal("pod not ready")
+	}
+
+	// check if CPU limit is present and equivalent to what we set in plugin config
+	pod := corev1.Pod{}
+	if err := k8sClient.Get(ctx, types.NamespacedName{Namespace: NS, Name: podName}, &pod); err != nil {
+		t.Fatalf("can't retrieve pod: %v", podName)
+	}
+	wantCpuLimit := resource.MustParse(reqCpuLimit)
+	wantMemoryLimit := resource.MustParse(reqMemoryLimit)
+	for _, ic := range pod.Spec.InitContainers {
+		if ic.Name != "plugin-pgbackrest" {
+			continue
+		}
+
+		cpuLimit, ok := ic.Resources.Limits[corev1.ResourceCPU]
+		if !ok {
+			t.Fatalf("CPU limit not set on plugin-pgbackrest container")
+		}
+		if cpuLimit.Cmp(wantCpuLimit) != 0 {
+			t.Errorf(
+				"CPU limit not based on plugin config, want: %v, got: %v",
+				wantCpuLimit,
+				cpuLimit,
+			)
+		}
+
+		memoryLimit, ok := ic.Resources.Limits[corev1.ResourceMemory]
+		if !ok {
+			t.Fatalf("Memory limit not set on plugin-pgbackrest container")
+		}
+		if memoryLimit.Cmp(wantMemoryLimit) != 0 {
+			t.Errorf(
+				"Memory limit not based on plugin config, want: %v, got: %v",
+				wantMemoryLimit,
+				memoryLimit,
+			)
+		}
 	}
 }
 

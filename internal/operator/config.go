@@ -23,6 +23,7 @@ import (
 type PluginConfiguration struct {
 	Cluster           *cnpgv1.Cluster
 	ServerName        string
+	PluginConfigRef   string
 	StanzaRef         string
 	RecoveryStanzaRef string
 	ReplicaStanzaRef  string
@@ -103,16 +104,27 @@ func NewFromCluster(cluster *cnpgv1.Cluster) (*PluginConfiguration, error) {
 	)
 	serverName := cluster.Name
 	recovObjName := ""
+	pluginConfigRef := ""
+	if pcr, ok := helper.Parameters["pluginConfigRef"]; ok {
+		pluginConfigRef = pcr
+	}
 	if recovParams := getRecovParams(cluster); recovParams != nil {
 		recovObjName = recovParams["stanzaRef"]
+		if pcr, ok := recovParams["pluginConfigRef"]; ok {
+			pluginConfigRef = pcr
+		}
 	}
 	repliObjName := ""
 	if repliParams := getReplicaParams(cluster); repliParams != nil {
 		repliObjName = repliParams["stanzaRef"]
+		if pcr, ok := repliParams["pluginConfigRef"]; ok {
+			pluginConfigRef = pcr
+		}
 	}
 	result := &PluginConfiguration{
 		Cluster:           cluster,
 		ServerName:        serverName,
+		PluginConfigRef:   pluginConfigRef,
 		StanzaRef:         helper.Parameters["stanzaRef"],
 		RecoveryStanzaRef: recovObjName,
 		ReplicaStanzaRef:  repliObjName,
