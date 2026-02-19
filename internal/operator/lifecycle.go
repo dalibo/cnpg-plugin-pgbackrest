@@ -16,9 +16,11 @@ import (
 	"github.com/cloudnative-pg/cnpg-i-machinery/pkg/pluginhelper/object"
 	"github.com/cloudnative-pg/cnpg-i/pkg/lifecycle"
 	"github.com/cloudnative-pg/machinery/pkg/log"
+	pluginv1 "github.com/dalibo/cnpg-i-pgbackrest/api/v1"
 	"github.com/dalibo/cnpg-i-pgbackrest/internal/metadata"
 	batchv1 "k8s.io/api/batch/v1"
 	corev1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/utils/ptr"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
@@ -400,6 +402,29 @@ func mergeEnvs(envSlices ...[]corev1.EnvVar) []corev1.EnvVar {
 	return merged
 }
 
+func (impl LifecycleImplementation) injectSharedPluginConfig(
+	ctx context.Context,
+	pluginConfig *PluginConfiguration,
+	sidecar *corev1.Container,
+) error {
+	if pluginConfig.PluginConfigRef != "" {
+		// first retrieve shared plugin config
+		pc := pluginv1.PluginConfig{}
+		key := types.NamespacedName{
+			Namespace: pluginConfig.Cluster.Namespace,
+			Name:      pluginConfig.PluginConfigRef,
+		}
+		if err := impl.Client.Get(ctx, key, &pc); err != nil {
+			return err
+		}
+		// then apply resources limit
+		if pc.Spec.Resources != nil {
+			sidecar.Resources = *pc.Spec.Resources
+		}
+	}
+	return nil
+}
+
 // reconcilePod handles lifecycle reconciliation and injects the sidecar
 func (impl LifecycleImplementation) reconcilePod(
 	ctx context.Context,
@@ -426,6 +451,9 @@ func (impl LifecycleImplementation) reconcilePod(
 			Args: []string{"instance"},
 		}
 
+		if err := impl.injectSharedPluginConfig(ctx, pluginConfig, &sidecar); err != nil {
+			return nil, err
+		}
 		// Reuse reconcilePodSpec to mutate PodSpec
 		reconcilePodSpec(cluster, &mutatedPod.Spec, "postgres", &sidecar)
 		if err := object.InjectPluginInitContainerSidecarSpec(&mutatedPod.Spec, &sidecar, true); err != nil {

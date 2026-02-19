@@ -1,0 +1,14 @@
+---
+apiVersion: pgbackrest.dalibo.com/v1
+kind: PluginConfig
+metadata:
+  name: sample-pluginconfig
+  namespace: default
+spec:
+  resourcesRequirement:
+    requests:
+      cpu: "300m"
+      memory: "128Mi"
+    limits:
+      cpu: "500m"
+      memory: "512Mi"
