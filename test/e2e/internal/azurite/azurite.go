@@ -142,7 +142,7 @@ func CreateAzContainer(
 	if err := k8sClient.Create(ctx, &j); err != nil {
 		return err
 	}
-	_, err := k8sClient.JobIsCompleted(ctx, ns, jName, 20, 2)
+	_, err := k8sClient.JobIsCompleted(ctx, ns, jName, 40, 3)
 	return err
 }
 
