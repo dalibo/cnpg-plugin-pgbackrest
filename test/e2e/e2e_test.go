@@ -19,7 +19,6 @@ import (
 	"github.com/dalibo/cnpg-i-pgbackrest/test/e2e/internal/cluster"
 	"github.com/dalibo/cnpg-i-pgbackrest/test/e2e/internal/cnpg"
 	"github.com/dalibo/cnpg-i-pgbackrest/test/e2e/internal/command"
-	"github.com/dalibo/cnpg-i-pgbackrest/test/e2e/internal/common"
 	"github.com/dalibo/cnpg-i-pgbackrest/test/e2e/internal/kubernetes"
 	"github.com/dalibo/cnpg-i-pgbackrest/test/e2e/internal/minio"
 	"github.com/dalibo/cnpg-i-pgbackrest/test/e2e/internal/pgbackrest"
@@ -178,11 +177,7 @@ func takeBackup(
 	if err != nil {
 		t.Fatalf("error when executing backup %v", err)
 	}
-	retrier, err := common.NewRetrier(115)
-	if err != nil {
-		panic("can't initiate retrier")
-	}
-	if _, err = bi.IsDone(ctx, k8sClient, retrier); err != nil {
+	if _, err = bi.IsDone(ctx, k8sClient, 115, 3); err != nil {
 		t.Fatalf("error when trying to determine if backup is done, %v", err)
 	}
 	return b
