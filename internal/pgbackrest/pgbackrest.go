@@ -242,6 +242,36 @@ func (p *PgBackrest) GetBackupInfo() ([]pgbackrestapi.BackupInfo, error) {
 
 }
 
+func CountFull(backups []pgbackrestapi.BackupInfo) uint16 {
+	var count uint16 = 0
+	for _, backup := range backups {
+		if backup.Type == "full" {
+			count++
+		}
+	}
+	return count
+}
+
+func CountDiff(backups []pgbackrestapi.BackupInfo) uint16 {
+	var count uint16 = 0
+	for _, backup := range backups {
+		if backup.Type == "diff" {
+			count++
+		}
+	}
+	return count
+}
+
+func CountIncr(backups []pgbackrestapi.BackupInfo) uint16 {
+	var count uint16 = 0
+	for _, backup := range backups {
+		if backup.Type == "incr" {
+			count++
+		}
+	}
+	return count
+}
+
 func LatestBackup(backups []pgbackrestapi.BackupInfo) *pgbackrestapi.BackupInfo {
 	if len(backups) < 1 {
 		return nil

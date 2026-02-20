@@ -3,7 +3,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.19.0
+    controller-gen.kubebuilder.io/version: v0.20.1
   name: stanzas.pgbackrest.dalibo.com
 spec:
   group: pgbackrest.dalibo.com
@@ -407,6 +407,19 @@ spec:
           status:
             description: status defines the observed state of Stanza
             properties:
+              backupsCount:
+                properties:
+                  Diff:
+                    type: integer
+                  Full:
+                    type: integer
+                  Incr:
+                    type: integer
+                required:
+                - Diff
+                - Full
+                - Incr
+                type: object
               conditions:
                 description: |-
                   conditions represent the current state of the Stanza resource.
