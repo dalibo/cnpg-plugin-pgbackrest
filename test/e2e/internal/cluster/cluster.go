@@ -7,14 +7,15 @@ package cluster
 import (
 	"context"
 	"fmt"
+	"time"
 
 	cloudnativepgv1 "github.com/cloudnative-pg/api/pkg/api/v1"
-	"github.com/dalibo/cnpg-i-pgbackrest/test/e2e/internal/common"
 	"github.com/dalibo/cnpg-i-pgbackrest/test/e2e/internal/kubernetes"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
+	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/utils/ptr"
 )
 
@@ -139,21 +140,46 @@ func (b BackupInfo) Backup(
 func (b BackupInfo) IsDone(
 	ctx context.Context,
 	kClient *kubernetes.K8sClient,
-	r *common.Retrier,
+	maxRetry uint,
+	retryInterval uint,
 ) (bool, error) {
-	waitedRessource := &cloudnativepgv1.Backup{}
-	fqdn := types.NamespacedName{Name: b.Name, Namespace: b.Namespace}
-	for range r.MaxRetry {
-		err := kClient.Get(ctx, fqdn, waitedRessource)
-		if errors.IsNotFound(err) {
-			r.Wait()
-			continue
-		} else if err != nil {
-			return false, err
-		} else if waitedRessource.Status.Phase == "completed" {
-			return true, nil
-		}
-		r.Wait()
+
+	if maxRetry == 0 {
+		return false, fmt.Errorf("maxRetry should be non-zero value")
 	}
-	return false, fmt.Errorf("%s", waitedRessource.Status.Phase)
+
+	if retryInterval == 0 {
+		return false, fmt.Errorf("retryInterval should be non-zero value")
+	}
+
+	interval := time.Duration(retryInterval) * time.Second
+	timeout := time.Duration(maxRetry) * interval
+
+	backup := &cloudnativepgv1.Backup{}
+	backupFQDN := types.NamespacedName{
+		Name:      b.Name,
+		Namespace: b.Namespace,
+	}
+
+	err := wait.PollUntilContextTimeout(
+		ctx,
+		interval,
+		timeout,
+		true,
+		func(ctx context.Context) (bool, error) {
+			if err := kClient.Get(ctx, backupFQDN, backup); err != nil {
+				if errors.IsNotFound(err) {
+					return false, nil
+				}
+				return false, err
+			}
+			return backup.Status.Phase == "completed", nil
+		},
+	)
+
+	if err != nil {
+		return false, err
+	}
+
+	return true, nil
 }
