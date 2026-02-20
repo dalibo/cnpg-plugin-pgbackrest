@@ -14,5 +14,6 @@ spec:
       isWALArchiver: true
       parameters:
         stanzaRef: stanza-sample
+        pluginConfigRef: sample-pluginconfig
   storage:
     size: 1Gi

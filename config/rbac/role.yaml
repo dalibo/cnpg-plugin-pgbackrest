@@ -17,6 +17,7 @@ rules:
 - apiGroups:
   - pgbackrest.dalibo.com
   resources:
+  - pluginconfigs
   - stanzas
   verbs:
   - create
@@ -29,12 +30,14 @@ rules:
 - apiGroups:
   - pgbackrest.dalibo.com
   resources:
+  - pluginconfigs/finalizers
   - stanzas/finalizers
   verbs:
   - update
 - apiGroups:
   - pgbackrest.dalibo.com
   resources:
+  - pluginconfigs/status
   - stanzas/status
   verbs:
   - get
