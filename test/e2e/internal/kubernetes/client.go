@@ -235,14 +235,16 @@ func (cl K8sClient) PodIsReady(
 				}
 				return true, err
 			}
-			switch pod.Status.Phase {
-			case corev1.PodRunning:
-				return true, nil
-			case corev1.PodFailed:
-				return true, fmt.Errorf("pod in failed status")
-			default:
-				return false, nil
+			ps := pod.Status
+			if ps.Phase == corev1.PodFailed {
+				return true, fmt.Errorf("pod entered Failed phase")
 			}
+			for _, c := range ps.Conditions {
+				if c.Type == corev1.PodReady && c.Status == corev1.ConditionTrue {
+					return true, nil
+				}
+			}
+			return false, nil
 		},
 	)
 	if err != nil {
