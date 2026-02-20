@@ -147,31 +147,30 @@ func (cl K8sClient) DeploymentIsReady(
 	maxRetry uint,
 	retryInterval uint,
 ) (bool, error) {
-	waitedRessource := &appsv1.Deployment{}
+	deployment := &appsv1.Deployment{}
 	deploymentFqdn := types.NamespacedName{Name: name, Namespace: namespace}
-	if maxRetry == 0 {
-		return false, fmt.Errorf("maxRetry should be non-zero value")
-	}
-	for range maxRetry {
-		err := cl.client.Get(ctx, deploymentFqdn, waitedRessource)
-		if errors.IsNotFound(err) {
-			time.Sleep(2 * time.Second) // Deployment not created yet, wait and retry
-			continue
-		}
-		if err != nil {
-			return false, fmt.Errorf("error to get deployment information %w", err)
-		}
-		if waitedRessource.Status.AvailableReplicas > 0 {
-			return true, nil
-		}
-		time.Sleep(time.Duration(retryInterval) * time.Second)
-	}
-	return false, fmt.Errorf(
-		"max retry %d reached, when monitoring %s on namespace %s",
+	err := cl.waitForObj(
+		ctx,
+		deploymentFqdn,
 		maxRetry,
-		name,
-		namespace,
-	)
+		retryInterval,
+		deployment,
+		func(_ client.Object, err error) (bool, error) {
+			if errors.IsNotFound(err) {
+				return false, nil
+			}
+			if err != nil {
+				return false, fmt.Errorf("error to get deployment information %w", err)
+			}
+			if deployment.Status.AvailableReplicas != (*deployment.Spec.Replicas) {
+				return false, nil
+			}
+			return true, nil
+		})
+	if err != nil {
+		return false, err
+	}
+	return true, nil
 }
 
 type ConditionFunc func(obj client.Object, err error) (done bool, errOut error)
