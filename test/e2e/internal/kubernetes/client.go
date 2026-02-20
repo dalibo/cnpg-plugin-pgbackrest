@@ -178,7 +178,7 @@ type ConditionFunc func(obj client.Object, err error) (done bool, errOut error)
 
 func (cl K8sClient) waitForObj(
 	ctx context.Context,
-	podName types.NamespacedName,
+	objName types.NamespacedName,
 	maxRetry uint,
 	retryInterval uint,
 	obj client.Object,
@@ -196,16 +196,16 @@ func (cl K8sClient) waitForObj(
 		timeout,
 		true,
 		func(ctx context.Context) (bool, error) {
-			err := cl.client.Get(ctx, podName, obj)
+			err := cl.client.Get(ctx, objName, obj)
 			return condition(obj, err)
 		},
 	)
 
 	if err != nil {
 		return fmt.Errorf(
-			"timeout waiting for pod %s in namespace %s: %w",
-			podName.Name,
-			podName.Namespace,
+			"timeout waiting for object %s in namespace %s: %w",
+			objName.Name,
+			objName.Namespace,
 			err,
 		)
 	}
