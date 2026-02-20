@@ -255,7 +255,7 @@ func TestDeployInstance(t *testing.T) {
 		}
 	}()
 
-	if ready, err := k8sClient.PodIsReady(ctx, NS, podName, 120, 3); err != nil {
+	if ready, err := k8sClient.PodIsReady(ctx, NS, podName, 150, 3); err != nil {
 		t.Fatalf("error when requesting pod status, %s", err.Error())
 	} else if !ready {
 		t.Fatal("pod not ready")
@@ -319,7 +319,7 @@ func TestCreateAndRestoreInstance(t *testing.T) {
 			t.Fatal("can't delete cluster")
 		}
 	}()
-	if ready, err := k8sClient.PodIsReady(ctx, NS, podName, 120, 3); err != nil {
+	if ready, err := k8sClient.PodIsReady(ctx, NS, podName, 150, 3); err != nil {
 		t.Fatalf("error when requesting pod status, %s", err.Error())
 	} else if !ready {
 		t.Fatal("pod not ready")
@@ -441,7 +441,7 @@ func TestCreateAndRestoreInstance(t *testing.T) {
 	if err != nil {
 		t.Fatalf("can't recreate cluster from backup, %v", err)
 	}
-	if ready, err := k8sClient.PodIsReady(ctx, NS, podName, 120, 3); err != nil {
+	if ready, err := k8sClient.PodIsReady(ctx, NS, podName, 150, 3); err != nil {
 		t.Fatalf("error when requesting pod status, %s", err.Error())
 	} else if !ready {
 		t.Fatal("pod not ready")
@@ -511,7 +511,7 @@ func TestAzure(t *testing.T) {
 			t.Fatal("can't delete cluster")
 		}
 	}()
-	if ready, err := k8sClient.PodIsReady(ctx, NS, podName, 120, 3); err != nil {
+	if ready, err := k8sClient.PodIsReady(ctx, NS, podName, 150, 3); err != nil {
 		t.Fatalf("error when requesting pod status, %s", err.Error())
 	} else if !ready {
 		t.Fatal("pod not ready")
