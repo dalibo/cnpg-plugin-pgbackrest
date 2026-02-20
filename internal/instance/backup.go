@@ -109,7 +109,7 @@ func (b BackupServiceImplementation) Backup(
 	}
 	lastBackup := pgbackrest.LatestBackup(backupsList)
 	firstBackup := pgbackrest.FirstBackup(backupsList)
-	if err != updateBackupInfo(ctx, b.Client, stanza, *firstBackup, *lastBackup) {
+	if err := updateBackupInfo(ctx, b.Client, stanza, *firstBackup, *lastBackup); err != nil {
 		contextLogger.Error(err, "can't update backup info")
 		return nil, err
 	}
