@@ -53,35 +53,7 @@ are no validation.
 
 For example, the definition of that `Stanza`:
 
-``` yaml
-apiVersion: pgbackrest.dalibo.com/v1
-kind: Stanza
-metadata:
-  name: stanza-sample
-spec:
-  stanzaConfiguration:
-    name: main
-    s3Repositories:
-      - bucket: demo
-        endpoint: s3.minio.svc.cluster.local
-        region: us-east-1
-        repoPath: /cluster-demo
-        uriStyle: path
-        verifyTLS: false
-        cipherConfig:
-          encryptionPass:
-            name: minio
-            key: ENCRYPTION_PASS
-        secretRef:
-          accessKeyId:
-            name: minio
-            key: ACCESS_KEY_ID
-          secretAccessKey:
-            name: minio
-            key: ACCESS_SECRET_KEY
-      CustomEnvVar:
-        PGBACKREST_MY_CUSTOM: CNPG_ROCKS
-```
+<CodeBlock language="yaml">{StanzaCustom}</CodeBlock>
 
 Will result in pgbackrest running with those environment variables:
 
