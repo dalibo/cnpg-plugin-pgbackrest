@@ -13,7 +13,6 @@ import (
 	"testing"
 
 	cloudnativepgv1 "github.com/cloudnative-pg/api/pkg/api/v1"
-	apipgbackrest "github.com/dalibo/cnpg-i-pgbackrest/api/v1"
 	"github.com/dalibo/cnpg-i-pgbackrest/test/e2e/internal/azurite"
 	"github.com/dalibo/cnpg-i-pgbackrest/test/e2e/internal/certmanager"
 	"github.com/dalibo/cnpg-i-pgbackrest/test/e2e/internal/cluster"
@@ -183,18 +182,24 @@ func takeBackup(
 	return b
 }
 
-func getStanza(
+// helper to determine if recovery window is valid after taking backup
+func checkRecoveryWindow(
 	ctx context.Context,
 	t *testing.T,
 	k8sClient *kubernetes.K8sClient,
 	ns string,
 	name string,
-) *apipgbackrest.Stanza {
+	same bool,
+) {
 	stanza, err := pgbackrest.GetStanza(ctx, k8sClient, name, ns)
 	if err != nil {
 		t.Fatalf("failed to get stanza: %v", err)
 	}
-	return stanza
+	fBackup := stanza.Status.RecoveryWindow.FirstBackup
+	lBackup := stanza.Status.RecoveryWindow.LastBackup
+	if fBackup.Timestamp.Start == 0 || ((fBackup == lBackup) != same) {
+		t.Fatal("registered backup information into recovery window are invalid")
+	}
 }
 
 // basic verification to ensure we can use our plugin with a cluster
@@ -328,13 +333,8 @@ func TestCreateAndRestoreInstance(t *testing.T) {
 		}
 	}()
 
-	// check stored backup info / status
-	stanza := getStanza(ctx, t, k8sClient, NS, "stanza-restored")
-	fBackup := stanza.Status.RecoveryWindow.FirstBackup
-	lBackup := stanza.Status.RecoveryWindow.LastBackup
-	if fBackup.Timestamp.Start == 0 || fBackup != lBackup {
-		t.Fatal("registered backup data are invalid after first backup")
-	}
+	// first & last backup on recovery window shoud be the same
+	checkRecoveryWindow(ctx, t, k8sClient, NS, "stanza-restored", true)
 
 	// few helpers func to create table, insert data,...
 	createDumpData := func() {
@@ -401,14 +401,9 @@ func TestCreateAndRestoreInstance(t *testing.T) {
 	// then re-instert data to ensure we have some activity on the cluster
 	createDumpData()
 
-	// check stored backup info / status
-	stanza = getStanza(ctx, t, k8sClient, NS, "stanza-restored")
-	fBackup = stanza.Status.RecoveryWindow.FirstBackup
-	lBackup = stanza.Status.RecoveryWindow.LastBackup
-	// After the second backup, both ends of the window should NOT match the first case
-	if fBackup.Timestamp.Start == 0 || fBackup == lBackup {
-		t.Fatal("registered backup data are invalid after second backup")
-	}
+	// second backup first and last backup into recovery window must differ
+	checkRecoveryWindow(ctx, t, k8sClient, NS, "stanza-restored", false)
+
 	// delete cluster, we will recreate it from backup
 	if err := k8sClient.Delete(ctx, c); err != nil {
 		t.Fatal("can't delete cluster")
