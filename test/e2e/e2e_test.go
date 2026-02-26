@@ -403,9 +403,6 @@ func TestCreateAndRestoreInstance(t *testing.T) {
 
 	// check stored backup info / status
 	stanza = getStanza(ctx, t, k8sClient, NS, "stanza-restored")
-	if err != nil {
-		t.Fatalf("failed to get stanza after second backup: %v", err)
-	}
 	fBackup = stanza.Status.RecoveryWindow.FirstBackup
 	lBackup = stanza.Status.RecoveryWindow.LastBackup
 	// After the second backup, both ends of the window should NOT match the first case
