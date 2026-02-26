@@ -25,6 +25,10 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
+const (
+	SIDECAR_NAME string = "plugin-pgbackrest"
+)
+
 // LifecycleImplementation is the implementation of the lifecycle handler
 type LifecycleImplementation struct {
 	lifecycle.UnimplementedOperatorLifecycleServer
@@ -279,7 +283,7 @@ func reconcilePodSpec(
 	} else {
 		containerConfig.Image = img
 	}
-	containerConfig.Name = "plugin-pgbackrest"
+	containerConfig.Name = SIDECAR_NAME
 	containerConfig.ImagePullPolicy = cluster.Spec.ImagePullPolicy
 	containerConfig.SecurityContext = &corev1.SecurityContext{
 		AllowPrivilegeEscalation: ptr.To(false),
