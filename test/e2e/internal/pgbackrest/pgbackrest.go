@@ -40,7 +40,7 @@ func NewStanzaConfig(
 	stanza := &apipgbackrest.Stanza{
 		TypeMeta: metav1.TypeMeta{
 			Kind:       "stanza",
-			APIVersion: "pgbacrest.dalibo.com/v1",
+			APIVersion: "pgbackrest.dalibo.com/v1",
 		},
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      name,
