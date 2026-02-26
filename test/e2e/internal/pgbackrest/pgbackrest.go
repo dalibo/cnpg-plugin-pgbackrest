@@ -35,6 +35,7 @@ func NewStanzaConfig(
 	ns string,
 	s3Repo []pgbackrest.S3Repository,
 	azRepo []pgbackrest.AzureRepository,
+	async bool,
 ) *apipgbackrest.Stanza {
 	stanza := &apipgbackrest.Stanza{
 		TypeMeta: metav1.TypeMeta{
@@ -50,6 +51,9 @@ func NewStanzaConfig(
 				Name:              "my_stanza",
 				S3Repositories:    s3Repo,
 				AzureRepositories: azRepo,
+				Archive: pgbackrest.ArchiveOption{
+					Async: async,
+				},
 				Compress: &pgbackrest.CompressConfig{
 					Type:  ptr.To("lz4"),
 					Level: 7,
@@ -61,6 +65,9 @@ func NewStanzaConfig(
 			},
 		},
 	}
+	if async {
+		stanza.Spec.Configuration.ProcessMax = 2
+	}
 	return stanza
 }
 
@@ -71,8 +78,9 @@ func CreateStanzaConfig(
 	ns string,
 	s3Repo []pgbackrest.S3Repository,
 	azRepo []pgbackrest.AzureRepository,
+	async bool,
 ) (*apipgbackrest.Stanza, error) {
-	stanza := NewStanzaConfig(k8sClient, name, ns, s3Repo, azRepo)
+	stanza := NewStanzaConfig(k8sClient, name, ns, s3Repo, azRepo, async)
 	if err := k8sClient.Create(ctx, stanza); err != nil {
 		return nil, err
 	}
@@ -112,6 +120,9 @@ func NewPluginConfig(ns, name, cpu_limit, memory_limit string) *apipgbackrest.Pl
 					corev1.ResourceCPU:    resource.MustParse(cpu_limit),
 					corev1.ResourceMemory: resource.MustParse(memory_limit),
 				},
+			},
+			StorageConfig: &apipgbackrest.StorageConfig{
+				StorageClass: "standard",
 			},
 		},
 	}

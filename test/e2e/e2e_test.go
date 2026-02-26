@@ -231,6 +231,7 @@ func TestDeployInstance(t *testing.T) {
 		NS,
 		minio.NewS3Repositories("stanza"),
 		nil,
+		true,
 	)
 	if err != nil {
 		panic(err.Error())
@@ -318,6 +319,21 @@ func TestDeployInstance(t *testing.T) {
 			)
 		}
 	}
+
+	// check if pvc has been created (async enabled and MaxProcess>1
+	pvc := corev1.PersistentVolumeClaim{}
+	if err := k8sClient.Get(
+		ctx,
+		types.NamespacedName{Namespace: NS, Name: podName + "-pgbackrest-spool"},
+		&pvc,
+	); err != nil {
+		t.Errorf("can't retrieve PVC for pgbackrest spooled WAL")
+
+	}
+	if pvc.Status.Phase != corev1.ClaimBound {
+		t.Errorf("PVC for pgbackrest spooled WAL not bound")
+	}
+
 }
 
 func TestCreateAndRestoreInstance(t *testing.T) {
@@ -347,6 +363,7 @@ func TestCreateAndRestoreInstance(t *testing.T) {
 		NS,
 		minio.NewS3Repositories("stanza-restored"),
 		nil,
+		false,
 	)
 	if err != nil {
 		panic(err.Error())
@@ -533,6 +550,7 @@ func TestAzure(t *testing.T) {
 		NS,
 		nil,
 		azurite.NewAzureRepositories(azContainer),
+		false,
 	)
 	if err != nil {
 		panic(err.Error())

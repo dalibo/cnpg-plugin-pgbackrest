@@ -99,6 +99,31 @@ spec:
                       More info: https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/
                     type: object
                 type: object
+              storageConfig:
+                description: |-
+                  Defines the configuration for pgBackRest storage used to persist WALs
+                  when running in asynchronous mode. When provided, it allows to customize
+                  the PersistentVolumeClaim settings (storage class and default size) for
+                  the pgBackRest sidecars.
+                properties:
+                  size:
+                    description: |-
+                      Defines the size of storage request for pgBackRest WAL storage
+                      when running in asynchronous mode. This value determines the
+                      capacity allocated to safely retain WALs.
+                    pattern: ^[0-9]+?[M|G]i$
+                    type: string
+                  storageClass:
+                    default: default
+                    description: |-
+                      Defines the storage class used for PersistentVolumeClaims
+                      created for the pgBackRest sidecar container. This storage will be used
+                      to safely store WAL segments when running in asynchronous mode.
+                    minLength: 1
+                    type: string
+                required:
+                - storageClass
+                type: object
             type: object
         required:
         - spec
