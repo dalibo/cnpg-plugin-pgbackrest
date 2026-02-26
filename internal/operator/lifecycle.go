@@ -20,6 +20,8 @@ import (
 	"github.com/dalibo/cnpg-i-pgbackrest/internal/metadata"
 	batchv1 "k8s.io/api/batch/v1"
 	corev1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/api/resource"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/utils/ptr"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -109,7 +111,6 @@ func (impl LifecycleImplementation) LifecycleHook(
 func staticEnvVarConfig() []corev1.EnvVar {
 	return []corev1.EnvVar{
 		{Name: "PGBACKREST_pg1-path", Value: "/var/lib/postgresql/data/pgdata"},
-		{Name: "PGBACKREST_SPOOL_PATH", Value: "/controller/wal-spool"},
 	}
 }
 
@@ -429,6 +430,133 @@ func (impl LifecycleImplementation) injectSharedPluginConfig(
 	return nil
 }
 
+func (impl LifecycleImplementation) requestPVC(
+	ctx context.Context,
+	stClass,
+	stSize string,
+	cluster *cnpgv1.Cluster,
+	pod *corev1.Pod,
+) (string, error) {
+	name := pod.Name + "-pgbackrest-spool"
+	pvc := &corev1.PersistentVolumeClaim{
+		ObjectMeta: metav1.ObjectMeta{
+			Namespace: cluster.Namespace,
+			Name:      name,
+			OwnerReferences: []metav1.OwnerReference{
+				{
+					APIVersion:         cnpgv1.SchemeGroupVersion.String(),
+					Kind:               cluster.Kind,
+					Name:               cluster.Name,
+					UID:                cluster.UID,
+					BlockOwnerDeletion: ptr.To(true),
+				},
+			},
+		},
+		Spec: corev1.PersistentVolumeClaimSpec{
+			StorageClassName: &stClass,
+			AccessModes: []corev1.PersistentVolumeAccessMode{
+				corev1.ReadWriteOnce,
+			},
+			Resources: corev1.VolumeResourceRequirements{
+				Requests: corev1.ResourceList{
+					corev1.ResourceStorage: resource.MustParse(stSize),
+				},
+			},
+		},
+	}
+	// Create PVC if it does not exist
+	err := impl.Client.Create(ctx, pvc)
+	return name, client.IgnoreAlreadyExists(err)
+}
+
+// returns the configured size for the spool WAL volume.
+//
+// The size is determined by using the following precedence:
+//   - If pluginStorageConfig is non-nil and specifies a non-empty Size, that value is returned.
+//   - Otherwise, if walStorageConfig is non-nil and specifies a non-empty Size, that value is returned.
+//   - If neither configuration provides a size, the default value "1Gi" is returned.
+//
+// the plugin specific storage configuration overrides the general WAL storage configuration, while still
+// using a fallback (1Gi) size.
+func getSpoolWALSize(
+	walStorageConfig *cnpgv1.StorageConfiguration,
+	pluginStorageConfig *pluginv1.StorageConfig,
+) string {
+	if pluginStorageConfig != nil && pluginStorageConfig.Size != "" {
+		return pluginStorageConfig.Size
+	}
+	if walStorageConfig != nil && walStorageConfig.Size != "" {
+		return walStorageConfig.Size
+	}
+	return "1Gi"
+}
+
+func (impl LifecycleImplementation) injectWALVolume(
+	ctx context.Context,
+	pluginConfig *PluginConfiguration,
+	pod *corev1.Pod,
+	cluster *cnpgv1.Cluster,
+) error {
+	pc := pluginv1.PluginConfig{}
+	k := types.NamespacedName{
+		Namespace: cluster.Namespace,
+		Name:      pluginConfig.PluginConfigRef,
+	}
+	if err := impl.Client.Get(ctx, k, &pc); err != nil {
+		return err
+	}
+
+	volume := pod.Name + "-wal-vol"
+
+	stSize := getSpoolWALSize(cluster.Spec.WalStorage, pc.Spec.StorageConfig)
+
+	// search for sidecar container
+	var sidecar int
+	var found bool
+	for i, ic := range pod.Spec.InitContainers {
+		if ic.Name == SIDECAR_NAME {
+			sidecar = i
+			found = true
+			break
+		}
+	}
+	if !found {
+		return nil // TODO: throw an error
+	}
+	// create a PVC based on plugin config
+	pvcName, err := impl.requestPVC(
+		ctx,
+		pc.Spec.StorageConfig.StorageClass,
+		stSize,
+		cluster,
+		pod,
+	)
+	if err != nil {
+		return err
+	}
+
+	// Add volume to Pod spec (if not already present) and add mount information
+	pod.Spec.Volumes = ensureVolume(
+		pod.Spec.Volumes,
+		corev1.Volume{
+			Name: volume,
+			VolumeSource: corev1.VolumeSource{
+				PersistentVolumeClaim: &corev1.PersistentVolumeClaimVolumeSource{
+					ClaimName: pvcName,
+				},
+			},
+		},
+	)
+	pod.Spec.InitContainers[sidecar].VolumeMounts = ensureVolumeMount(
+		pod.Spec.InitContainers[sidecar].VolumeMounts,
+		corev1.VolumeMount{
+			Name:      volume,
+			MountPath: "/var/spool/pgbackrest",
+		},
+	)
+	return nil
+}
+
 // reconcilePod handles lifecycle reconciliation and injects the sidecar
 func (impl LifecycleImplementation) reconcilePod(
 	ctx context.Context,
@@ -463,6 +591,21 @@ func (impl LifecycleImplementation) reconcilePod(
 		if err := object.InjectPluginInitContainerSidecarSpec(&mutatedPod.Spec, &sidecar, true); err != nil {
 			return nil, err
 		}
+
+		// If a plugin configuration is defined and a stanza can be retrivied,
+		// inject the WAL volume only when async archiving is enabled and ProcessMax != 1.
+		if len(pluginConfig.PluginConfigRef) != 0 && len(pluginConfig.StanzaRef) != 0 {
+			stanza, err := GetStanza(ctx, request, impl.Client, (*PluginConfiguration).GetStanzaRef)
+			if err == nil {
+				conf := stanza.Spec.Configuration
+				if conf.ProcessMax != 1 && conf.Archive.Async {
+					if err := impl.injectWALVolume(ctx, pluginConfig, mutatedPod, cluster); err != nil {
+						return nil, err
+					}
+				}
+			}
+		}
+
 	}
 
 	// Create JSON patch

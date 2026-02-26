@@ -8,6 +8,8 @@ import (
 	"reflect"
 	"testing"
 
+	cnpgv1 "github.com/cloudnative-pg/cloudnative-pg/api/v1"
+	pluginv1 "github.com/dalibo/cnpg-i-pgbackrest/api/v1"
 	corev1 "k8s.io/api/core/v1"
 )
 
@@ -343,6 +345,83 @@ func TestAddVolumeMountsFromContainer(t *testing.T) {
 					test.wantMounts,
 					test.target.VolumeMounts,
 				)
+			}
+		})
+	}
+}
+
+func TestGetSpoolWALSize(t *testing.T) {
+	tests := []struct {
+		name           string
+		walStor        *cnpgv1.StorageConfiguration
+		pluginStorConf *pluginv1.StorageConfig
+		expected       string
+	}{
+		{
+			name: "plugin size takes precedence over wal size",
+			walStor: &cnpgv1.StorageConfiguration{
+				Size: "2Gi",
+			},
+			pluginStorConf: &pluginv1.StorageConfig{
+				Size: "5Gi",
+			},
+			expected: "5Gi",
+		},
+		{
+			name:    "plugin size used when wal is nil",
+			walStor: nil,
+			pluginStorConf: &pluginv1.StorageConfig{
+				Size: "3Gi",
+			},
+			expected: "3Gi",
+		},
+		{
+			name: "wal size used when plugin is nil",
+			walStor: &cnpgv1.StorageConfiguration{
+				Size: "4Gi",
+			},
+			pluginStorConf: nil,
+			expected:       "4Gi",
+		},
+		{
+			name: "wal size used when plugin size is empty",
+			walStor: &cnpgv1.StorageConfiguration{
+				Size: "6Gi",
+			},
+			pluginStorConf: &pluginv1.StorageConfig{},
+			expected:       "6Gi",
+		},
+		{
+			name:           "default used when both are nil",
+			walStor:        nil,
+			pluginStorConf: nil,
+			expected:       "1Gi",
+		},
+		{
+			name:           "default used when both sizes are empty",
+			walStor:        &cnpgv1.StorageConfiguration{},
+			pluginStorConf: &pluginv1.StorageConfig{},
+			expected:       "1Gi",
+		},
+		{
+			name:           "default used when plugin empty and wal nil",
+			walStor:        nil,
+			pluginStorConf: &pluginv1.StorageConfig{},
+			expected:       "1Gi",
+		},
+		{
+			name:           "default used when wal empty and plugin nil",
+			walStor:        &cnpgv1.StorageConfiguration{},
+			pluginStorConf: nil,
+			expected:       "1Gi",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := getSpoolWALSize(tt.walStor, tt.pluginStorConf)
+			if result != tt.expected {
+				t.Fatalf("expected %q, got %q", tt.expected, result)
 			}
 		})
 	}
