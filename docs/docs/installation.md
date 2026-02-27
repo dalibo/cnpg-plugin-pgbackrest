@@ -13,6 +13,13 @@ To install and use this plugin, Kubernetes and CloudNativePG users should :
 kubectl apply -k ./kubernetes/prod
 ```
 
+Users can also use the manifest file from GitHub:
+
+``` console
+$ kubectl apply -f \
+  https://raw.githubusercontent.com/dalibo/cnpg-plugin-pgbackrest/main/manifest.yaml
+```
+
 This will install the plugin in the same `Namespace` as the operator.
 
 # Verifications
