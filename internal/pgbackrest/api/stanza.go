@@ -321,6 +321,7 @@ func (r *Stanza) ToEnv() ([]string, error) {
 		envConf,
 		"PGBACKREST_LOG_LEVEL_FILE=off",
 		"PGBACKREST_LOCK_PATH=/controller/tmp/pgbackrest-cnpg-plugin.lock",
+		"PGBACKREST_PG1_PATH=/var/lib/postgresql/data/pgdata",
 	)
 
 	return envConf, nil

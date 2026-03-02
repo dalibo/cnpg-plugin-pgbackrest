@@ -97,73 +97,12 @@ func (impl LifecycleImplementation) LifecycleHook(
 	}
 	switch kind {
 	case "Pod":
-		podName := "postgres"
-		env, _ := consolidateEnvVar(&cluster, request, podName)
-		return impl.reconcilePod(ctx, &cluster, request, env, pluginConfig)
+		return impl.reconcilePod(ctx, &cluster, request, pluginConfig)
 	case "Job":
-		env := staticEnvVarConfig()
-		return impl.reconcileJob(ctx, &cluster, request, env)
+		return impl.reconcileJob(ctx, &cluster, request)
 	default:
 		return nil, fmt.Errorf("unsupported kind: %s", kind)
 	}
-}
-
-func staticEnvVarConfig() []corev1.EnvVar {
-	return []corev1.EnvVar{
-		{Name: "PGBACKREST_pg1-path", Value: "/var/lib/postgresql/data/pgdata"},
-	}
-}
-
-func consolidateEnvVar(
-	cluster *cnpgv1.Cluster,
-	request *lifecycle.OperatorLifecycleRequest,
-	srcContainerName string,
-) ([]corev1.EnvVar, error) {
-
-	// get pod definition, we will use it to retrieve environment variables set on a specific (srcContainerName)
-	// container)
-	pod, err := decoder.DecodePodJSON(request.GetObjectDefinition())
-	if err != nil {
-		return nil, err
-	}
-	envs := []corev1.EnvVar{
-		{Name: "CLUSTER_NAME", Value: cluster.Name},
-		{Name: "NAMESPACE", Value: cluster.Namespace},
-	}
-	envs = append(envs, staticEnvVarConfig()...)
-	envs = append(envs, envFromContainer(srcContainerName, pod.Spec, envs)...)
-	return envs, nil
-}
-
-func envFromContainer(
-	srcContainer string,
-	p corev1.PodSpec,
-	srcEnvs []corev1.EnvVar,
-) []corev1.EnvVar {
-	var envs []corev1.EnvVar
-	// first retrieve the container
-	var c corev1.Container
-	found := false
-	for _, c = range p.Containers {
-		if c.Name == srcContainer {
-			found = true
-			break
-		}
-	}
-	if !found {
-		return envs
-	}
-	existing := make(map[string]struct{}, len(srcEnvs))
-	for _, e := range srcEnvs {
-		existing[e.Name] = struct{}{}
-	}
-	// then merge the env var from it
-	for _, e := range c.Env {
-		if _, found := existing[e.Name]; !found {
-			envs = append(envs, e)
-		}
-	}
-	return envs
 }
 
 // getCNPGJobRole gets the role associated to a CNPG job
@@ -181,7 +120,6 @@ func (impl LifecycleImplementation) reconcileJob(
 	ctx context.Context,
 	cluster *cnpgv1.Cluster,
 	request *lifecycle.OperatorLifecycleRequest,
-	env []corev1.EnvVar,
 ) (*lifecycle.OperatorLifecycleResponse, error) {
 	logger := log.FromContext(ctx).WithName("lifecycle")
 
@@ -210,7 +148,7 @@ func (impl LifecycleImplementation) reconcileJob(
 	mutatedJob := job.DeepCopy()
 	podSpec := &mutatedJob.Spec.Template.Spec
 
-	sidecarContainer := &corev1.Container{Env: env, Args: []string{"restore"}}
+	sidecarContainer := &corev1.Container{Args: []string{"restore"}}
 
 	reconcilePodSpec(cluster, podSpec, role, sidecarContainer)
 
@@ -253,18 +191,6 @@ func reconcilePodSpec(
 	mainContainerName string,
 	containerConfig *corev1.Container,
 ) {
-	// Merge cluster defaults and main container envs
-	defaultEnv := []corev1.EnvVar{
-		{Name: "NAMESPACE", Value: cluster.Namespace},
-		{Name: "CLUSTER_NAME", Value: cluster.Name},
-	}
-	var mainEnv []corev1.EnvVar
-	for _, c := range spec.Containers {
-		if c.Name == mainContainerName {
-			mainEnv = c.Env
-			break
-		}
-	}
 	baseProbe := &corev1.Probe{
 		FailureThreshold: 10,
 		TimeoutSeconds:   10,
@@ -298,10 +224,37 @@ func reconcilePodSpec(
 			Drop: []corev1.Capability{"ALL"},
 		},
 	}
-	containerConfig.Env = mergeEnvs(containerConfig.Env, mainEnv, defaultEnv)
+	containerConfig.Env = envFromContainer(mainContainerName, spec, containerConfig.Env)
 	containerConfig.StartupProbe = baseProbe.DeepCopy()
 	containerConfig.RestartPolicy = ptr.To(corev1.ContainerRestartPolicyAlways)
 	object.InjectPluginVolumeSpec(spec)
+}
+
+func envFromContainer(
+	srcContainerName string,
+	srcPod *corev1.PodSpec,
+	destEnvVar []corev1.EnvVar,
+) []corev1.EnvVar {
+	var env []corev1.EnvVar
+	existing := make(map[string]struct{}, len(destEnvVar))
+	for _, d := range destEnvVar {
+		existing[d.Name] = struct{}{}
+	}
+	var oriContainer *corev1.Container
+	for i := range srcPod.Containers {
+		if srcPod.Containers[i].Name == srcContainerName {
+			oriContainer = &srcPod.Containers[i]
+			break
+		}
+	}
+	if oriContainer != nil {
+		for _, srcEnv := range oriContainer.Env {
+			if _, ok := existing[srcEnv.Name]; !ok {
+				env = append(env, srcEnv)
+			}
+		}
+	}
+	return env
 }
 
 // injects the plugin volume (/plugin) into a CNPG Pod spec.
@@ -386,25 +339,6 @@ func addVolumeMountsFromContainer(
 		}
 	}
 	return fmt.Errorf("container %q not found", sourceName)
-}
-
-// mergeEnvs merges environment variables, skipping duplicates by name
-func mergeEnvs(envSlices ...[]corev1.EnvVar) []corev1.EnvVar {
-	envMap := make(map[string]corev1.EnvVar)
-	// Iterate through all provided slices
-	for _, slice := range envSlices {
-		for _, env := range slice {
-			if _, exists := envMap[env.Name]; !exists {
-				envMap[env.Name] = env
-			}
-		}
-	}
-	// Convert map back to slice
-	merged := make([]corev1.EnvVar, 0, len(envMap))
-	for _, env := range envMap {
-		merged = append(merged, env)
-	}
-	return merged
 }
 
 func (impl LifecycleImplementation) injectSharedPluginConfig(
@@ -562,7 +496,6 @@ func (impl LifecycleImplementation) reconcilePod(
 	ctx context.Context,
 	cluster *cnpgv1.Cluster,
 	request *lifecycle.OperatorLifecycleRequest,
-	envVars []corev1.EnvVar,
 	pluginConfig *PluginConfiguration,
 ) (*lifecycle.OperatorLifecycleResponse, error) {
 
@@ -578,10 +511,7 @@ func (impl LifecycleImplementation) reconcilePod(
 
 	if len(pluginConfig.StanzaRef) != 0 || len(pluginConfig.ReplicaStanzaRef) != 0 {
 		// Build the container config using envVars from caller
-		sidecar := corev1.Container{
-			Env:  envVars,
-			Args: []string{"instance"},
-		}
+		sidecar := corev1.Container{Args: []string{"instance"}}
 
 		if err := impl.injectSharedPluginConfig(ctx, pluginConfig, &sidecar); err != nil {
 			return nil, err

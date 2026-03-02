@@ -22,7 +22,7 @@ func envVarSliceToMap(envVars []corev1.EnvVar) map[string]string {
 	return envMap
 }
 func TestEnvFromContainer(t *testing.T) {
-	srcPod := corev1.PodSpec{
+	srcPod := &corev1.PodSpec{
 		Containers: []corev1.Container{
 			{
 				Name: "test-container-with-var",
