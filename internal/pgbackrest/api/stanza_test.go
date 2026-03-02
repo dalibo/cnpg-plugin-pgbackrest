@@ -13,6 +13,7 @@ import (
 
 func TestStanzaToEnv(t *testing.T) {
 	expected := []string{
+		"PGBACKREST_PG1_PATH=/var/lib/postgresql/data/pgdata",
 		"PGBACKREST_REPO1_S3_BUCKET=demo",
 		"PGBACKREST_REPO1_S3_ENDPOINT=s3.minio.svc.cluster.local",
 		"PGBACKREST_REPO1_S3_REGION=us-east-1",
