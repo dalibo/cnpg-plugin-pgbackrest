@@ -27,10 +27,10 @@ of the plugin. For example, it allows to:
 - Define resource limits (CPU, memory, etc.) for the pgBackRest sidecar
   container.
 - Specify the `StorageClass` to use when creating a
-  PersistentVolumeClaim (PVC) to store pgBackRest spooled WAL files when
-  running in asynchronous mode. Using a dedicated PVC ensures that we
-  don't lose WAL when operating in asynchronous mode in case the sidecar
-  container crashes.
+  PersistentVolumeClaim (PVC) to store transient data for spooled WAL
+  files when running in asynchronous mode. Using a dedicated PVC ensures
+  that we don't lose information about processed WAL when operating in
+  asynchronous mode in case the sidecar container crashes.
 
 <CodeBlock language="yaml">{PluginConfig}</CodeBlock>
 
