@@ -60,7 +60,7 @@ func Start(ctx context.Context) error {
 		Metrics:                       metricsServerOptions,
 		HealthProbeBindAddress:        viper.GetString("health-probe-bind-address"),
 		LeaderElection:                true,
-		LeaderElectionID:              "822e3f5c.cnpg.io",
+		LeaderElectionID:              "822e3f5c.pgbackrest.cnpg.io",
 		LeaderElectionReleaseOnCancel: true,
 	})
 	if err != nil {
