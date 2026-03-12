@@ -26,33 +26,34 @@ To use this plugin with a `Cluster`, CloudNativePG users must :
     the PostgreSQL `Cluster`. This secret must contain the `key` and
     `secret-key` of the `s3` bucket.
 
-Example:
+    Example:
 
-<CodeBlock language="yaml">{Secret}</CodeBlock>
+    <CodeBlock language="yaml">{Secret}</CodeBlock>
 
-2.  Create a pgBackRest `stanza` :
 
-Example:
+2.  Create a pgBackRest `stanza`
 
-<CodeBlock language="yaml">{Stanza}</CodeBlock>
+    <CodeBlock language="yaml">{Stanza}</CodeBlock>
 
-:::note The `s3Repositories` variable is a list. You can configure
-multiple repositories. You can then select the repository to which your
-backup will be performed. By default :
+    :::note
 
-- the first repository is selected for backup ;
-- WAL archiving always occurs on all repositories.
-:::
+    The `s3Repositories` variable is a list. You can configure
+    multiple repositories. You can then select the repository to which your
+    backup will be performed. By default :
+
+    - the first repository is selected for backup ;
+    - WAL archiving always occurs on all repositories.
+    :::
 
 3.  Create the PostgreSQL `Cluster` and adapt the manifest by :
 
-- adding the plugin definition `pgbackrest.dalibo.com` under the
-  `plugins` entry;
-- referencing the pgBackRest `stanza` resource with `stanzaRef`.
+    - adding the plugin definition `pgbackrest.dalibo.com` under the
+      `plugins` entry;
+    - referencing the pgBackRest `stanza` resource with `stanzaRef`.
 
-Example:
+    Example:
 
-<CodeBlock language="yaml">{Cluster}</CodeBlock>
+    <CodeBlock language="yaml">{Cluster}</CodeBlock>
 
 If it runs without errors, the `Pod` dedicated to the PostgreSQL
 `Cluster` should have now two containers. One for the `postgres` service
