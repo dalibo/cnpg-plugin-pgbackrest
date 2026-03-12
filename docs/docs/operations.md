@@ -30,19 +30,19 @@ To use this plugin with a `Cluster`, CloudNativePG users must :
 
     <CodeBlock language="yaml">{Secret}</CodeBlock>
 
-
 2.  Create a pgBackRest `stanza`
 
     <CodeBlock language="yaml">{Stanza}</CodeBlock>
 
     :::note
 
-    The `s3Repositories` variable is a list. You can configure
-    multiple repositories. You can then select the repository to which your
+    The `s3Repositories` variable is a list. You can configure multiple
+    repositories. You can then select the repository to which your
     backup will be performed. By default :
 
     - the first repository is selected for backup ;
     - WAL archiving always occurs on all repositories.
+
     :::
 
 3.  Create the PostgreSQL `Cluster` and adapt the manifest by :
@@ -88,7 +88,7 @@ to `plugin` and the `pluginConfiguration.name` field to
 `pgbackrest.dalibo.com`.
 
 Here is a full example of a backup definition using the pgBackRest
-plugin :
+plugin:
 
 <CodeBlock language="yaml">{Backup}</CodeBlock>
 
@@ -96,7 +96,7 @@ It's also possible to use the `cnpg` plugin for `kubectl` to perform
 your backup :
 
 ``` console
-kubectl cnpg backup cluster-demo -m plugin --plugin-name pgbackrest.dalibo.com
+$ kubectl cnpg backup cluster-sample -m plugin --plugin-name pgbackrest.dalibo.com
 ```
 
 When performing a backup, you can choose the repository to which to push
@@ -115,7 +115,7 @@ configured repositories. For example, to use the first repository:
 Or with the `cnpg` plugin:
 
 ``` console
-$ kubectl cnpg backup cluster-demo -m plugin --plugin-name pgbackrest.dalibo.com \
+$ kubectl cnpg backup cluster-sample -m plugin --plugin-name pgbackrest.dalibo.com \
   --plugin-parameters selectedRepository=1
 ```
 
@@ -127,7 +127,7 @@ object, the schedule field (with a `crontab`-like annotation) should
 also be defined under the specification (`spec`).
 
 Here is a full example of a scheduled backup definition using the
-pgbackrest plugin :
+pgBackRest plugin:
 
 <CodeBlock language="yaml">{ScheduleBackup}</CodeBlock>
 
@@ -152,9 +152,8 @@ documentation](https://pgbackrest.org/command.html#command-restore).
 
 ## WAL Archiving
 
-WAL archiving can be customized through the `pgbackrest` CRD. It is
-possible to define the WAL archiving strategy (e.g. [using the
-`asynchronous`
+WAL archiving can be customized through the `Stanza` CRD. It is possible
+to define the WAL archiving strategy (e.g. [using the `asynchronous`
 mode](https://pgbackrest.org/configuration.html#section-archive/option-archive-async))
 as well as configure the `pgbackrest` queue size.
 
@@ -165,7 +164,7 @@ regarding the scope of a `Stanza` object.
 
 As stated in the
 [documentation](https://pgbackrest.org/user-guide.html#quickstart/configure-stanza),
-a *stanza* is specific to a PostgreSQL instance cluster.
+a *stanza* is specific to a PostgreSQL Cluster.
 
 > A stanza is the configuration for a PostgreSQL database cluster that
 > defines where it is located, how it will be backed up, archiving
