@@ -13,7 +13,7 @@ import ScheduleBackup from '!!raw-loader!../../examples/schedule_backup.yaml';
 
 # Operations
 
-## Create an instance with pgBackRest
+## Create a Cluster with pgBackRest
 
 The `examples` directory contains several pre-configured manifests
 designed to work with [`kind`](https://kind.sigs.k8s.io/) (Eg: the pull
