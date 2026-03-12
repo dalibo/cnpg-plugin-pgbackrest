@@ -4,6 +4,11 @@ sidebar_position: 2
 
 # Installation
 
+## Prerequisite
+
+`cert-manager` must be installed before pgBackRest plugin.
+Please follow steps in this [documentation](https://cert-manager.io/docs/installation/).
+
 To install the plugin, users can follow one of the following methods :
 
 1. Install the plugin by applying the production manifest located in the 
