@@ -16,7 +16,7 @@ kubectl apply -k ./kubernetes/prod
 Users can also use the manifest file from GitHub:
 
 ``` console
-$ kubectl apply -f \
+kubectl apply -f \
   https://raw.githubusercontent.com/dalibo/cnpg-plugin-pgbackrest/main/manifest.yaml
 ```
 
