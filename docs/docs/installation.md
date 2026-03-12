@@ -4,19 +4,26 @@ sidebar_position: 2
 
 # Installation
 
-To install and use this plugin, Kubernetes and CloudNativePG users should :
+## Prerequisite
 
-1. Install the plugin by applying the manifest located in the 
-`kubernetes` directory :
+`cert-manager` must be installed before pgBackRest plugin.
+Please follow steps in this [documentation](https://cert-manager.io/docs/installation/).
+
+To install the plugin, users can follow one of the following methods :
+
+1. Install the plugin by applying the production manifest located in the 
+`kubernetes` directory after cloning the [repository](https://github.com/dalibo/cnpg-plugin-pgbackrest) :
 
 ``` console
 kubectl apply -k ./kubernetes/prod
 ```
 
-Users can also use the manifest file from GitHub:
+Or 
+
+2. Directly apply the manifest files from GitHub :
 
 ``` console
-$ kubectl apply -f \
+kubectl apply -f \
   https://raw.githubusercontent.com/dalibo/cnpg-plugin-pgbackrest/main/manifest.yaml
 ```
 
