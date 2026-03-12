@@ -62,34 +62,6 @@ named `pgbackrest-plugin`. The injected container now holds the
 responsibility for archiving the WALs and triggering backups when a
 backup request is made.
 
-## Stanza Consideration
-
-We chose to adhere to the concepts of the pgBackRest project, especially
-regarding the scope of a `Stanza` object.
-
-As stated in the
-[documentation](https://pgbackrest.org/user-guide.html#quickstart/configure-stanza),
-a *stanza* is specific to a PostgreSQL instance cluster.
-
-> A stanza is the configuration for a PostgreSQL database cluster that
-> defines where it is located, how it will be backed up, archiving
-> options, etc.
-
-Therefore, you will need to create as many `Stanza` objects as you have
-deployed `Cluster`.
-
-### Stanza Initialization (or create-stanza operation)
-
-Stanzas are initialized when archiving the first WAL. Since the stanza
-initialization state is tracked internally, restarting the sidecar
-container will cause the `pgbackrest create-stanza` command to run
-again.
-
-Adding a new repository to a stanza can require running the
-`create-stanza` command again. Currently, this is not done
-automatically. Restarting the `pgbackrest-plugin` container will launch
-the create-stanza command.
-
 ## Backup a Cluster
 
 There are two ways to backup a PostgreSQL Cluster with this plugin
@@ -159,14 +131,6 @@ pgbackrest plugin :
 
 <CodeBlock language="yaml">{ScheduleBackup}</CodeBlock>
 
-## WAL Archiving
-
-WAL archiving can be customized through the `pgbackrest` CRD. It is
-possible to define the WAL archiving strategy (e.g. [using the
-`asynchronous`
-mode](https://pgbackrest.org/configuration.html#section-archive/option-archive-async))
-as well as configure the `pgbackrest` queue size.
-
 ## Restoring a Cluster
 
 To restore a `Cluster` from a backup, create a new `Cluster` that
@@ -185,3 +149,39 @@ If no specific backup (BackupID) is specified, the plugin lets
 pgBackRest automatically choose the optimal backup using its standard
 algorithm. For more details, see the [pgBackRest restore
 documentation](https://pgbackrest.org/command.html#command-restore).
+
+## WAL Archiving
+
+WAL archiving can be customized through the `pgbackrest` CRD. It is
+possible to define the WAL archiving strategy (e.g. [using the
+`asynchronous`
+mode](https://pgbackrest.org/configuration.html#section-archive/option-archive-async))
+as well as configure the `pgbackrest` queue size.
+
+## Stanza Consideration
+
+We chose to adhere to the concepts of the pgBackRest project, especially
+regarding the scope of a `Stanza` object.
+
+As stated in the
+[documentation](https://pgbackrest.org/user-guide.html#quickstart/configure-stanza),
+a *stanza* is specific to a PostgreSQL instance cluster.
+
+> A stanza is the configuration for a PostgreSQL database cluster that
+> defines where it is located, how it will be backed up, archiving
+> options, etc.
+
+Therefore, you will need to create as many `Stanza` objects as you have
+deployed `Cluster`.
+
+### Stanza Initialization (or create-stanza operation)
+
+Stanzas are initialized when archiving the first WAL. Since the stanza
+initialization state is tracked internally, restarting the sidecar
+container will cause the `pgbackrest create-stanza` command to run
+again.
+
+Adding a new repository to a stanza can require running the
+`create-stanza` command again. Currently, this is not done
+automatically. Restarting the `pgbackrest-plugin` container will launch
+the create-stanza command.
