@@ -10,7 +10,7 @@ import PluginConfig from '!!raw-loader!../../examples/plugin_config.yaml';
 
 This pgBackRest plugin supports three levels of configuration:
 
-- **Managed configuration:** Options defined via the Stanza or
+- **Managed configuration:** Options defined via the `Stanza` or
   `PluginConfig` CRD.
 - **Environment variables:** Free-form variables that can be specified
   using `CustomEnvVars`. `CustomEnvVars` is a list of variables.
