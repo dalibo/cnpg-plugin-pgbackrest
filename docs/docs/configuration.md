@@ -78,17 +78,17 @@ PGBACKREST_MY_CUSTOM=CNPG_ROCKS
 To run pgBackRest with parameters not directly managed by this plugin,
 the `CustomEnvVar` option can be used.
 
-## Supported repositories type (S3 and Azure)
+## Supported repositories types (S3 and Azure)
 
-The pgBackRest plugin enables PostgreSQL backup files to be stored in:
+The pgBackRest plugin enables backup and WAL files to be stored in:
 
-- Amazon s3
+- Amazon s3, or S3 compatible solutions
 - Microsoft Azure Blob Storage
 
-The plugin relies on the protocols that pgBackRest supports natively. To
-configure the repositories for pgBackRest, you must define a `Stanza`
-object, which establishes the link between your PostgreSQL `Cluster` and
-the repository or repositories.
+The plugin relies on the repositories protocols supported by pgBackRest
+natively. configure the repositories for pgBackRest, you must define a
+`Stanza` object, which establishes the link between one PostgreSQL
+`Cluster` and the repository or repositories.
 
 Below are a few examples of how to use the supported backup storage
 backend.
