@@ -6,8 +6,9 @@ metadata:
 spec:
   stanzaConfiguration:
     name: main
-    s3Repositories:
-      - container: backups
+    azureRepositories:
+      - account: sts-sample
+        container: backups
         endpoint: blob.core.windows.net
         repoPath: /cluster-sample
         keyType: shared
