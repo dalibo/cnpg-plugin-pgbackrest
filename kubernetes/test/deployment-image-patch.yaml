@@ -9,7 +9,7 @@ spec:
     spec:
       containers:
         - name: pgbackrest-controller
-          image: registry.hub.docker.com/dalibo/cnpg-pgbackrest-controller:0.0.1b
+          image: registry.hub.docker.com/dalibo/cnpg-pgbackrest-controller:0.0.1
           imagePullPolicy: IfNotPresent
           env:
             - name: SIDECAR_IMAGE

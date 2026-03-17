@@ -1011,10 +1011,10 @@ apiVersion: v1
 data:
   SIDECAR_IMAGE: |
     cmVnaXN0cnkuaHViLmRvY2tlci5jb20vZGFsaWJvL2NucGctcGdiYWNrcmVzdC1zaWRlY2
-    FyOjAuMC4xYg==
+    FyOjAuMC4x
 kind: Secret
 metadata:
-  name: plugin-pgbackrest-5k7k7f4gh8
+  name: plugin-pgbackrest-66hkbh8k26
   namespace: cnpg-system
 type: Opaque
 ---
@@ -1070,9 +1070,8 @@ spec:
           valueFrom:
             secretKeyRef:
               key: SIDECAR_IMAGE
-              name: plugin-pgbackrest-5k7k7f4gh8
-        image: registry.hub.docker.com/dalibo/cnpg-pgbackrest-controller:0.0.1b
-        imagePullPolicy: IfNotPresent
+              name: plugin-pgbackrest-66hkbh8k26
+        image: registry.hub.docker.com/dalibo/cnpg-pgbackrest-controller:0.0.1
         name: pgbackrest-controller
         ports:
         - containerPort: 9090
