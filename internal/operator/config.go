@@ -241,30 +241,31 @@ func getEnvVarForS3(
 ) ([]string, error) {
 	s3env := make([]string, 0, len(repositories))
 	for i, r := range repositories {
-		sRef := r.SecretRef
-		aKey, err := decodeSecretVal(ctx, c, ns, sRef.AccessKeyIDReference)
-		if err != nil {
-			return nil, err
-		}
-		sKey, err := decodeSecretVal(ctx, c, ns, sRef.SecretAccessKeyReference)
-		if err != nil {
-			return nil, err
-		}
 		prefix := fmt.Sprintf("PGBACKREST_REPO%d_", startId+i)
+		if sRef := r.SecretRef; sRef != nil {
+			aKey, err := decodeSecretVal(ctx, c, ns, sRef.AccessKeyIDReference)
+			if err != nil {
+				return nil, fmt.Errorf("cannot decode S3 secret: %w (missing or invalid)", err)
+			}
+			sKey, err := decodeSecretVal(ctx, c, ns, sRef.SecretAccessKeyReference)
+			if err != nil {
+				return nil, fmt.Errorf("cannot decode S3 key: %w (missing or invalid)", err)
+			}
+			s3env = append(
+				s3env,
+				fmt.Sprintf("%sS3_KEY=%s", prefix, aKey),
+				fmt.Sprintf("%sS3_KEY_SECRET=%s", prefix, sKey),
+			)
+		}
 		if r.Cipher != nil {
 			encKey, err := decodeSecretVal(ctx, c, ns, r.Cipher.PassReference)
 			if err != nil {
-				return nil, err
+				return nil, fmt.Errorf("cannot decode cipher secret: %w", err)
 			}
 			s3env = append(s3env, fmt.Sprintf("%sCIPHER_PASS=%s", prefix, encKey))
 		}
 		// build env var names
-		s3env = append(
-			s3env,
-			fmt.Sprintf("%sS3_KEY=%s", prefix, aKey),
-			fmt.Sprintf("%sS3_KEY_SECRET=%s", prefix, sKey),
-			fmt.Sprintf("%sTYPE=%s", prefix, "s3"),
-		)
+		s3env = append(s3env, fmt.Sprintf("%sTYPE=s3", prefix))
 	}
 	return s3env, nil
 }
@@ -278,17 +279,16 @@ func getEnvVarForAzure(
 ) ([]string, error) {
 	azureEnv := make([]string, 0, len(repositories))
 	for i, r := range repositories {
-		sRef := r.SecretRef
-		sKey, err := decodeSecretVal(ctx, c, ns, sRef.KeyReference)
-		if err != nil {
-			return nil, err
-		}
 		prefix := fmt.Sprintf("PGBACKREST_REPO%d_", (startId + i))
-		azureEnv = append(
-			azureEnv,
-			fmt.Sprintf("%sAZURE_KEY=%s", prefix, sKey),
-			fmt.Sprintf("%sTYPE=%s", prefix, "azure"),
-		)
+		if sRef := r.SecretRef; sRef != nil {
+			sKey, err := decodeSecretVal(ctx, c, ns, sRef.KeyReference)
+			if err != nil {
+				return nil, fmt.Errorf("cannot decode Azure secret: %w (missing or invalid)", err)
+			}
+
+			azureEnv = append(azureEnv, fmt.Sprintf("%sAZURE_KEY=%s", prefix, sKey))
+		}
+		azureEnv = append(azureEnv, fmt.Sprintf("%sTYPE=azure", prefix))
 	}
 	return azureEnv, nil
 }
