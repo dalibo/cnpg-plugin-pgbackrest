@@ -5,6 +5,7 @@ package utils
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
 	machineryapi "github.com/cloudnative-pg/machinery/pkg/api"
@@ -18,6 +19,9 @@ func GetValueFromSecret(
 	namespace string,
 	secretReference *machineryapi.SecretKeySelector,
 ) ([]byte, error) {
+	if secretReference == nil {
+		return nil, errors.New("secret reference is nil")
+	}
 	secret := &corev1.Secret{}
 	err := c.Get(ctx, client.ObjectKey{Namespace: namespace, Name: secretReference.Name}, secret)
 	if err != nil {

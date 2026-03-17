@@ -7,6 +7,7 @@ package operator
 import (
 	"context"
 	"slices"
+	"strings"
 	"testing"
 
 	machineryapi "github.com/cloudnative-pg/machinery/pkg/api"
@@ -126,5 +127,35 @@ func TestGetEnvVarConfig(t *testing.T) {
 		if !slices.Contains(env, e) {
 			t.Errorf("expected env var %v not found in: %v", e, env)
 		}
+	}
+}
+
+func TestGetEnvVarConfig_MissingSecret(t *testing.T) {
+	ctx := context.Background()
+	r := buildRepo()
+
+	// Build client WITHOUT the access-key-secret
+	c := fake.NewClientBuilder().
+		WithScheme(scheme).
+		WithObjects(
+			// only include some secrets, omit one on purpose
+			&corev1.Secret{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "another-secret-key",
+					Namespace: "default",
+				},
+				Data: map[string][]byte{
+					"key": []byte("SECRET123"),
+				},
+			},
+		).
+		Build()
+
+	_, err := GetEnvVarConfig(ctx, *r, c)
+	if err == nil {
+		t.Fatalf("expected error when secret is missing, got %v", err)
+	}
+	if !strings.Contains(err.Error(), "secrets \"access-key-secret\" not found") {
+		t.Fatalf("unexpected error: %v", err)
 	}
 }

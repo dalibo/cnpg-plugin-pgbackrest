@@ -14,13 +14,15 @@ import (
 
 func getSecrets(stanza apipgbackrest.Stanza, s *stringset.Data) {
 	for _, s3r := range stanza.Spec.Configuration.S3Repositories {
-		akidr := s3r.SecretRef.AccessKeyIDReference
-		akisr := s3r.SecretRef.SecretAccessKeyReference
-		if akidr != nil {
-			s.Put(akidr.Name)
-		}
-		if akisr != nil {
-			s.Put(akisr.Name)
+		if s3r.SecretRef != nil {
+			akidr := s3r.SecretRef.AccessKeyIDReference
+			akisr := s3r.SecretRef.SecretAccessKeyReference
+			if akidr != nil {
+				s.Put(akidr.Name)
+			}
+			if akisr != nil {
+				s.Put(akisr.Name)
+			}
 		}
 		if s3r.Cipher != nil {
 			if pr := s3r.Cipher.PassReference; pr != nil {
@@ -29,8 +31,10 @@ func getSecrets(stanza apipgbackrest.Stanza, s *stringset.Data) {
 		}
 	}
 	for _, azr := range stanza.Spec.Configuration.AzureRepositories {
-		if azk := azr.SecretRef.KeyReference; azk != nil {
-			s.Put(azk.Name)
+		if azr.SecretRef != nil {
+			if azk := azr.SecretRef.KeyReference; azk != nil {
+				s.Put(azk.Name)
+			}
 		}
 	}
 }
