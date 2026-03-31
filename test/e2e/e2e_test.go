@@ -118,13 +118,24 @@ func TestMain(m *testing.M) {
 	m.Run()
 }
 
+func mustK8sClient(t *testing.T) *kubernetes.K8sClient {
+	t.Helper()
+
+	c, err := kubernetes.Client()
+	if err != nil {
+		t.Fatalf("failed to create kubernetes client: %v", err)
+	}
+	if c == nil {
+		t.Fatal("kubernetes client is nil")
+	}
+
+	return c
+}
+
 func TestInstall(t *testing.T) {
 	log.SetLogger(zap.New(zap.WriteTo(os.Stdout), zap.UseDevMode(true)))
 	// basic verification to ensure our plugin is present
-	k8sClient, err := kubernetes.Client()
-	if k8sClient == nil || err != nil {
-		t.Fatalf("error kubernetes client not initialized")
-	}
+	k8sClient := mustK8sClient(t)
 	ctx := context.TODO()
 
 	// basic check for deployment
@@ -140,8 +151,7 @@ func TestInstall(t *testing.T) {
 	// verify service creation
 	fqdn = types.NamespacedName{Name: "pgbackrest", Namespace: "cnpg-system"}
 	svc := &corev1.Service{}
-	err = k8sClient.Get(ctx, fqdn, svc)
-	if err != nil {
+	if err := k8sClient.Get(ctx, fqdn, svc); err != nil {
 		t.Errorf("error no service for pgbackrest found %s", err.Error())
 	}
 	wantLabels := map[string]string{
@@ -206,12 +216,10 @@ func checkRecoveryWindow(
 // basic verification to ensure we can use our plugin with a cluster
 func TestDeployInstance(t *testing.T) {
 	log.SetLogger(zap.New(zap.WriteTo(os.Stdout), zap.UseDevMode(true)))
-	k8sClient, err := kubernetes.Client()
-	if k8sClient == nil || err != nil {
-		t.Fatalf("kubernetes client not initialized: %v", err)
-	}
+	k8sClient := mustK8sClient(t)
 	ctx := context.Background()
 	log.FromContext(ctx)
+
 	// first create a secret
 	secret, err := createSecret(ctx, k8sClient, NS, "pgbackrest-s3-secret", _S3_DATA_SECRET)
 	if err != nil {
@@ -338,12 +346,10 @@ func TestDeployInstance(t *testing.T) {
 
 func TestCreateAndRestoreInstance(t *testing.T) {
 	log.SetLogger(zap.New(zap.WriteTo(os.Stdout), zap.UseDevMode(true)))
-	k8sClient, err := kubernetes.Client()
-	if k8sClient == nil || err != nil {
-		t.Fatalf("kubernetes client not initialized: %v", err)
-	}
+	k8sClient := mustK8sClient(t)
 	ctx := context.Background()
 	log.FromContext(ctx)
+
 	// first create a secret
 	secret, err := createSecret(ctx, k8sClient, NS, "pgbackrest-s3-secret", _S3_DATA_SECRET)
 	if err != nil {
@@ -520,15 +526,15 @@ func TestCreateAndRestoreInstance(t *testing.T) {
 }
 
 func TestAzure(t *testing.T) {
-	ctx := context.Background()
-	k8sClient, err := kubernetes.Client()
+
+	k8sClient := mustK8sClient(t)
+
 	clusterName := "cluster-azure"
 	podName := clusterName + "-1"
 	stanza := "stanza-azure"
 	azContainer := "azcontainer"
-	if err != nil {
-		panic("can't init kubernetes client")
-	}
+
+	ctx := context.Background()
 	if err := azurite.CreateAzContainer(ctx, *k8sClient, "azurite", azContainer); err != nil {
 		panic(err.Error())
 	}
