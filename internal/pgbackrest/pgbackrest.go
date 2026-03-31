@@ -284,7 +284,6 @@ func FirstBackup(backups []pgbackrestapi.BackupInfo) *pgbackrestapi.BackupInfo {
 }
 
 func (p *PgBackrest) Restore(ctx context.Context) <-chan error {
-	env := make([]string, 1)
-	env = append(env, "PGBACKREST_ARCHIVE_CHECK=n")
+	env := []string{"PGBACKREST_ARCHIVE_CHECK=n"}
 	return p.runBackgroundTask(ctx, []string{"restore"}, env)
 }
