@@ -255,12 +255,10 @@ func TestEnsureVolume(t *testing.T) {
 				}
 			}
 
-			if found == nil {
-				t.Fatalf("expected volume %q to be present", test.input.Name)
-			}
-
-			if !reflect.DeepEqual(*found, test.wantVolume) {
+			if found != nil && !reflect.DeepEqual(*found, test.wantVolume) {
 				t.Errorf("volume mismatch want: %v, got:  %v", test.wantVolume, *found)
+			} else if found == nil {
+				t.Fatalf("expected volume %q to be present", test.input.Name)
 			}
 		})
 	}
