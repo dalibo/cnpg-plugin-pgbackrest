@@ -332,7 +332,7 @@ func (cl K8sClient) CreateCertificate(
 			Duration: &metav1.Duration{
 				Duration: time.Minute * time.Duration(certSpec.DurationInMinute),
 			},
-			IssuerRef: cmmeta.ObjectReference{
+			IssuerRef: cmmeta.IssuerReference{
 				Name: certSpec.IssuerName,
 				Kind: "ClusterIssuer",
 			},
