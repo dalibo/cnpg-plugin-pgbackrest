@@ -78,12 +78,13 @@ provided by default.
 
 ## Customisation
 
-The image used by the CloudNativePG instance sidecar container can be
-customised by adding the `SIDECAR_IMAGE` environment variable to the
-pgbackrest plugin controller container.
+The image used by the CloudNativePG instance sidecar containers can be
+customised by adding the `SIDECAR_IMAGE` `SIDECAR_EXPORTER_IMAGE` (when
+configured) environment variables to the pgbackrest plugin controller
+container.
 
-For example, this patch can be used to add the `SIDECAR_IMAGE` variable
-:
+For example, this patch can be used to add the `SIDECAR_IMAGE` and
+`SIDECAR_EXPORTER_IMAGE` variable :
 
 ``` yaml
 apiVersion: apps/v1
@@ -98,5 +99,7 @@ spec:
         - name: pgbackrest-controller
           env:
             - name: SIDECAR_IMAGE
+               value: <my_own_image>
+            - name: SIDECAR_EXPORTER_IMAGE
                value: <my_own_image>
 ```

@@ -162,6 +162,16 @@ func (c *PluginConfiguration) GetRecoveryStanzaRef() (*types.NamespacedName, err
 	return nil, fmt.Errorf("recovery stanza not configured")
 }
 
+func (c *PluginConfiguration) GetSharedPluginConfig() (*types.NamespacedName, error) {
+	if len(c.PluginConfigRef) > 0 {
+		return &types.NamespacedName{
+			Name:      c.PluginConfigRef,
+			Namespace: c.Cluster.Namespace,
+		}, nil
+	}
+	return nil, fmt.Errorf("no shared plugin configuration available")
+}
+
 // GetReferredPgBackrestObjectKey the list of pgbackrest objects referred by this
 // plugin configuration
 func (c *PluginConfiguration) GetReferredPgBackrestObjectKey() []types.NamespacedName {

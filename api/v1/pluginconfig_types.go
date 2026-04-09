@@ -5,9 +5,36 @@
 package v1
 
 import (
+	"fmt"
+
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
+
+type ExporterConfig struct {
+
+	// Define if pgBackrest exporter should be enabled.
+	// +optional
+	Enabled bool `json:"enabled"`
+
+	// Collecting metrics interval in seconds.
+	// +kubebuilder:default=600
+	// +required
+	CollectInterval uint `json:"collectInterval"`
+}
+
+// ToArgs converts the ExporterConfig into command-line flags for the
+// pgBackRest exporter.
+//
+// It returns a slice of arguments in "--key=value" form, with only
+// fields that are explicitly set (non-zero values).
+func (ec *ExporterConfig) ToArgs() []string {
+	args := make([]string, 0, 1) // TODO: change capacity if we add more setting
+	if eci := ec.CollectInterval; eci != 0 {
+		args = append(args, fmt.Sprintf("--collect.interval=%d", eci))
+	}
+	return args
+}
 
 type StorageConfig struct {
 
@@ -40,6 +67,13 @@ type PluginConfigSpec struct {
 	// the pgBackRest sidecars.
 	// +optional
 	StorageConfig *StorageConfig `json:"storageConfig"`
+
+	// Defines options to inject, enable and configure a pgBackRest exporter
+	// sidecar into the cluster pods.
+	// When enabled, it adds a pgBackRest exporter container to expose backup
+	// and WAL archiving metrics for monitoring purposes.
+	// +optional
+	ExporterConfig *ExporterConfig `json:"exporterConfig"`
 }
 
 // +kubebuilder:object:root=true

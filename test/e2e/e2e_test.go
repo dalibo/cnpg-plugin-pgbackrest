@@ -299,7 +299,7 @@ func TestDeployInstance(t *testing.T) {
 	wantCpuLimit := resource.MustParse(reqCpuLimit)
 	wantMemoryLimit := resource.MustParse(reqMemoryLimit)
 	for _, ic := range pod.Spec.InitContainers {
-		if ic.Name != "plugin-pgbackrest" {
+		if ic.Name != "plugin-pgbackrest" && ic.Name != "plugin-pgbackrest-exporter" {
 			continue
 		}
 

@@ -149,8 +149,8 @@ func (impl LifecycleImplementation) reconcileJob(
 	podSpec := &mutatedJob.Spec.Template.Spec
 
 	sidecarContainer := &corev1.Container{Args: []string{"restore"}}
-
-	reconcilePodSpec(cluster, podSpec, role, sidecarContainer)
+	sidecarContainer.Name = "pgbackrest-sidecar"
+	reconcilePodSpec(cluster, podSpec, role, sidecarContainer, false)
 
 	// Inject plugin-specific volume mounts
 	// only needed here, for postgres container, it's done by the CNPG machenery
@@ -190,6 +190,7 @@ func reconcilePodSpec(
 	spec *corev1.PodSpec,
 	mainContainerName string,
 	containerConfig *corev1.Container,
+	isExporter bool,
 ) {
 	baseProbe := &corev1.Probe{
 		FailureThreshold: 10,
@@ -205,12 +206,16 @@ func reconcilePodSpec(
 		},
 	}
 	// Set required fields
-	if img, exists := os.LookupEnv("SIDECAR_IMAGE"); !exists {
-		containerConfig.Image = "pgbackrest-sidecar"
-	} else {
-		containerConfig.Image = img
+	img := "pgbackrest-sidecar"
+	if isExporter {
+		img = "pgbackrest-sidecar-exporter"
+		if i, ok := os.LookupEnv("SIDECAR_EXPORTER_IMAGE"); ok {
+			img = i
+		}
+	} else if i, ok := os.LookupEnv("SIDECAR_IMAGE"); ok {
+		img = i
 	}
-	containerConfig.Name = SIDECAR_NAME
+	containerConfig.Image = img
 	containerConfig.ImagePullPolicy = cluster.Spec.ImagePullPolicy
 	containerConfig.SecurityContext = &corev1.SecurityContext{
 		AllowPrivilegeEscalation: ptr.To(false),
@@ -515,6 +520,7 @@ func (impl LifecycleImplementation) reconcilePod(
 	if len(pluginConfig.StanzaRef) != 0 || len(pluginConfig.ReplicaStanzaRef) != 0 {
 		// Build the container config using envVars from caller
 		sidecar := corev1.Container{Args: []string{"instance"}}
+		sidecar.Name = "plugin-pgbackrest"
 
 		pc := &pluginv1.PluginConfig{}
 		if err := impl.getSharedPluginConfig(ctx, pc, pluginConfig); err != nil {
@@ -523,9 +529,30 @@ func (impl LifecycleImplementation) reconcilePod(
 		impl.injectSharedPluginConfig(pc, &sidecar)
 
 		// Reuse reconcilePodSpec to mutate PodSpec
-		reconcilePodSpec(cluster, &mutatedPod.Spec, "postgres", &sidecar)
+		reconcilePodSpec(cluster, &mutatedPod.Spec, "postgres", &sidecar, false)
 		if err := object.InjectPluginInitContainerSidecarSpec(&mutatedPod.Spec, &sidecar, true); err != nil {
 			return nil, err
+		}
+
+		// inject sidecar exporter if requested
+		if pc.Spec.ExporterConfig != nil {
+			sidecar_exporter := corev1.Container{Args: []string{"exporter"}}
+			sidecar_exporter.Name = "plugin-pgbackrest-exporter"
+			sidecar_exporter.Ports = []corev1.ContainerPort{
+				{
+					ContainerPort: 9854,
+					Protocol:      corev1.ProtocolTCP,
+				},
+			}
+			reconcilePodSpec(cluster, &mutatedPod.Spec, "postgres", &sidecar_exporter, true)
+			impl.injectSharedPluginConfig(pc, &sidecar_exporter)
+			if err := object.InjectPluginInitContainerSidecarSpec(
+				&mutatedPod.Spec,
+				&sidecar_exporter,
+				true,
+			); err != nil {
+				return nil, err
+			}
 		}
 
 		// If a plugin configuration is defined and a stanza can be retrivied,

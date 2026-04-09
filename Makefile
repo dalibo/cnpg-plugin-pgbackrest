@@ -61,6 +61,7 @@ setup-test-e2e: ## Set up a Kind cluster for e2e tests if it does not exist
 upload-images-kind-e2e-cluster: build-images ## Load container images to the K8S test cluster
 	@$(KIND) load docker-image pgbackrest-controller:latest --name $(KIND_CLUSTER)
 	@$(KIND) load docker-image pgbackrest-sidecar:latest --name $(KIND_CLUSTER)
+	@$(KIND) load docker-image pgbackrest-sidecar-exporter:latest --name $(KIND_CLUSTER)
 
 .PHONY: test-e2e-run-tests
 test-e2e-run-tests:
@@ -85,5 +86,10 @@ build-sidecar-image: ## Build sidecar image
 	$(CONTAINER_TOOL) build --tag pgbackrest-sidecar:latest \
 		-f containers/pgbackrest-sidecar.container .
 
+.PHONY: build-sidecar-exporter-image
+build-sidecar-exporter-image: ## Build sidecar image
+	$(CONTAINER_TOOL) build --tag pgbackrest-sidecar-exporter:latest \
+		-f containers/pgbackrest-sidecar-exporter.container .
+
 .PHONY: build-images
-build-images: build-sidecar-image build-controller-image ## Build controller and sidecar images.
+build-images: build-sidecar-image build-controller-image build-sidecar-exporter-image ## Build controller and sidecar images.

@@ -71,6 +71,7 @@ func NewCmd() *cobra.Command {
 	_ = viper.BindPFlag("server-address", cmd.Flags().Lookup("server-address"))
 
 	_ = viper.BindEnv("sidecar-image", "SIDECAR_IMAGE")
+	_ = viper.BindEnv("sidecar-exporter-image", "SIDECAR_EXPORTER_IMAGE")
 
 	return cmd
 }

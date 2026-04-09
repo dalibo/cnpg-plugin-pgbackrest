@@ -91,7 +91,21 @@ func (r ReconcilerImplementation) Pre(
 		}
 		stanzas = append(stanzas, stanza)
 	}
-	if err := r.ensureRole(ctx, &cluster, stanzas); err != nil {
+
+	refPluginConf, _ := conf.GetSharedPluginConfig()
+
+	var sharedPluginConf *apipgbackrest.PluginConfig
+	if refPluginConf != nil {
+		sharedPluginConf = &apipgbackrest.PluginConfig{}
+		if err := r.Client.Get(ctx, *refPluginConf, sharedPluginConf); err != nil {
+			if !apierrs.IsNotFound(err) {
+				return nil, err
+			}
+			sharedPluginConf = nil
+		}
+	}
+
+	if err := r.ensureRole(ctx, &cluster, stanzas, sharedPluginConf); err != nil {
 		return nil, err
 	}
 	if err := r.ensureRoleBinding(ctx, &cluster); err != nil {
@@ -117,9 +131,10 @@ func (r ReconcilerImplementation) ensureRole(
 	ctx context.Context,
 	cluster *cnpgv1.Cluster,
 	stanza []apipgbackrest.Stanza,
+	pluginconfig *apipgbackrest.PluginConfig,
 ) error {
 	contextLogger := log.FromContext(ctx)
-	newRole := BuildK8SRole(cluster.Namespace, cluster.Name, stanza)
+	newRole := BuildK8SRole(cluster.Namespace, cluster.Name, stanza, pluginconfig)
 
 	var role rbacv1.Role
 	if err := r.Client.Get(ctx, client.ObjectKey{

@@ -43,6 +43,7 @@ func BuildK8SRole(
 	ns string,
 	clusterName string,
 	stanzas []apipgbackrest.Stanza,
+	pluginconf *apipgbackrest.PluginConfig,
 ) *rbacv1.Role {
 	role := &rbacv1.Role{
 		ObjectMeta: metav1.ObjectMeta{
@@ -56,6 +57,27 @@ func BuildK8SRole(
 	for _, st := range stanzas {
 		pgbStanzaSet.Put(st.Name)
 		getSecrets(st, secretsSet)
+	}
+	if pluginconf != nil {
+		role.Rules = append(
+			role.Rules,
+			rbacv1.PolicyRule{
+				APIGroups: []string{
+					"pgbackrest.dalibo.com",
+				},
+				Verbs: []string{
+					"get",
+					"watch",
+					"list",
+				},
+				Resources: []string{
+					"pluginconfigs",
+				},
+				ResourceNames: []string{
+					pluginconf.Name,
+				},
+			},
+		)
 	}
 	role.Rules = append(
 		role.Rules,

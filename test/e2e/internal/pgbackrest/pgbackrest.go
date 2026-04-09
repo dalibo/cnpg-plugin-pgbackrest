@@ -123,6 +123,10 @@ func NewPluginConfig(ns, name, cpu_limit, memory_limit string) *pgbackrestapi.Pl
 			StorageConfig: &pgbackrestapi.StorageConfig{
 				StorageClass: "standard",
 			},
+			ExporterConfig: &pgbackrestapi.ExporterConfig{
+				Enabled:         true,
+				CollectInterval: 60,
+			},
 		},
 	}
 }

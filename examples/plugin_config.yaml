@@ -14,3 +14,4 @@ spec:
       memory: "512Mi"
   storageConfig:
     storageClass: "sample-storageclass"
+  injectExporter: true

@@ -72,22 +72,31 @@ func (e *ExecCmd) SetEnv(env []string) {
 	e.Env = env
 }
 
-type PgBackrestRunner struct {
-	cmdRunner func(name string, args ...string) CommandExecutor
+type baseRunner struct {
+	command   string
+	cmdRunner func(args ...string) CommandExecutor
 	baseEnv   []string
 }
 
+type PgBackrestRunner struct {
+	baseRunner
+}
+
 func NewPgBackrest(env []string) *PgBackrestRunner {
+	command := "pgbackrest"
 	return &PgBackrestRunner{
-		cmdRunner: func(name string, args ...string) CommandExecutor {
-			return &ExecCmd{exec.Command(name, args...)}
+		baseRunner: baseRunner{
+			command: command,
+			cmdRunner: func(args ...string) CommandExecutor {
+				return &ExecCmd{exec.Command(command, args...)}
+			},
+			baseEnv: env,
 		},
-		baseEnv: env,
 	}
 }
 
-func (p *PgBackrestRunner) run(args []string, extraEnv []string) CommandExecutor {
-	cmd := p.cmdRunner("pgbackrest", args...)
+func (p *baseRunner) run(args []string, extraEnv []string) CommandExecutor {
+	cmd := p.cmdRunner(args...)
 	cmd.SetEnv(append(os.Environ(), append(p.baseEnv, extraEnv...)...))
 	return cmd
 }
@@ -145,7 +154,7 @@ func (p *PgBackrestRunner) runBackgroundTask(
 		select {
 		case err := <-done:
 			if err != nil || errOut != nil {
-				logger.Error(err, "pgbackrest task failed", "args", args)
+				logger.Error(err, "command", p.command, "failed with", "args", args)
 				result <- err
 				return
 			}
