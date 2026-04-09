@@ -39,6 +39,23 @@ spec:
           spec:
             description: spec defines the desired state of the PluginConfig
             properties:
+              exporterConfig:
+                description: |-
+                  Defines options to inject, enable and configure a pgBackRest exporter
+                  sidecar into the cluster pods.
+                  When enabled, it adds a pgBackRest exporter container to expose backup
+                  and WAL archiving metrics for monitoring purposes.
+                properties:
+                  collectInterval:
+                    default: 600
+                    description: Collecting metrics interval in seconds.
+                    type: integer
+                  enabled:
+                    description: Define if pgbackrest exporter should be enabled.
+                    type: boolean
+                required:
+                - collectInterval
+                type: object
               resourcesRequirement:
                 description: Defines resource requests and limits for the pgBackRest
                   sidecar containers.

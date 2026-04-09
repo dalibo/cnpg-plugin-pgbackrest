@@ -64,6 +64,12 @@ rules:
 - apiGroups:
   - postgresql.cnpg.io
   resources:
+  - clusters
+  verbs:
+  - get
+- apiGroups:
+  - postgresql.cnpg.io
+  resources:
   - clusters/finalizers
   verbs:
   - update

@@ -33,6 +33,13 @@ of the plugin. For example, it allows to:
   files when running in asynchronous mode. Using a dedicated PVC ensures
   that we don't lose information about processed WAL when operating in
   asynchronous mode in case the sidecar container crashes.
+- The `ExporterConfig` setting can be used to add a sidecar container
+  dedicated to [pgBackRest
+  exporter](https://github.com/woblerr/pgbackrest_exporter) alongside
+  the PostgreSQL container and the pgBackRest sidecar container. This
+  exporter exposes metrics (on TCP port 9854) for monitoring purposes
+  (e.g., Prometheus scraping) without impacting the PostgreSQL container
+  and the pgBackRest sidecar container.
 
 <CodeBlock language="yaml">{PluginConfig}</CodeBlock>
 

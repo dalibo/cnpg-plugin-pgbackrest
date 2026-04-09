@@ -1,0 +1,18 @@
+# SPDX-FileCopyrightText: 2026 Dalibo <contact@dalibo.com>
+#
+# SPDX-License-Identifier: Apache-2.0
+
+FROM pgbackrest-sidecar:latest
+
+ARG USERNAME=postgres
+ARG EXPORTER_VERSION=0.23.0
+ARG EXPORTER_URL=https://github.com/woblerr/pgbackrest_exporter/releases/download
+
+USER root
+# Then add the exporter
+RUN curl -O -L ${EXPORTER_URL}/v${EXPORTER_VERSION}/pgbackrest_exporter_${EXPORTER_VERSION}_linux_x86_64.deb &&\
+    dpkg -i pgbackrest_exporter_${EXPORTER_VERSION}_linux_x86_64.deb &&\
+    rm -rf pgbackrest_exporter_${EXPORTER_VERSION}_linux_x86_64.deb
+
+USER $USERNAME
+ENTRYPOINT ["/usr/bin/tini", "--", "/app/bin/cnpg-i-pgbackrest"]

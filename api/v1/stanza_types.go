@@ -35,6 +35,7 @@ import (
 // +kubebuilder:rbac:groups=rbac.authorization.k8s.io,resources=roles,verbs=create;patch;update;get;list;watch
 // +kubebuilder:rbac:groups="",resources=secrets,verbs=create;list;get;watch;delete
 // +kubebuilder:rbac:groups=postgresql.cnpg.io,resources=clusters/finalizers,verbs=update
+// +kubebuilder:rbac:groups=postgresql.cnpg.io,resources=clusters,verbs=get
 // +kubebuilder:rbac:groups=postgresql.cnpg.io,resources=backups,verbs=get;list;watch
 // +kubebuilder:rbac:groups=pgbackrest.dalibo.com,resources=stanzas,verbs=get;list;watch;create;update;patch;delete
 // +kubebuilder:rbac:groups=pgbackrest.dalibo.com,resources=stanzas/status,verbs=get;update;patch

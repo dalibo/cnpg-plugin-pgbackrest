@@ -38,6 +38,20 @@ spec:
           spec:
             description: spec defines the desired state of the PluginConfig
             properties:
+              exporterConfig:
+                description: |-
+                  Defines options to inject, enable and configure a pgBackRest exporter
+                  sidecar into the cluster pods.
+                  When enabled, it adds a pgBackRest exporter container to expose backup
+                  and WAL archiving metrics for monitoring purposes.
+                properties:
+                  collectInterval:
+                    default: 600
+                    description: Collecting metrics interval in seconds.
+                    type: integer
+                required:
+                - collectInterval
+                type: object
               resourcesRequirement:
                 description: Defines resource requests and limits for the pgBackRest
                   sidecar containers.
@@ -817,16 +831,6 @@ rules:
 - apiGroups:
   - ""
   resources:
-  - persistentvolumeclaims
-  verbs:
-  - create
-  - get
-  - list
-  - patch
-  - watch
-- apiGroups:
-  - ""
-  resources:
   - secrets
   verbs:
   - create
@@ -837,7 +841,6 @@ rules:
 - apiGroups:
   - pgbackrest.dalibo.com
   resources:
-  - pluginconfigs
   - stanzas
   verbs:
   - create
@@ -850,14 +853,12 @@ rules:
 - apiGroups:
   - pgbackrest.dalibo.com
   resources:
-  - pluginconfigs/finalizers
   - stanzas/finalizers
   verbs:
   - update
 - apiGroups:
   - pgbackrest.dalibo.com
   resources:
-  - pluginconfigs/status
   - stanzas/status
   verbs:
   - get
@@ -871,6 +872,12 @@ rules:
   - get
   - list
   - watch
+- apiGroups:
+  - postgresql.cnpg.io
+  resources:
+  - clusters
+  verbs:
+  - get
 - apiGroups:
   - postgresql.cnpg.io
   resources:
@@ -1008,17 +1015,6 @@ subjects:
   namespace: cnpg-system
 ---
 apiVersion: v1
-data:
-  SIDECAR_IMAGE: |
-    cmVnaXN0cnkuaHViLmRvY2tlci5jb20vZGFsaWJvL2NucGctcGdiYWNrcmVzdC1zaWRlY2
-    FyOjAuMC4x
-kind: Secret
-metadata:
-  name: plugin-pgbackrest-66hkbh8k26
-  namespace: cnpg-system
-type: Opaque
----
-apiVersion: v1
 kind: Service
 metadata:
   annotations:
@@ -1065,13 +1061,8 @@ spec:
         - --client-cert=/client/tls.crt
         - --server-address=:9090
         - --log-level=debug
-        env:
-        - name: SIDECAR_IMAGE
-          valueFrom:
-            secretKeyRef:
-              key: SIDECAR_IMAGE
-              name: plugin-pgbackrest-66hkbh8k26
-        image: registry.hub.docker.com/dalibo/cnpg-pgbackrest-controller:0.0.1
+        image: pgbackrest-controller
+        imagePullPolicy: IfNotPresent
         name: pgbackrest-controller
         ports:
         - containerPort: 9090
