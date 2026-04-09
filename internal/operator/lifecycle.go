@@ -342,26 +342,13 @@ func addVolumeMountsFromContainer(
 }
 
 func (impl LifecycleImplementation) injectSharedPluginConfig(
-	ctx context.Context,
-	pluginConfig *PluginConfiguration,
+	pc *pluginv1.PluginConfig,
 	sidecar *corev1.Container,
-) error {
-	if pluginConfig.PluginConfigRef != "" {
-		// first retrieve shared plugin config
-		pc := pluginv1.PluginConfig{}
-		key := types.NamespacedName{
-			Namespace: pluginConfig.Cluster.Namespace,
-			Name:      pluginConfig.PluginConfigRef,
-		}
-		if err := impl.Client.Get(ctx, key, &pc); err != nil {
-			return err
-		}
-		// then apply resources limit
-		if pc.Spec.Resources != nil {
-			sidecar.Resources = *pc.Spec.Resources
-		}
+) {
+	// then apply resources limit
+	if pc.Spec.Resources != nil {
+		sidecar.Resources = *pc.Spec.Resources
 	}
-	return nil
 }
 
 func (impl LifecycleImplementation) requestPVC(
@@ -491,6 +478,22 @@ func (impl LifecycleImplementation) injectWALVolume(
 	return nil
 }
 
+func (impl LifecycleImplementation) getSharedPluginConfig(
+	ctx context.Context,
+	pc *pluginv1.PluginConfig,
+	pluginConfig *PluginConfiguration,
+) error {
+	if pluginConfig.PluginConfigRef != "" {
+		// first retrieve shared plugin config
+		key := types.NamespacedName{
+			Namespace: pluginConfig.Cluster.Namespace,
+			Name:      pluginConfig.PluginConfigRef,
+		}
+		return impl.Client.Get(ctx, key, pc)
+	}
+	return nil
+}
+
 // reconcilePod handles lifecycle reconciliation and injects the sidecar
 func (impl LifecycleImplementation) reconcilePod(
 	ctx context.Context,
@@ -513,9 +516,12 @@ func (impl LifecycleImplementation) reconcilePod(
 		// Build the container config using envVars from caller
 		sidecar := corev1.Container{Args: []string{"instance"}}
 
-		if err := impl.injectSharedPluginConfig(ctx, pluginConfig, &sidecar); err != nil {
+		pc := &pluginv1.PluginConfig{}
+		if err := impl.getSharedPluginConfig(ctx, pc, pluginConfig); err != nil {
 			return nil, err
 		}
+		impl.injectSharedPluginConfig(pc, &sidecar)
+
 		// Reuse reconcilePodSpec to mutate PodSpec
 		reconcilePodSpec(cluster, &mutatedPod.Spec, "postgres", &sidecar)
 		if err := object.InjectPluginInitContainerSidecarSpec(&mutatedPod.Spec, &sidecar, true); err != nil {
