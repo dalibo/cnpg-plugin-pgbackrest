@@ -72,13 +72,13 @@ func (e *ExecCmd) SetEnv(env []string) {
 	e.Env = env
 }
 
-type PgBackrest struct {
+type PgBackrestRunner struct {
 	cmdRunner func(name string, args ...string) CommandExecutor
 	baseEnv   []string
 }
 
-func NewPgBackrest(env []string) *PgBackrest {
-	return &PgBackrest{
+func NewPgBackrest(env []string) *PgBackrestRunner {
+	return &PgBackrestRunner{
 		cmdRunner: func(name string, args ...string) CommandExecutor {
 			return &ExecCmd{exec.Command(name, args...)}
 		},
@@ -86,13 +86,13 @@ func NewPgBackrest(env []string) *PgBackrest {
 	}
 }
 
-func (p *PgBackrest) run(args []string, extraEnv []string) CommandExecutor {
+func (p *PgBackrestRunner) run(args []string, extraEnv []string) CommandExecutor {
 	cmd := p.cmdRunner("pgbackrest", args...)
 	cmd.SetEnv(append(os.Environ(), append(p.baseEnv, extraEnv...)...))
 	return cmd
 }
 
-func (p *PgBackrest) runBackgroundTask(
+func (p *PgBackrestRunner) runBackgroundTask(
 	ctx context.Context,
 	args []string,
 	extraEnv []string,
@@ -160,7 +160,7 @@ func (p *PgBackrest) runBackgroundTask(
 	return result
 }
 
-func (p *PgBackrest) RepositoriesConfigured() (bool, error) {
+func (p *PgBackrestRunner) RepositoriesConfigured() (bool, error) {
 	cmd := p.run([]string{"info", "--output=json"}, nil)
 	stdout, err := cmd.CombinedOutput()
 	if err != nil {
@@ -190,7 +190,7 @@ func allReposHaveZeroStatusCode(pgbackrestInfo []PgBackRestInfo) bool {
 	return true
 }
 
-func (p *PgBackrest) EnsureStanzaExists(stanza string) (bool, error) {
+func (p *PgBackrestRunner) EnsureStanzaExists(stanza string) (bool, error) {
 	repoConfigured, err := p.RepositoriesConfigured()
 	if err != nil {
 		return false, fmt.Errorf("can't determine if stanza exists, error %w", err)
@@ -206,18 +206,18 @@ func (p *PgBackrest) EnsureStanzaExists(stanza string) (bool, error) {
 	return true, nil
 }
 
-func (p *PgBackrest) PushWal(ctx context.Context, walName string) <-chan error {
+func (p *PgBackrestRunner) PushWal(ctx context.Context, walName string) <-chan error {
 	return p.runBackgroundTask(ctx, []string{"archive-push", walName}, nil)
 }
 
-func (p *PgBackrest) GetWAL(
+func (p *PgBackrestRunner) GetWAL(
 	ctx context.Context,
 	walName string, dstPath string,
 ) <-chan error {
 	return p.runBackgroundTask(ctx, []string{"archive-get", walName, dstPath}, nil)
 }
 
-func (p *PgBackrest) Backup(backupType string) error {
+func (p *PgBackrestRunner) Backup(backupType string) error {
 	env := make([]string, 1)
 	env = append(env, "PGBACKREST_ARCHIVE_CHECK=n")
 	if backupType != "" {
@@ -235,7 +235,7 @@ func (p *PgBackrest) Backup(backupType string) error {
 	return nil
 }
 
-func (p *PgBackrest) GetBackupInfo() ([]pgbackrestapi.BackupInfo, error) {
+func (p *PgBackrestRunner) GetBackupInfo() ([]pgbackrestapi.BackupInfo, error) {
 	cmd := p.run([]string{"info", "--output", "json"}, nil)
 	output, err := cmd.CombinedOutput()
 	if err != nil {
@@ -283,7 +283,7 @@ func FirstBackup(backups []pgbackrestapi.BackupInfo) *pgbackrestapi.BackupInfo {
 	return &found
 }
 
-func (p *PgBackrest) Restore(ctx context.Context) <-chan error {
+func (p *PgBackrestRunner) Restore(ctx context.Context) <-chan error {
 	env := []string{"PGBACKREST_ARCHIVE_CHECK=n"}
 	return p.runBackgroundTask(ctx, []string{"restore"}, env)
 }
