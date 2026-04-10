@@ -21,12 +21,15 @@ import (
 	pgbackrestapi "github.com/dalibo/cnpg-i-pgbackrest/api/v1"
 )
 
-type CmdRunner func(name string, args ...string) CommandExecutor
+type CmdRunner func(args ...string) CommandExecutor
 
-func newPgBackrestWithRunner(env []string, runner CmdRunner) *PgBackrest {
-	return &PgBackrest{
-		cmdRunner: runner,
-		baseEnv:   env,
+func newPgBackrestWithRunner(env []string, runner CmdRunner) *PgBackrestRunner {
+	return &PgBackrestRunner{
+		baseRunner: baseRunner{
+			command:   "pgbackrest",
+			cmdRunner: runner,
+			baseEnv:   env,
+		},
 	}
 }
 
@@ -173,9 +176,9 @@ type execCalls struct {
 }
 
 func (e *execCalls) fakeCmdRunner(output string, err error) CmdRunner {
-	return func(name string, args ...string) CommandExecutor {
+	return func(args ...string) CommandExecutor {
 		// Track the command call
-		e.execCalls = append(e.execCalls, fakeExec{cmdName: name, args: args})
+		e.execCalls = append(e.execCalls, fakeExec{cmdName: "pgbackrest", args: args})
 		// Fake the command execution by returning a function that provides predefined output
 		cmd := exec.Command("echo", output) // Fake command that outputs JSON
 		if err != nil {
@@ -286,13 +289,16 @@ func TestRunBackgroundTask_Normal(t *testing.T) {
 		stderr: stderr,
 	}
 
-	cmdRunner := func(name string, args ...string) CommandExecutor {
+	cmdRunner := func(args ...string) CommandExecutor {
 		return mockCmd
 	}
 
-	pg := &PgBackrest{
-		cmdRunner: cmdRunner,
-		baseEnv:   []string{"BASE=1"},
+	pg := &PgBackrestRunner{
+		baseRunner: baseRunner{
+			command:   "pgbackrest",
+			cmdRunner: cmdRunner,
+			baseEnv:   []string{"BASE=1"},
+		},
 	}
 
 	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
@@ -337,13 +343,16 @@ func TestRunBackgroundTask_CommandFails(t *testing.T) {
 	}
 
 	// Command runner returns the mock command
-	cmdRunner := func(name string, args ...string) CommandExecutor {
+	cmdRunner := func(args ...string) CommandExecutor {
 		return mockCmd
 	}
 
-	pg := &PgBackrest{
-		cmdRunner: cmdRunner,
-		baseEnv:   []string{"BASE=1"},
+	pg := &PgBackrestRunner{
+		baseRunner: baseRunner{
+			command:   "pgbackrest",
+			cmdRunner: cmdRunner,
+			baseEnv:   []string{"BASE=1"},
+		},
 	}
 
 	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
