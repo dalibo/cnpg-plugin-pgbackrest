@@ -15,7 +15,7 @@ import (
 	"os/exec"
 	"sync"
 
-	pgbackrestapi "github.com/dalibo/cnpg-i-pgbackrest/internal/pgbackrest/api"
+	pgbackrestapi "github.com/dalibo/cnpg-i-pgbackrest/api/v1"
 	"github.com/dalibo/cnpg-i-pgbackrest/internal/utils"
 	"sigs.k8s.io/controller-runtime/pkg/log"
 )

@@ -5,12 +5,12 @@ package minio
 
 import (
 	"github.com/cloudnative-pg/machinery/pkg/api"
-	apipgbackrest "github.com/dalibo/cnpg-i-pgbackrest/internal/pgbackrest/api"
+	pgbackrestapi "github.com/dalibo/cnpg-i-pgbackrest/api/v1"
 	"k8s.io/utils/ptr"
 )
 
-func NewS3Repositories(name string) []apipgbackrest.S3Repository {
-	return []apipgbackrest.S3Repository{
+func NewS3Repositories(name string) []pgbackrestapi.S3Repository {
+	return []pgbackrestapi.S3Repository{
 		{
 			Bucket:    BUCKET_NAME,
 			Endpoint:  SVC_NAME,
@@ -18,11 +18,11 @@ func NewS3Repositories(name string) []apipgbackrest.S3Repository {
 			VerifyTLS: ptr.To(false),
 			UriStyle:  "path",
 			RepoPath:  "/repo01" + name,
-			RetentionPolicy: apipgbackrest.Retention{
+			RetentionPolicy: pgbackrestapi.Retention{
 				FullType: "count",
 				Full:     7,
 			},
-			SecretRef: &apipgbackrest.S3SecretRef{
+			SecretRef: &pgbackrestapi.S3SecretRef{
 				AccessKeyIDReference: &api.SecretKeySelector{
 					LocalObjectReference: api.LocalObjectReference{
 						Name: "pgbackrest-s3-secret",
@@ -36,7 +36,7 @@ func NewS3Repositories(name string) []apipgbackrest.S3Repository {
 					Key: "ACCESS_SECRET_KEY",
 				},
 			},
-			Cipher: &apipgbackrest.CipherConfig{
+			Cipher: &pgbackrestapi.CipherConfig{
 				Type: "aes-256-cbc",
 				PassReference: &api.SecretKeySelector{
 					LocalObjectReference: api.LocalObjectReference{

@@ -10,11 +10,10 @@ import (
 	"strconv"
 
 	"github.com/cloudnative-pg/cnpg-i/pkg/backup"
-	apipgbackrestv1 "github.com/dalibo/cnpg-i-pgbackrest/api/v1"
+	pgbackrestapi "github.com/dalibo/cnpg-i-pgbackrest/api/v1"
 	"github.com/dalibo/cnpg-i-pgbackrest/internal/metadata"
 	"github.com/dalibo/cnpg-i-pgbackrest/internal/operator"
 	"github.com/dalibo/cnpg-i-pgbackrest/internal/pgbackrest"
-	apipgbackrest "github.com/dalibo/cnpg-i-pgbackrest/internal/pgbackrest/api"
 	"k8s.io/client-go/util/retry"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/log"
@@ -42,12 +41,15 @@ func (b BackupServiceImplementation) GetCapabilities(
 	}, nil
 }
 
-func getEnvVarBackupRepoDest(repo apipgbackrest.Stanza, selectedRepo string) (string, error) {
+func getEnvVarBackupRepoDest(
+	stanzaConf pgbackrestapi.StanzaConfiguration,
+	selectedRepo string,
+) (string, error) {
 	sRepo, err := strconv.ParseUint(selectedRepo, 10, 64)
 	if err != nil {
 		return "", err
 	}
-	if sRepo != 1 && sRepo > uint64(len(repo.S3Repositories)) {
+	if sRepo != 1 && sRepo > uint64(len(stanzaConf.S3Repositories)) {
 		return "", fmt.Errorf("can't parse selected repository: %s, %w", selectedRepo, err)
 	}
 	return fmt.Sprintf("PGBACKREST_REPO=%d", sRepo), nil
@@ -56,9 +58,9 @@ func getEnvVarBackupRepoDest(repo apipgbackrest.Stanza, selectedRepo string) (st
 func updateBackupInfo(
 	ctx context.Context,
 	c client.Client,
-	stanza *apipgbackrestv1.Stanza,
-	firstBackup apipgbackrest.BackupInfo,
-	lastBackup apipgbackrest.BackupInfo,
+	stanza *pgbackrestapi.Stanza,
+	firstBackup pgbackrestapi.BackupInfo,
+	lastBackup pgbackrestapi.BackupInfo,
 ) error {
 	return retry.RetryOnConflict(retry.DefaultBackoff, func() error {
 		stanza.Status.RecoveryWindow.FirstBackup = firstBackup
@@ -70,7 +72,7 @@ func updateBackupInfo(
 func updateBackupsCount(
 	ctx context.Context,
 	c client.Client,
-	stanza *apipgbackrestv1.Stanza,
+	stanza *pgbackrestapi.Stanza,
 	countByType map[string]uint16,
 ) error {
 	return retry.RetryOnConflict(retry.DefaultBackoff, func() error {

@@ -8,18 +8,17 @@ import (
 
 	machineryapi "github.com/cloudnative-pg/machinery/pkg/api"
 	"github.com/cloudnative-pg/machinery/pkg/stringset"
-	apipgbackrest "github.com/dalibo/cnpg-i-pgbackrest/api/v1"
-	pgbackrest "github.com/dalibo/cnpg-i-pgbackrest/internal/pgbackrest/api"
+	pgbackrestapi "github.com/dalibo/cnpg-i-pgbackrest/api/v1"
 )
 
 func TestGetSecrets(t *testing.T) {
 	t.Run("with secrets", func(t *testing.T) {
-		stanza := apipgbackrest.Stanza{
-			Spec: apipgbackrest.StanzaSpec{
-				Configuration: pgbackrest.Stanza{
-					S3Repositories: []pgbackrest.S3Repository{
+		stanza := pgbackrestapi.Stanza{
+			Spec: pgbackrestapi.StanzaSpec{
+				Configuration: pgbackrestapi.StanzaConfiguration{
+					S3Repositories: []pgbackrestapi.S3Repository{
 						{
-							SecretRef: &pgbackrest.S3SecretRef{
+							SecretRef: &pgbackrestapi.S3SecretRef{
 								AccessKeyIDReference: &machineryapi.SecretKeySelector{
 									LocalObjectReference: machineryapi.LocalObjectReference{
 										Name: "access-key-1",
@@ -35,9 +34,9 @@ func TestGetSecrets(t *testing.T) {
 							},
 						},
 					},
-					AzureRepositories: []pgbackrest.AzureRepository{
+					AzureRepositories: []pgbackrestapi.AzureRepository{
 						{
-							SecretRef: &pgbackrest.AzureSecretRef{
+							SecretRef: &pgbackrestapi.AzureSecretRef{
 								KeyReference: &machineryapi.SecretKeySelector{
 									LocalObjectReference: machineryapi.LocalObjectReference{
 										Name: "azure-key-1",
@@ -68,11 +67,11 @@ func TestGetSecrets(t *testing.T) {
 	})
 
 	t.Run("no secrets", func(t *testing.T) {
-		stanza := apipgbackrest.Stanza{
-			Spec: apipgbackrest.StanzaSpec{
-				Configuration: pgbackrest.Stanza{
-					S3Repositories:    []pgbackrest.S3Repository{{SecretRef: nil}},
-					AzureRepositories: []pgbackrest.AzureRepository{{SecretRef: nil}},
+		stanza := pgbackrestapi.Stanza{
+			Spec: pgbackrestapi.StanzaSpec{
+				Configuration: pgbackrestapi.StanzaConfiguration{
+					S3Repositories:    []pgbackrestapi.S3Repository{{SecretRef: nil}},
+					AzureRepositories: []pgbackrestapi.AzureRepository{{SecretRef: nil}},
 				},
 			},
 		}

@@ -11,8 +11,7 @@ import (
 	"testing"
 
 	machineryapi "github.com/cloudnative-pg/machinery/pkg/api"
-	apipgbackrest "github.com/dalibo/cnpg-i-pgbackrest/api/v1"
-	pgbackrest "github.com/dalibo/cnpg-i-pgbackrest/internal/pgbackrest/api"
+	pgbackrestapi "github.com/dalibo/cnpg-i-pgbackrest/api/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -52,8 +51,8 @@ func buildFakeClient() client.Client {
 		WithObjects(aKey, sKey, azureKey).
 		Build()
 }
-func buildRepo() *apipgbackrest.Stanza {
-	return &apipgbackrest.Stanza{
+func buildRepo() *pgbackrestapi.Stanza {
+	return &pgbackrestapi.Stanza{
 		TypeMeta: metav1.TypeMeta{
 			Kind:       "stanza",
 			APIVersion: "pgbacrest.dalibo.com/v1",
@@ -62,16 +61,16 @@ func buildRepo() *apipgbackrest.Stanza {
 			Name:      "stanza",
 			Namespace: "default",
 		},
-		Spec: apipgbackrest.StanzaSpec{
-			Configuration: pgbackrest.Stanza{
+		Spec: pgbackrestapi.StanzaSpec{
+			Configuration: pgbackrestapi.StanzaConfiguration{
 				Name: "myStanza",
-				S3Repositories: []pgbackrest.S3Repository{
+				S3Repositories: []pgbackrestapi.S3Repository{
 					{
 						Bucket:   "mybucket",
 						Endpoint: "https://s3.example.com",
 						Region:   "us-east-1",
 						RepoPath: "/backups",
-						SecretRef: &pgbackrest.S3SecretRef{
+						SecretRef: &pgbackrestapi.S3SecretRef{
 							AccessKeyIDReference: &machineryapi.SecretKeySelector{
 								LocalObjectReference: machineryapi.LocalObjectReference{
 									Name: "access-key-secret",
@@ -87,11 +86,11 @@ func buildRepo() *apipgbackrest.Stanza {
 						},
 					},
 				},
-				AzureRepositories: []pgbackrest.AzureRepository{
+				AzureRepositories: []pgbackrestapi.AzureRepository{
 					{
 						Account:   "my_account",
 						Container: "my_container",
-						SecretRef: &pgbackrest.AzureSecretRef{
+						SecretRef: &pgbackrestapi.AzureSecretRef{
 							KeyReference: &machineryapi.SecretKeySelector{
 								LocalObjectReference: machineryapi.LocalObjectReference{
 									Name: "azure-key-secret",

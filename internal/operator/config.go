@@ -12,9 +12,8 @@ import (
 	"github.com/cloudnative-pg/cnpg-i-machinery/pkg/pluginhelper/decoder"
 	machineryapi "github.com/cloudnative-pg/machinery/pkg/api"
 	"github.com/cloudnative-pg/machinery/pkg/stringset"
-	apipgbackrest "github.com/dalibo/cnpg-i-pgbackrest/api/v1"
+	pgbackrestapi "github.com/dalibo/cnpg-i-pgbackrest/api/v1"
 	"github.com/dalibo/cnpg-i-pgbackrest/internal/metadata"
-	pgbackrestapi "github.com/dalibo/cnpg-i-pgbackrest/internal/pgbackrest/api"
 	"github.com/dalibo/cnpg-i-pgbackrest/internal/utils"
 	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -204,7 +203,7 @@ func decodeSecretVal(
 
 func GetEnvVarConfig(
 	ctx context.Context,
-	stanza apipgbackrest.Stanza,
+	stanza pgbackrestapi.Stanza,
 	c client.Client,
 ) ([]string, error) {
 	conf := stanza.Spec.Configuration
@@ -303,7 +302,7 @@ func GetStanza(ctx context.Context,
 	c ClusterDefinitionGetter,
 	cl client.Client,
 	getRef StanzaRefGetter,
-) (*apipgbackrest.Stanza, error) {
+) (*pgbackrestapi.Stanza, error) {
 	cDef := c.GetClusterDefinition()
 	pluginConf, err := NewFromClusterJSON(cDef)
 	if err != nil {
@@ -313,7 +312,7 @@ func GetStanza(ctx context.Context,
 	if err != nil {
 		return nil, err
 	}
-	var stanza apipgbackrest.Stanza
+	var stanza pgbackrestapi.Stanza
 	if err := cl.Get(ctx, *stanzaFQDN, &stanza); err != nil {
 		return nil, err
 	}
