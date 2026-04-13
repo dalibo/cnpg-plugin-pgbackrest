@@ -8,7 +8,7 @@ import (
 	"context"
 
 	"github.com/cloudnative-pg/machinery/pkg/api"
-	apipgbackrest "github.com/dalibo/cnpg-i-pgbackrest/internal/pgbackrest/api"
+	pgbackrestapi "github.com/dalibo/cnpg-i-pgbackrest/api/v1"
 	"github.com/dalibo/cnpg-i-pgbackrest/test/e2e/internal/kubernetes"
 	appsv1 "k8s.io/api/apps/v1"
 	batchv1 "k8s.io/api/batch/v1"
@@ -146,8 +146,8 @@ func CreateAzContainer(
 	return err
 }
 
-func NewAzureRepositories(name string) []apipgbackrest.AzureRepository {
-	return []apipgbackrest.AzureRepository{
+func NewAzureRepositories(name string) []pgbackrestapi.AzureRepository {
+	return []pgbackrestapi.AzureRepository{
 		{
 			Account:   ACCOUNT_NAME,
 			Container: name,
@@ -156,7 +156,7 @@ func NewAzureRepositories(name string) []apipgbackrest.AzureRepository {
 			VerifyTLS: ptr.To(false),
 			RepoPath:  "/" + name,
 			KeyType:   "shared",
-			SecretRef: &apipgbackrest.AzureSecretRef{
+			SecretRef: &pgbackrestapi.AzureSecretRef{
 				KeyReference: &api.SecretKeySelector{
 					LocalObjectReference: api.LocalObjectReference{
 						Name: "pgbackrest-azure-secret",

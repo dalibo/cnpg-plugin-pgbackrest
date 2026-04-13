@@ -18,7 +18,7 @@ import (
 	"testing"
 	"time"
 
-	pgbackrestapi "github.com/dalibo/cnpg-i-pgbackrest/internal/pgbackrest/api"
+	pgbackrestapi "github.com/dalibo/cnpg-i-pgbackrest/api/v1"
 )
 
 type CmdRunner func(name string, args ...string) CommandExecutor
