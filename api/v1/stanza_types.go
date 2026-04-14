@@ -27,6 +27,10 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
+// +kubebuilder:rbac:groups=pgbackrest.dalibo.com,resources=pluginconfigs,verbs=get;list;watch;create;update;patch;delete
+// +kubebuilder:rbac:groups=pgbackrest.dalibo.com,resources=pluginconfigs/status,verbs=get;update;patch
+// +kubebuilder:rbac:groups=pgbackrest.dalibo.com,resources=pluginconfigs/finalizers,verbs=update
+// +kubebuilder:rbac:groups="",resources=persistentvolumeclaims,verbs=get;list;create;watch;patch
 // +kubebuilder:rbac:groups=rbac.authorization.k8s.io,resources=rolebindings,verbs=create;patch;update;get;list;watch
 // +kubebuilder:rbac:groups=rbac.authorization.k8s.io,resources=roles,verbs=create;patch;update;get;list;watch
 // +kubebuilder:rbac:groups="",resources=secrets,verbs=create;list;get;watch;delete
