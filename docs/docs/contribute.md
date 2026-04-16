@@ -38,6 +38,17 @@ Here are some basic informations about how this plugin should work:
   `pgBackRest` manager (on the side container) when the archive command
   is triggered.
 
+## Prerequisites
+
+The following tools must be installed before contributing: 
+
+- [Go 1.26+](https://go.dev/dl/)
+- [Docker](https://docs.docker.com/get-docker/)
+- [Kind](https://kind.sigs.k8s.io/docs/user/quick-start/)
+- [kubectl](https://kubernetes.io/docs/tasks/tools/)
+- [kubebuilder](https://book.kubebuilder.io/quick-start)
+- [golangci-lint](https://golangci-lint.run/docs/welcome/install/local/)
+
 ## Deploy CloudNativePG on kind
 
 To contribute and test the pgBackRest plugin, a dedicated Kubernetes
@@ -57,9 +68,8 @@ steps to prepare the required environment.
     $ cd cloudenative-pg
     ```
 
-3.  Install the required dependencies (please follow the instruction
-    within the README.md file, at least you will need
-    [**kind**](https://kind.sigs.k8s.io/)).
+3.  Install the required [dependencies](#prerequisites) listed above
+    (at least you will need [**kind**](https://kind.sigs.k8s.io/)).
 
 4.  Run a Kubernetes cluster with the development version of
     CloudNativePG:
@@ -153,4 +163,24 @@ target can be used:
 
 ``` console
 $ make test-e2e-run-tests
+```
+
+Once done with the tests, the **kind** cluster can be deleted :
+
+``` console
+$ make cleanup-test-e2e
+```
+
+## Linting and compliance
+
+Before submitting a contribution, make sure the linter run without errors:
+
+$ golangci-lint run
+```
+
+This project follows the **REUSE specification** for copyright and license tracking.
+The `reuse` tool can be used to add it automatically ;
+
+$ reuse annotate -copyright="Dalibo" --year=2026 --license="Apache-2.0" \
+    <PATH>
 ```
