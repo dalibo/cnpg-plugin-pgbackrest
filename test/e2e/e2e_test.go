@@ -52,7 +52,7 @@ func setup() {
 		panic("can't init kubernetes client")
 	}
 	s := kubernetes.InstallSpec{
-		ManifestUrl: "https://raw.githubusercontent.com/cloudnative-pg/cloudnative-pg/release-1.28/releases/cnpg-1.28.0.yaml",
+		ManifestUrl: "https://raw.githubusercontent.com/cloudnative-pg/cloudnative-pg/release-1.29/releases/cnpg-1.29.0.yaml",
 	}
 	if err := cnpg.Install(ctx, *k8sClient, s); err != nil {
 		panic("can't install CNPG")
