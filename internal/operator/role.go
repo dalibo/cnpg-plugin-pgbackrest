@@ -62,63 +62,31 @@ func BuildK8SRole(
 		role.Rules = append(
 			role.Rules,
 			rbacv1.PolicyRule{
-				APIGroups: []string{
-					"pgbackrest.dalibo.com",
-				},
-				Verbs: []string{
-					"get",
-					"watch",
-					"list",
-				},
-				Resources: []string{
-					"pluginconfigs",
-				},
-				ResourceNames: []string{
-					pluginconf.Name,
-				},
+				APIGroups:     []string{"pgbackrest.dalibo.com"},
+				Verbs:         []string{"get", "watch", "list"},
+				Resources:     []string{"pluginconfigs"},
+				ResourceNames: []string{pluginconf.Name},
 			},
 		)
 	}
 	role.Rules = append(
 		role.Rules,
 		rbacv1.PolicyRule{
-			APIGroups: []string{
-				"pgbackrest.dalibo.com",
-			},
-			Verbs: []string{
-				"get",
-				"watch",
-				"list",
-			},
-			Resources: []string{
-				"stanzas",
-			},
+			APIGroups:     []string{"pgbackrest.dalibo.com"},
+			Verbs:         []string{"get", "watch", "list"},
+			Resources:     []string{"stanzas"},
 			ResourceNames: pgbStanzaSet.ToSortedList(),
 		},
 		rbacv1.PolicyRule{
-			APIGroups: []string{
-				"pgbackrest.dalibo.com",
-			},
-			Verbs: []string{
-				"update",
-			},
-			Resources: []string{
-				"stanzas/status",
-			},
+			APIGroups:     []string{"pgbackrest.dalibo.com"},
+			Verbs:         []string{"update"},
+			Resources:     []string{"stanzas/status"},
 			ResourceNames: pgbStanzaSet.ToSortedList(),
 		},
 		rbacv1.PolicyRule{
-			APIGroups: []string{
-				"",
-			},
-			Resources: []string{
-				"secrets",
-			},
-			Verbs: []string{
-				"get",
-				"watch",
-				"list",
-			},
+			APIGroups:     []string{""},
+			Resources:     []string{"secrets"},
+			Verbs:         []string{"get", "watch", "list"},
 			ResourceNames: secretsSet.ToSortedList(),
 		},
 	)
