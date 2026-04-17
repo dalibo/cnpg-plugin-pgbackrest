@@ -49,6 +49,9 @@ spec:
                     default: 600
                     description: Collecting metrics interval in seconds.
                     type: integer
+                  enabled:
+                    description: Define if pgBackRest exporter should be enabled.
+                    type: boolean
                 required:
                 - collectInterval
                 type: object
@@ -831,6 +834,16 @@ rules:
 - apiGroups:
   - ""
   resources:
+  - persistentvolumeclaims
+  verbs:
+  - create
+  - get
+  - list
+  - patch
+  - watch
+- apiGroups:
+  - ""
+  resources:
   - secrets
   verbs:
   - create
@@ -841,6 +854,7 @@ rules:
 - apiGroups:
   - pgbackrest.dalibo.com
   resources:
+  - pluginconfigs
   - stanzas
   verbs:
   - create
@@ -853,12 +867,14 @@ rules:
 - apiGroups:
   - pgbackrest.dalibo.com
   resources:
+  - pluginconfigs/finalizers
   - stanzas/finalizers
   verbs:
   - update
 - apiGroups:
   - pgbackrest.dalibo.com
   resources:
+  - pluginconfigs/status
   - stanzas/status
   verbs:
   - get
@@ -1015,6 +1031,20 @@ subjects:
   namespace: cnpg-system
 ---
 apiVersion: v1
+data:
+  SIDECAR_EXPORTER_IMAGE: |
+    cmVnaXN0cnkuaHViLmRvY2tlci5jb20vZGFsaWJvL2NucGctcGdiYWNrcmVzdC1zaWRlY2
+    FyLWV4cG9ydGVyOjAuMC4y
+  SIDECAR_IMAGE: |
+    cmVnaXN0cnkuaHViLmRvY2tlci5jb20vZGFsaWJvL2NucGctcGdiYWNrcmVzdC1zaWRlY2
+    FyOjAuMC4y
+kind: Secret
+metadata:
+  name: plugin-pgbackrest-t97787c98t
+  namespace: cnpg-system
+type: Opaque
+---
+apiVersion: v1
 kind: Service
 metadata:
   annotations:
@@ -1061,8 +1091,18 @@ spec:
         - --client-cert=/client/tls.crt
         - --server-address=:9090
         - --log-level=debug
-        image: pgbackrest-controller
-        imagePullPolicy: IfNotPresent
+        env:
+        - name: SIDECAR_IMAGE
+          valueFrom:
+            secretKeyRef:
+              key: SIDECAR_IMAGE
+              name: plugin-pgbackrest-t97787c98t
+        - name: SIDECAR_EXPORTER_IMAGE
+          valueFrom:
+            secretKeyRef:
+              key: SIDECAR_EXPORTER_IMAGE
+              name: plugin-pgbackrest-t97787c98t
+        image: registry.hub.docker.com/dalibo/cnpg-pgbackrest-controller:0.0.2
         name: pgbackrest-controller
         ports:
         - containerPort: 9090
