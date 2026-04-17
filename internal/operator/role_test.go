@@ -4,11 +4,15 @@
 package operator
 
 import (
+	"slices"
 	"testing"
 
 	machineryapi "github.com/cloudnative-pg/machinery/pkg/api"
 	"github.com/cloudnative-pg/machinery/pkg/stringset"
 	pgbackrestapi "github.com/dalibo/cnpg-i-pgbackrest/api/v1"
+
+	rbacv1 "k8s.io/api/rbac/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 func TestGetSecrets(t *testing.T) {
@@ -83,4 +87,137 @@ func TestGetSecrets(t *testing.T) {
 			t.Errorf("expected no secrets in set, got %d: %v", s.Len(), s)
 		}
 	})
+}
+
+func TestBuildK8SRole(t *testing.T) {
+	testNs := "test-ns"
+	testsCase := []struct {
+		name          string
+		ns            string
+		clusterName   string
+		stanzas       []pgbackrestapi.Stanza
+		pluginconf    *pgbackrestapi.PluginConfig
+		wantRuleCount int
+	}{
+		{
+			name:        "with plugin config",
+			ns:          testNs,
+			clusterName: "cluster1",
+			stanzas: []pgbackrestapi.Stanza{
+				{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "stanza1",
+						Namespace: testNs,
+					},
+				},
+				{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "stanza2",
+						Namespace: testNs,
+					},
+				},
+			},
+			pluginconf: &pgbackrestapi.PluginConfig{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "plugin1",
+					Namespace: testNs,
+				},
+			},
+			wantRuleCount: 4,
+		},
+		{
+			name:        "without plugin config",
+			ns:          testNs,
+			clusterName: "cluster1",
+			stanzas: []pgbackrestapi.Stanza{
+				{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "stanza1",
+						Namespace: testNs,
+					},
+				},
+			},
+			pluginconf:    nil,
+			wantRuleCount: 3,
+		},
+		{
+			name:          "no stanzas",
+			ns:            testNs,
+			clusterName:   "cluster1",
+			stanzas:       nil,
+			pluginconf:    nil,
+			wantRuleCount: 3,
+		},
+	}
+
+	for _, tt := range testsCase {
+		t.Run(tt.name, func(t *testing.T) {
+			role := BuildK8SRole(tt.ns, tt.clusterName, tt.stanzas, tt.pluginconf)
+
+			if role == nil {
+				t.Fatalf("want role, got nil")
+			}
+
+			// Metadata checks
+			if role.Namespace != tt.ns {
+				t.Fatalf("want namespace %s, got %s", tt.ns, role.Namespace)
+			}
+
+			wantName := GetRBACName(tt.clusterName)
+			if role.Name != wantName {
+				t.Fatalf("want name %s, got %s", wantName, role.Name)
+			}
+
+			if len(role.Rules) != tt.wantRuleCount {
+				t.Fatalf("want %d rules, got %d", tt.wantRuleCount, len(role.Rules))
+			}
+
+			// check stanza rule
+			var stanzaRule *rbacv1.PolicyRule
+			for i := range role.Rules {
+				r := role.Rules[i]
+				if slices.Contains(r.Resources, "stanzas") {
+					stanzaRule = &r
+					break
+				}
+			}
+
+			if stanzaRule == nil {
+				t.Fatalf("stanza rule not found")
+			}
+
+			wantStanzaNames := make([]string, len(tt.stanzas))
+			for i, s := range tt.stanzas {
+				wantStanzaNames[i] = s.Name
+			}
+			slices.Sort(stanzaRule.ResourceNames)
+			slices.Sort(wantStanzaNames)
+
+			if slices.Compare(stanzaRule.ResourceNames, wantStanzaNames) != 0 {
+				t.Fatalf("want stanza names %v, got %v",
+					wantStanzaNames, stanzaRule.ResourceNames)
+			}
+
+			if tt.pluginconf != nil {
+				var pluginRule *rbacv1.PolicyRule
+				for i := range role.Rules {
+					r := role.Rules[i]
+					if slices.Contains(r.Resources, "pluginconfigs") {
+						pluginRule = &r
+						break
+					}
+				}
+
+				if pluginRule == nil {
+					t.Fatalf("want plugin rule, not found")
+				}
+
+				want := []string{tt.pluginconf.Name}
+				if slices.Compare(pluginRule.ResourceNames, want) != 0 {
+					t.Fatalf("want plugin resource names %v, got %v",
+						want, pluginRule.ResourceNames)
+				}
+			}
+		})
+	}
 }
