@@ -21,4 +21,4 @@ spec:
               valueFrom:
                 secretKeyRef:
                   key: SIDECAR_EXPORTER_IMAGE
-                  name: plugin-pgbackrest-exporter
+                  name: plugin-pgbackrest
