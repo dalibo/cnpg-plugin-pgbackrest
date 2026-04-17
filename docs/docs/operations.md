@@ -76,7 +76,7 @@ Whatever the kind of backup, users can list and see them with the
 appropriate `kubectl` command :
 
 ``` console
-$ kubectl get backups.postgresql.cnpg.io
+kubectl get backups.postgresql.cnpg.io
 ```
 
 ### On-demand backups
@@ -96,7 +96,7 @@ It's also possible to use the `cnpg` plugin for `kubectl` to perform
 your backup :
 
 ``` console
-$ kubectl cnpg backup cluster-sample -m plugin --plugin-name pgbackrest.dalibo.com
+kubectl cnpg backup cluster-sample -m plugin --plugin-name pgbackrest.dalibo.com
 ```
 
 When performing a backup, you can choose the repository to which to push
@@ -115,7 +115,7 @@ configured repositories. For example, to use the first repository:
 Or with the `cnpg` plugin:
 
 ``` console
-$ kubectl cnpg backup cluster-sample -m plugin --plugin-name pgbackrest.dalibo.com \
+kubectl cnpg backup cluster-sample -m plugin --plugin-name pgbackrest.dalibo.com \
   --plugin-parameters selectedRepository=1
 ```
 

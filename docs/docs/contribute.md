@@ -59,13 +59,13 @@ steps to prepare the required environment.
 1.  Clone the main CloudNativePG operator repository:
 
     ``` console
-    $ git clone https://github.com/cloudnative-pg/cloudnative-pg
+    git clone https://github.com/cloudnative-pg/cloudnative-pg
     ```
 
 2.  Move to the newly created directory:
 
     ``` console
-    $ cd cloudenative-pg
+    cd cloudnative-pg
     ```
 
 3.  Install the required [dependencies](#prerequisites) listed above
@@ -75,7 +75,7 @@ steps to prepare the required environment.
     CloudNativePG:
 
     ``` console
-    $ ./hack/setup-cluster.sh create load deploy
+    ./hack/setup-cluster.sh create load deploy
     ```
 
 :::info
@@ -94,20 +94,20 @@ Kubernetes cluster.
 1.  Clone the pgBackRest plugin repository:
 
     ``` console
-    $ git clone https://github.com/dalibo/cnpg-plugin-pgbackrest
+    git clone https://github.com/dalibo/cnpg-plugin-pgbackrest
     ```
 
 2.  Move to the newly created directory:
 
     ``` console
-    $ cd cnpg-plugin-pgbackrest
+    cd cnpg-plugin-pgbackrest
     ```
 
 3.  Build the container images used for the plugin (one for the
     controller and another one for the sidecar container):
 
     ``` console
-    $ make build-images
+    make build-images
     ```
 
 4.  The images must now be loaded into the registry dedicated the
@@ -115,14 +115,14 @@ Kubernetes cluster.
     command:
 
     ``` console
-    $ kind load docker-image pgbackrest-{controller,sidecar}:latest --name <KUBERNETES-CLUSTER-NAME>
+    kind load docker-image pgbackrest-{controller,sidecar}:latest --name <KUBERNETES-CLUSTER-NAME>
     ```
 
     It's possible to retrieve the name of the Kubernetes cluster by
     running:
 
     ``` console
-    $ kind get clusters
+    kind get clusters
     ```
 
 5.  The plugin controller can now be deployed within the `cnpg-system`
@@ -130,7 +130,7 @@ Kubernetes cluster.
     applied:
 
     ``` console
-    $ kubectl apply -k ./kubernetes/dev
+    kubectl apply -k ./kubernetes/dev
     ```
 
 6.  A `pgbackrest-controller` deployment must be present (e.g., in
@@ -146,7 +146,7 @@ to use [**kind**](https://kind.sigs.k8s.io/) and the appropriate make
 target:
 
 ``` console
-$ make test-e2e
+make test-e2e
 ```
 
 That command will:
@@ -162,25 +162,26 @@ To only run the tests (`test/e2e/e2e_test.go`), the `test-e2e-run-tests`
 target can be used:
 
 ``` console
-$ make test-e2e-run-tests
+make test-e2e-run-tests
 ```
 
 Once done with the tests, the **kind** cluster can be deleted :
 
 ``` console
-$ make cleanup-test-e2e
+make cleanup-test-e2e
 ```
 
 ## Linting and compliance
 
 Before submitting a contribution, make sure the linter run without errors:
 
-$ golangci-lint run
+```
+golangci-lint run
 ```
 
 This project follows the **REUSE specification** for copyright and license tracking.
 The `reuse` tool can be used to add it automatically ;
 
-$ reuse annotate -copyright="Dalibo" --year=2026 --license="Apache-2.0" \
-    <PATH>
+```
+reuse annotate -copyright="Dalibo" --year=2026 --license="Apache-2.0" <PATH>
 ```

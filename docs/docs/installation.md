@@ -10,7 +10,7 @@ This plugin can be installed and used by Kubernetes and CloudNativePG
 users via the manifest located at the root of the repository.
 
 ``` console
-$ kubectl apply -f \
+kubectl apply -f \
   https://raw.githubusercontent.com/dalibo/cnpg-plugin-pgbackrest/main/manifest.yaml
 ```
 
@@ -23,7 +23,7 @@ the `pgbackrest-controller` deployment in the namespace used by the
 CloudNativePG operator (e.g., `cnpg-system`).
 
 ``` console
-$ kubectl get pod -n cnpg-system
+kubectl get pod -n cnpg-system
 NAME                                       READY   STATUS    RESTARTS   AGE
 cnpg-controller-manager-65bfdb64c9-hwvpd   1/1     Running   0          9m4s
 pgbackrest-controller-fc9f4d5f4-5w6wt      1/1     Running   0          15s
@@ -33,7 +33,7 @@ And also by confirming that the `Custom Resource Definition`
 `stanza.pgbackrest.dalibo.com` is installed.
 
 ``` console
-$ kubectl api-resources --api-group pgbackrest.dalibo.com
+kubectl api-resources --api-group pgbackrest.dalibo.com
 NAME      SHORTNAMES   APIVERSION                 NAMESPACED   KIND
 stanzas                pgbackrest.dalibo.com/v1   true         Stanza
 ```
@@ -45,7 +45,7 @@ To use the latest testing or unstable version of this plugin, apply the
 images from Docker Hub. You can simply run :
 
 ``` console
-$ kubectl apply -k kubernetes/test
+kubectl apply -k kubernetes/test
 ```
 
 ## Dev version
@@ -56,7 +56,7 @@ $ kubectl apply -k kubernetes/test
     You can build them locally with the command :
 
     ``` console
-    $ make build-images
+    make build-images
     ```
 
     It will execute the appropriate `docker build` commands.
@@ -65,7 +65,7 @@ $ kubectl apply -k kubernetes/test
     `kubernetes` directory :
 
     ``` console
-    $ kubectl apply -k ./kubernetes/dev
+    kubectl apply -k ./kubernetes/dev
     ```
 
 :::note
