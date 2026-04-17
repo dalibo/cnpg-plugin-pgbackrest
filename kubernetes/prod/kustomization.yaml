@@ -9,5 +9,5 @@ patches:
 secretGenerator:
   - name: plugin-pgbackrest
     literals:
-      - SIDECAR_IMAGE=registry.hub.docker.com/dalibo/cnpg-pgbackrest-sidecar:0.0.1
-      - SIDECAR_EXPORTER_IMAGE=registry.hub.docker.com/dalibo/cnpg-pgbackrest-sidecar-exporter:0.0.1
+      - SIDECAR_IMAGE=registry.hub.docker.com/dalibo/cnpg-pgbackrest-sidecar:0.0.2
+      - SIDECAR_EXPORTER_IMAGE=registry.hub.docker.com/dalibo/cnpg-pgbackrest-sidecar-exporter:0.0.2
