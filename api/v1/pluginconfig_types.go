@@ -13,7 +13,7 @@ import (
 
 type ExporterConfig struct {
 
-	// Define if pgBackrest exporter should be enabled.
+	// Define if pgBackRest exporter should be enabled.
 	// +optional
 	Enabled bool `json:"enabled"`
 

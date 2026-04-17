@@ -51,7 +51,7 @@ spec:
                     description: Collecting metrics interval in seconds.
                     type: integer
                   enabled:
-                    description: Define if pgbackrest exporter should be enabled.
+                    description: Define if pgBackRest exporter should be enabled.
                     type: boolean
                 required:
                 - collectInterval
