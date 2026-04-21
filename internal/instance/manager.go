@@ -16,6 +16,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
+	"k8s.io/apimachinery/pkg/types"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	clientgoscheme "k8s.io/client-go/kubernetes/scheme"
 	ctrl "sigs.k8s.io/controller-runtime"
@@ -30,6 +31,8 @@ func Start(ctx context.Context) error {
 	setupLog := log.FromContext(ctx)
 	setupLog.Info("Starting pgbackrest instance plugin")
 	podName := viper.GetString("pod-name")
+	namespace := viper.GetString("namespace")
+	clusterName := viper.GetString("cluster-name")
 
 	sc := generateScheme(ctx)
 	controllerOptions := ctrl.Options{
@@ -61,6 +64,18 @@ func Start(ctx context.Context) error {
 		PluginPath: viper.GetString("plugin-path"),
 	}); err != nil {
 		setupLog.Error(err, "unable to create pbacrest plugin runnable/server")
+		return err
+	}
+
+	if err := mgr.Add(&StanzaMaintenanceRunnable{
+		Client: customCacheClient,
+		ClusterKey: types.NamespacedName{
+			Namespace: namespace,
+			Name:      clusterName,
+		},
+		CurrentPodName: podName,
+	}); err != nil {
+		setupLog.Error(err, "unable to policy enforcement runnable")
 		return err
 	}
 
