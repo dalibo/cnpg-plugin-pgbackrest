@@ -8,6 +8,9 @@ import { themes as prismThemes } from "prism-react-renderer";
 
 // This runs in Node.js - Don't use client-side code here (browser APIs, JSX...)
 
+const isRTD = process.env.READTHEDOCS === "True";
+const version = process.env.READTHEDOCS_VERSION || "latest";
+
 /** @type {import('@docusaurus/types').Config} */
 const config = {
   title: "pgBackRest CNPG-I Plugin",
@@ -22,7 +25,7 @@ const config = {
   url: "https://plugin-pgbackrest.readthedocs.io",
   // Set the /<baseUrl>/ pathname under which your site is served
   // For GitHub pages deployment, it is often '/<projectName>/'
-  baseUrl: "/en/latest",
+  baseUrl: isRTD ? `/en/${version}/` : "/",
 
   // GitHub pages deployment config.
   // If you aren't using GitHub pages, you don't need these.
