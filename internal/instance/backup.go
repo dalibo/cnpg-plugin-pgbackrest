@@ -59,12 +59,16 @@ func updateBackupInfo(
 	ctx context.Context,
 	c client.Client,
 	stanza *pgbackrestapi.Stanza,
-	firstBackup pgbackrestapi.BackupInfo,
-	lastBackup pgbackrestapi.BackupInfo,
+	firstBackup *pgbackrestapi.BackupInfo,
+	lastBackup *pgbackrestapi.BackupInfo,
 ) error {
 	return retry.RetryOnConflict(retry.DefaultBackoff, func() error {
-		stanza.Status.RecoveryWindow.FirstBackup = firstBackup
-		stanza.Status.RecoveryWindow.LastBackup = lastBackup
+		if firstBackup != nil {
+			stanza.Status.RecoveryWindow.FirstBackup = *firstBackup
+		}
+		if lastBackup != nil {
+			stanza.Status.RecoveryWindow.LastBackup = *lastBackup
+		}
 		return c.Status().Update(ctx, stanza)
 	})
 }
@@ -125,7 +129,7 @@ func (b BackupServiceImplementation) Backup(
 	}
 	lastBackup := pgbackrest.LatestBackup(backupsList)
 	firstBackup := pgbackrest.FirstBackup(backupsList)
-	if err := updateBackupInfo(ctx, b.Client, stanza, *firstBackup, *lastBackup); err != nil {
+	if err := updateBackupInfo(ctx, b.Client, stanza, firstBackup, lastBackup); err != nil {
 		contextLogger.Error(err, "can't update backup info")
 		return nil, err
 	}

@@ -318,6 +318,15 @@ func GetStanza(ctx context.Context,
 	if err != nil {
 		return nil, err
 	}
+	return getStanzaFromPluginConf(ctx, cl, pluginConf, getRef)
+}
+
+func getStanzaFromPluginConf(
+	ctx context.Context,
+	cl client.Client,
+	pluginConf *PluginConfiguration,
+	getRef StanzaRefGetter,
+) (*pgbackrestapi.Stanza, error) {
 	stanzaFQDN, err := getRef(pluginConf)
 	if err != nil {
 		return nil, err
@@ -327,4 +336,18 @@ func GetStanza(ctx context.Context,
 		return nil, err
 	}
 	return &stanza, nil
+
+}
+
+func GetStanzaFromCluster(
+	ctx context.Context,
+	cluster *cnpgv1.Cluster,
+	cl client.Client,
+	getRef StanzaRefGetter,
+) (*pgbackrestapi.Stanza, error) {
+	pluginConf, err := NewFromCluster(cluster)
+	if err != nil {
+		return nil, err
+	}
+	return getStanzaFromPluginConf(ctx, cl, pluginConf, getRef)
 }

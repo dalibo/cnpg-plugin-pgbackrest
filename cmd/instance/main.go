@@ -32,7 +32,7 @@ func NewCmd() *cobra.Command {
 			return instance_pgbackrest.Start(cmd.Context())
 		},
 	}
-
+	_ = viper.BindEnv("cluster-name", "CLUSTER_NAME")
 	_ = viper.BindEnv("namespace", "NAMESPACE")
 	_ = viper.BindEnv("pod-name", "POD_NAME")
 	_ = viper.BindEnv("pgdata", "PGDATA")
