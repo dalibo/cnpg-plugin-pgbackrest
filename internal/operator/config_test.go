@@ -108,7 +108,7 @@ func TestGetEnvVarConfig(t *testing.T) {
 	ctx := context.Background()
 	r := buildRepo()
 	c := buildFakeClient()
-	env, err := GetEnvVarConfig(ctx, *r, c)
+	env, err := GetEnvVarConfig(ctx, r, c)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -150,7 +150,7 @@ func TestGetEnvVarConfig_MissingSecret(t *testing.T) {
 		).
 		Build()
 
-	_, err := GetEnvVarConfig(ctx, *r, c)
+	_, err := GetEnvVarConfig(ctx, r, c)
 	if err == nil {
 		t.Fatalf("expected error when secret is missing, got %v", err)
 	}

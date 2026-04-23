@@ -101,7 +101,7 @@ func (b BackupServiceImplementation) Backup(
 	if err != nil {
 		return nil, err
 	}
-	env, err := operator.GetEnvVarConfig(ctx, *stanza, b.Client)
+	env, err := operator.GetEnvVarConfig(ctx, stanza, b.Client)
 	if err != nil {
 		contextLogger.Error(err, "can't get envvar")
 		return nil, err
