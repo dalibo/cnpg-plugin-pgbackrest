@@ -213,7 +213,7 @@ func decodeSecretVal(
 
 func GetEnvVarConfig(
 	ctx context.Context,
-	stanza pgbackrestapi.Stanza,
+	stanza *pgbackrestapi.Stanza,
 	c client.Client,
 ) ([]string, error) {
 	conf := stanza.Spec.Configuration

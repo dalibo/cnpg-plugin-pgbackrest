@@ -100,7 +100,7 @@ func (impl JobHookImpl) Restore(
 	if err != nil {
 		return nil, err
 	}
-	env, err := operator.GetEnvVarConfig(ctx, *stanza, impl.Client)
+	env, err := operator.GetEnvVarConfig(ctx, stanza, impl.Client)
 	if err != nil {
 		return nil, err
 	}

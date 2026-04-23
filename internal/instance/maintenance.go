@@ -107,7 +107,7 @@ func (c *StanzaMaintenanceRunnable) getBackupsInfo(
 	ctx context.Context,
 	stanza *pgbackrestapi.Stanza,
 ) ([]pgbackrestapi.BackupInfo, error) {
-	env, err := operator.GetEnvVarConfig(ctx, *stanza, c.Client)
+	env, err := operator.GetEnvVarConfig(ctx, stanza, c.Client)
 	if err != nil {
 		return nil, err
 	}

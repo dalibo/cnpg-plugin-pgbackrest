@@ -61,7 +61,7 @@ func (p *PgbackrestSidecarServer) Start(ctx context.Context) error {
 	}
 
 	// then launch the exporter
-	env, err := operator.GetEnvVarConfig(ctx, *stanza, p.Client)
+	env, err := operator.GetEnvVarConfig(ctx, stanza, p.Client)
 	if err != nil {
 		return err
 	}

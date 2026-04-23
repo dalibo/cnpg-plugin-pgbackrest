@@ -69,7 +69,7 @@ func (w_impl *WALSrvImplementation) Archive(
 	if err != nil {
 		return nil, err
 	}
-	env, err := operator.GetEnvVarConfig(ctx, *stanza, w_impl.Client)
+	env, err := operator.GetEnvVarConfig(ctx, stanza, w_impl.Client)
 	if err != nil {
 		return nil, err
 	}
@@ -142,7 +142,7 @@ func (w WALSrvImplementation) Restore(
 	if err != nil {
 		return nil, err
 	}
-	env, err := operator.GetEnvVarConfig(ctx, *stanza, w.Client)
+	env, err := operator.GetEnvVarConfig(ctx, stanza, w.Client)
 	if err != nil {
 		return nil, err
 	}
