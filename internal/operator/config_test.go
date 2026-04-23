@@ -51,7 +51,7 @@ func buildFakeClient() client.Client {
 		WithObjects(aKey, sKey, azureKey).
 		Build()
 }
-func buildRepo() *pgbackrestapi.Stanza {
+func buildStanza() *pgbackrestapi.Stanza {
 	return &pgbackrestapi.Stanza{
 		TypeMeta: metav1.TypeMeta{
 			Kind:       "stanza",
@@ -106,9 +106,9 @@ func buildRepo() *pgbackrestapi.Stanza {
 }
 func TestGetEnvVarConfig(t *testing.T) {
 	ctx := context.Background()
-	r := buildRepo()
+	s := buildStanza()
 	c := buildFakeClient()
-	env, err := GetEnvVarConfig(ctx, r, c)
+	env, err := GetEnvVarConfig(ctx, s, c)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -131,7 +131,7 @@ func TestGetEnvVarConfig(t *testing.T) {
 
 func TestGetEnvVarConfig_MissingSecret(t *testing.T) {
 	ctx := context.Background()
-	r := buildRepo()
+	s := buildStanza()
 
 	// Build client WITHOUT the access-key-secret
 	c := fake.NewClientBuilder().
@@ -150,7 +150,7 @@ func TestGetEnvVarConfig_MissingSecret(t *testing.T) {
 		).
 		Build()
 
-	_, err := GetEnvVarConfig(ctx, r, c)
+	_, err := GetEnvVarConfig(ctx, s, c)
 	if err == nil {
 		t.Fatalf("expected error when secret is missing, got %v", err)
 	}
