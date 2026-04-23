@@ -41,12 +41,14 @@ func (p *PgbackrestSidecarServer) Start(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
-	stanzaRef, err := pluginConfig.GetStanzaRef()
+
+	stanza, err := operator.GetStanzaFromCluster(
+		ctx,
+		cluster,
+		p.Client,
+		(*operator.PluginConfiguration).GetStanzaRef,
+	)
 	if err != nil {
-		return err
-	}
-	stanza := &apipgbackrest.Stanza{}
-	if err := p.Client.Get(ctx, *stanzaRef, stanza); err != nil {
 		return err
 	}
 
