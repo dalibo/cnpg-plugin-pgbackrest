@@ -9,7 +9,7 @@ import (
 
 	cnpgv1 "github.com/cloudnative-pg/cloudnative-pg/api/v1"
 	apipgbackrest "github.com/dalibo/cnpg-i-pgbackrest/api/v1"
-	"github.com/dalibo/cnpg-i-pgbackrest/internal/operator"
+	"github.com/dalibo/cnpg-i-pgbackrest/internal/config"
 	"github.com/dalibo/cnpg-i-pgbackrest/internal/pgbackrest"
 	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -37,16 +37,16 @@ func (p *PgbackrestSidecarServer) Start(ctx context.Context) error {
 	}
 
 	// retrieve stanza / pgbackrest configuration
-	pluginConfig, err := operator.NewFromCluster(cluster)
+	pluginConfig, err := config.NewFromCluster(cluster)
 	if err != nil {
 		return err
 	}
 
-	stanza, err := operator.GetStanzaFromCluster(
+	stanza, err := config.GetStanzaFromCluster(
 		ctx,
 		cluster,
 		p.Client,
-		(*operator.PluginConfiguration).GetStanzaRef,
+		(*config.PluginConfiguration).GetStanzaRef,
 	)
 	if err != nil {
 		return err
@@ -63,7 +63,7 @@ func (p *PgbackrestSidecarServer) Start(ctx context.Context) error {
 	}
 
 	// then launch the exporter
-	env, err := operator.GetEnvVarConfig(ctx, stanza, p.Client)
+	env, err := config.GetEnvVarConfig(ctx, stanza, p.Client)
 	if err != nil {
 		return err
 	}

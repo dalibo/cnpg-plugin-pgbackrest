@@ -11,7 +11,7 @@ import (
 	cnpgv1 "github.com/cloudnative-pg/cloudnative-pg/api/v1"
 	"github.com/cloudnative-pg/machinery/pkg/log"
 	pgbackrestapi "github.com/dalibo/cnpg-i-pgbackrest/api/v1"
-	"github.com/dalibo/cnpg-i-pgbackrest/internal/operator"
+	"github.com/dalibo/cnpg-i-pgbackrest/internal/config"
 	"github.com/dalibo/cnpg-i-pgbackrest/internal/pgbackrest"
 	"github.com/dalibo/cnpg-i-pgbackrest/internal/utils"
 	"k8s.io/apimachinery/pkg/types"
@@ -59,11 +59,11 @@ func (c *StanzaMaintenanceRunnable) cycle(ctx context.Context) error {
 		contextLogger.Debug("skipping maintenance: plugin is not enabled for backups")
 		return nil
 	}
-	stz, err := operator.GetStanzaFromCluster(
+	stz, err := config.GetStanzaFromCluster(
 		ctx,
 		&cluster,
 		c.Client,
-		(*operator.PluginConfiguration).GetStanzaRef,
+		(*config.PluginConfiguration).GetStanzaRef,
 	)
 	if err != nil {
 		return err
@@ -107,7 +107,7 @@ func (c *StanzaMaintenanceRunnable) getBackupsInfo(
 	ctx context.Context,
 	stanza *pgbackrestapi.Stanza,
 ) ([]pgbackrestapi.BackupInfo, error) {
-	env, err := operator.GetEnvVarConfig(ctx, stanza, c.Client)
+	env, err := config.GetEnvVarConfig(ctx, stanza, c.Client)
 	if err != nil {
 		return nil, err
 	}
