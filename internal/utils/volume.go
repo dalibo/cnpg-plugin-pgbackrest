@@ -74,6 +74,17 @@ func EnsureVolumeMount(
 	return mounts
 }
 
+// AddVolumeMountsFromContainer searches for a container by name
+// (sourceName) within a slice of containers and appends its
+// VolumeMounts to the target container.
+//
+// It utilizes EnsureVolumeMount to merge the mounts, typically
+// ensuring idempotency and preventing duplicate mount entries
+// in the target container.
+//
+// Returns:
+//   - nil: if the source container is found and volume mounts are successfully processed.
+//   - error: if no container matching sourceName is found in the provided slice.
 func AddVolumeMountsFromContainer(
 	target *corev1.Container,
 	sourceName string,
