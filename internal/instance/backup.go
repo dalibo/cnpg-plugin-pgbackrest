@@ -59,30 +59,29 @@ func updateBackupInfo(
 	ctx context.Context,
 	c client.Client,
 	stanza *pgbackrestapi.Stanza,
+	countByType map[string]uint16,
 	firstBackup *pgbackrestapi.BackupInfo,
 	lastBackup *pgbackrestapi.BackupInfo,
 ) error {
+
+	key := client.ObjectKeyFromObject(stanza)
+
 	return retry.RetryOnConflict(retry.DefaultBackoff, func() error {
+		if err := c.Get(ctx, key, stanza); err != nil {
+			return err
+		}
+
 		if firstBackup != nil {
 			stanza.Status.RecoveryWindow.FirstBackup = *firstBackup
 		}
 		if lastBackup != nil {
 			stanza.Status.RecoveryWindow.LastBackup = *lastBackup
 		}
-		return c.Status().Update(ctx, stanza)
-	})
-}
 
-func updateBackupsCount(
-	ctx context.Context,
-	c client.Client,
-	stanza *pgbackrestapi.Stanza,
-	countByType map[string]uint16,
-) error {
-	return retry.RetryOnConflict(retry.DefaultBackoff, func() error {
 		stanza.Status.Backups.Full = countByType["full"]
 		stanza.Status.Backups.Incr = countByType["incr"]
 		stanza.Status.Backups.Diff = countByType["diff"]
+
 		return c.Status().Update(ctx, stanza)
 	})
 }
@@ -123,21 +122,18 @@ func (b BackupServiceImplementation) Backup(
 		contextLogger.Error(err, "can't backup")
 		return nil, err
 	}
+
 	backupsList, err := pgb.GetBackupInfo()
 	if err != nil {
 		return nil, err
 	}
+
 	lastBackup := pgbackrest.LatestBackup(backupsList)
 	firstBackup := pgbackrest.FirstBackup(backupsList)
-	if err := updateBackupInfo(ctx, b.Client, stanza, firstBackup, lastBackup); err != nil {
-		contextLogger.Error(err, "can't update backup info")
-		return nil, err
-	}
-
 	backupCount := pgbackrest.CountByType(backupsList)
-
-	if err := updateBackupsCount(ctx, b.Client, stanza, backupCount); err != nil {
-		contextLogger.Error(err, "can't update backups count info")
+	err = updateBackupInfo(ctx, b.Client, stanza, backupCount, firstBackup, lastBackup)
+	if err != nil {
+		contextLogger.Error(err, "can't update backup info")
 		return nil, err
 	}
 
