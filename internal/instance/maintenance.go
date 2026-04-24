@@ -100,6 +100,10 @@ func (c *StanzaMaintenanceRunnable) maintenance(
 		return err
 	}
 
+	if err := c.cleanOldCNPGBackups(ctx, backups, cluster); err != nil {
+		return err
+	}
+
 	return nil
 }
 
@@ -124,4 +128,45 @@ func (c *StanzaMaintenanceRunnable) updateBackupWindow(
 	f := pgbackrest.FirstBackup(backups)
 	bc := pgbackrest.CountByType(backups)
 	return updateBackupInfo(ctx, c.Client, stanza, bc, f, l)
+}
+
+// cleanOldCNPGBackups synchronizes the Backup CNPG resources in Kubernetes
+// with the actual backup present in pgBackRest. It identifies and deletes
+// any Backup objects that no longer have a corresponding entry in the
+// pgBackRest repositories, ensuring the CNPG stays consistent with the
+// physical storage.
+func (c *StanzaMaintenanceRunnable) cleanOldCNPGBackups(
+	ctx context.Context,
+	backups []pgbackrestapi.BackupInfo,
+	cluster *cnpgv1.Cluster,
+) error {
+
+	realBckp := make(map[string]struct{}, len(backups))
+	for _, b := range backups {
+		realBckp[b.Label] = struct{}{}
+	}
+
+	// retrieve backups belonging to this cluster
+	var cnpgBackups cnpgv1.BackupList
+	err := c.Client.List(ctx, &cnpgBackups,
+		client.InNamespace(cluster.GetNamespace()),
+		client.MatchingLabels{"cnpg.io/cluster": cluster.Name},
+	)
+	if err != nil {
+		return err
+	}
+
+	// delete CNPG backups that no longer exist in pgBackRest real backup
+	for i := range cnpgBackups.Items {
+		item := &cnpgBackups.Items[i]
+		bckpName := item.Status.BackupName
+		if _, ok := realBckp[bckpName]; bckpName != "" && !ok {
+			if err := c.Client.Delete(ctx, item); client.IgnoreNotFound(err) != nil {
+				return err
+			}
+		}
+	}
+
+	return nil
+
 }
