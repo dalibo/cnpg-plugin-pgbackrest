@@ -122,5 +122,6 @@ func (c *StanzaMaintenanceRunnable) updateBackupWindow(
 ) error {
 	l := pgbackrest.LatestBackup(backups)
 	f := pgbackrest.FirstBackup(backups)
-	return updateBackupInfo(ctx, c.Client, stanza, f, l)
+	bc := pgbackrest.CountByType(backups)
+	return updateBackupInfo(ctx, c.Client, stanza, bc, f, l)
 }
