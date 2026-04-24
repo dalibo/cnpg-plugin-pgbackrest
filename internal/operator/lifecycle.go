@@ -19,6 +19,7 @@ import (
 	pluginv1 "github.com/dalibo/cnpg-i-pgbackrest/api/v1"
 	"github.com/dalibo/cnpg-i-pgbackrest/internal/config"
 	"github.com/dalibo/cnpg-i-pgbackrest/internal/metadata"
+	"github.com/dalibo/cnpg-i-pgbackrest/internal/utils"
 	batchv1 "k8s.io/api/batch/v1"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
@@ -155,8 +156,9 @@ func (impl LifecycleImplementation) reconcileJob(
 
 	// Inject plugin-specific volume mounts
 	// only needed here, for postgres container, it's done by the CNPG machenery
-	injectPluginVolumeMount(podSpec, role)
-	if err := addVolumeMountsFromContainer(sidecarContainer,
+	utils.InjectPluginVolumeMount(podSpec, role)
+	if err := utils.AddVolumeMountsFromContainer(
+		sidecarContainer,
 		role,
 		podSpec.Containers,
 	); err != nil {
@@ -261,90 +263,6 @@ func envFromContainer(
 		}
 	}
 	return env
-}
-
-// injects the plugin volume (/plugin) into a CNPG Pod spec.
-func injectPluginVolumeMount(spec *corev1.PodSpec, mainContainerName string) {
-	const (
-		pluginVolumeName = "plugins"
-		pluginMountPath  = "/plugins"
-	)
-	spec.Volumes = ensureVolume(spec.Volumes, corev1.Volume{
-		Name: pluginVolumeName,
-		VolumeSource: corev1.VolumeSource{
-			EmptyDir: &corev1.EmptyDirVolumeSource{},
-		},
-	})
-
-	for i := range spec.Containers {
-		if spec.Containers[i].Name == mainContainerName {
-			spec.Containers[i].VolumeMounts = ensureVolumeMount(
-				spec.Containers[i].VolumeMounts,
-				corev1.VolumeMount{
-					Name:      pluginVolumeName,
-					MountPath: pluginMountPath,
-				},
-			)
-		}
-	}
-}
-
-// ensureVolume makes sure the passed volume is present in the list of volumes.
-// If the volume is already present, it is updated.
-func ensureVolume(volumes []corev1.Volume, volume corev1.Volume) []corev1.Volume {
-	volumeFound := false
-	for i := range volumes {
-		if volumes[i].Name == volume.Name {
-			volumeFound = true
-			volumes[i] = volume
-		}
-	}
-
-	if !volumeFound {
-		volumes = append(volumes, volume)
-	}
-
-	return volumes
-}
-
-// ensureVolumeMount makes sure the passed volume mounts are present in the list of volume mounts.
-// If a volume mount is already present, it is updated.
-func ensureVolumeMount(
-	mounts []corev1.VolumeMount,
-	volumeMounts ...corev1.VolumeMount,
-) []corev1.VolumeMount {
-	for _, mount := range volumeMounts {
-		mountFound := false
-		for i := range mounts {
-			if mounts[i].Name == mount.Name {
-				mountFound = true
-				mounts[i] = mount
-				break
-			}
-		}
-
-		if !mountFound {
-			mounts = append(mounts, mount)
-		}
-	}
-
-	return mounts
-}
-
-func addVolumeMountsFromContainer(
-	target *corev1.Container,
-	sourceName string,
-	containers []corev1.Container,
-) error {
-	for i := range containers {
-		if containers[i].Name == sourceName {
-			target.VolumeMounts = ensureVolumeMount(
-				target.VolumeMounts,
-				containers[i].VolumeMounts...)
-			return nil
-		}
-	}
-	return fmt.Errorf("container %q not found", sourceName)
 }
 
 func (impl LifecycleImplementation) injectSharedPluginConfig(
@@ -463,7 +381,7 @@ func (impl LifecycleImplementation) injectWALVolume(
 	}
 
 	// Add volume to Pod spec (if not already present) and add mount information
-	pod.Spec.Volumes = ensureVolume(
+	pod.Spec.Volumes = utils.EnsureVolume(
 		pod.Spec.Volumes,
 		corev1.Volume{
 			Name: volume,
@@ -474,7 +392,7 @@ func (impl LifecycleImplementation) injectWALVolume(
 			},
 		},
 	)
-	pod.Spec.InitContainers[sidecar].VolumeMounts = ensureVolumeMount(
+	pod.Spec.InitContainers[sidecar].VolumeMounts = utils.EnsureVolumeMount(
 		pod.Spec.InitContainers[sidecar].VolumeMounts,
 		corev1.VolumeMount{
 			Name:      volume,
