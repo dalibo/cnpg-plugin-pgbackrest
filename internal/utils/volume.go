@@ -36,21 +36,17 @@ func InjectPluginVolumeMount(spec *corev1.PodSpec, mainContainerName string) {
 }
 
 // EnsureVolume makes sure the passed volume is present in the list of volumes.
-// If the volume is already present, it is updated.
+// If a volume with the same name is already present, it is updated;
+// otherwise, it is appended to the list.
 func EnsureVolume(volumes []corev1.Volume, vol corev1.Volume) []corev1.Volume {
-	volumeFound := false
 	for i := range volumes {
 		if volumes[i].Name == vol.Name {
-			volumeFound = true
 			volumes[i] = vol
+			return volumes
 		}
 	}
 
-	if !volumeFound {
-		volumes = append(volumes, vol)
-	}
-
-	return volumes
+	return append(volumes, vol)
 }
 
 // EnsureVolumeMount makes sure the passed volume mounts are
