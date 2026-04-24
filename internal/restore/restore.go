@@ -10,7 +10,7 @@ import (
 	cnpgv1 "github.com/cloudnative-pg/cloudnative-pg/api/v1"
 	"github.com/cloudnative-pg/cloudnative-pg/pkg/postgres"
 	restore "github.com/cloudnative-pg/cnpg-i/pkg/restore/job"
-	"github.com/dalibo/cnpg-i-pgbackrest/internal/operator"
+	"github.com/dalibo/cnpg-i-pgbackrest/internal/config"
 	"github.com/dalibo/cnpg-i-pgbackrest/internal/pgbackrest"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/log"
@@ -92,19 +92,19 @@ func (impl JobHookImpl) Restore(
 ) (*restore.RestoreResponse, error) {
 	contextLogger := log.FromContext(ctx)
 	contextLogger.Info("Start restoring backup")
-	stanza, err := operator.GetStanza(ctx,
+	stanza, err := config.GetStanza(ctx,
 		req,
 		impl.Client,
-		(*operator.PluginConfiguration).GetRecoveryStanzaRef,
+		(*config.PluginConfiguration).GetRecoveryStanzaRef,
 	)
 	if err != nil {
 		return nil, err
 	}
-	env, err := operator.GetEnvVarConfig(ctx, stanza, impl.Client)
+	env, err := config.GetEnvVarConfig(ctx, stanza, impl.Client)
 	if err != nil {
 		return nil, err
 	}
-	cConfig, err := operator.NewFromClusterJSON(req.ClusterDefinition)
+	cConfig, err := config.NewFromClusterJSON(req.ClusterDefinition)
 	if err != nil {
 		return nil, err
 	}
@@ -138,14 +138,14 @@ func (impl JobHookImpl) Restore(
 	}
 	// To ensure compatibility with CNPG 1.28 and 1.29, we build the RestoreResponse
 	// that contains the recovery_target_action and restore_command.
-	config := "recovery_target_action = promote\n" +
+	conf := "recovery_target_action = promote\n" +
 		fmt.Sprintf(
 			"restore_command = '%s'\n",
 			restoreCmd,
 		)
-	contextLogger.Info("Finished restoring backup, sending response", "config", config)
+	contextLogger.Info("Finished restoring backup, sending response", "config", conf)
 	return &restore.RestoreResponse{
-		RestoreConfig: config,
+		RestoreConfig: conf,
 		Envs:          nil,
 	}, nil
 }

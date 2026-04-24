@@ -13,6 +13,7 @@ import (
 	"github.com/cloudnative-pg/cnpg-i/pkg/reconciler"
 	"github.com/cloudnative-pg/machinery/pkg/log"
 	apipgbackrest "github.com/dalibo/cnpg-i-pgbackrest/api/v1"
+	"github.com/dalibo/cnpg-i-pgbackrest/internal/config"
 	rbacv1 "k8s.io/api/rbac/v1"
 	"k8s.io/apimachinery/pkg/api/equality"
 	apierrs "k8s.io/apimachinery/pkg/api/errors"
@@ -71,7 +72,7 @@ func (r ReconcilerImplementation) Pre(
 
 	contextLogger = contextLogger.WithValues("name", cluster.Name, "namespace", cluster.Namespace)
 	ctx = log.IntoContext(ctx, contextLogger)
-	conf, err := NewFromCluster(&cluster)
+	conf, err := config.NewFromCluster(&cluster)
 	if err != nil {
 		return nil, err
 	}

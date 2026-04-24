@@ -10,7 +10,7 @@ import (
 
 	"github.com/cloudnative-pg/cnpg-i/pkg/wal"
 	apipgbackrest "github.com/dalibo/cnpg-i-pgbackrest/api/v1"
-	"github.com/dalibo/cnpg-i-pgbackrest/internal/operator"
+	"github.com/dalibo/cnpg-i-pgbackrest/internal/config"
 	"github.com/dalibo/cnpg-i-pgbackrest/internal/pgbackrest"
 	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -61,15 +61,15 @@ func (w_impl *WALSrvImplementation) Archive(
 ) (*wal.WALArchiveResult, error) {
 	contextLogger := log.FromContext(ctx)
 	walName := request.GetSourceFileName()
-	stanza, err := operator.GetStanza(ctx,
+	stanza, err := config.GetStanza(ctx,
 		request,
 		w_impl.Client,
-		(*operator.PluginConfiguration).GetStanzaRef,
+		(*config.PluginConfiguration).GetStanzaRef,
 	)
 	if err != nil {
 		return nil, err
 	}
-	env, err := operator.GetEnvVarConfig(ctx, stanza, w_impl.Client)
+	env, err := config.GetEnvVarConfig(ctx, stanza, w_impl.Client)
 	if err != nil {
 		return nil, err
 	}
@@ -99,7 +99,7 @@ func (w WALSrvImplementation) Restore(
 	request *wal.WALRestoreRequest,
 ) (*wal.WALRestoreResult, error) {
 	logger := log.FromContext(ctx)
-	conf, err := operator.NewFromClusterJSON(request.ClusterDefinition)
+	conf, err := config.NewFromClusterJSON(request.ClusterDefinition)
 	if err != nil {
 		return nil, err
 	}
@@ -112,28 +112,28 @@ func (w WALSrvImplementation) Restore(
 	}
 
 	var stanza *apipgbackrest.Stanza
-	var getStanzaRef func(*operator.PluginConfiguration) (*types.NamespacedName, error)
+	var getStanzaRef func(*config.PluginConfiguration) (*types.NamespacedName, error)
 	switch {
 
 	case promotionToken != "" && conf.Cluster.Status.LastPromotionToken != promotionToken:
-		getStanzaRef = func(pc *operator.PluginConfiguration) (*types.NamespacedName, error) {
+		getStanzaRef = func(pc *config.PluginConfiguration) (*types.NamespacedName, error) {
 			return pc.GetReplicaStanzaRef()
 		}
 
 	case conf.Cluster.IsReplica() && conf.Cluster.Status.CurrentPrimary == w.InstanceName:
-		getStanzaRef = func(pc *operator.PluginConfiguration) (*types.NamespacedName, error) {
+		getStanzaRef = func(pc *config.PluginConfiguration) (*types.NamespacedName, error) {
 			return pc.GetReplicaStanzaRef()
 		}
 
 	case conf.Cluster.Status.CurrentPrimary == "":
-		getStanzaRef = func(pc *operator.PluginConfiguration) (*types.NamespacedName, error) {
+		getStanzaRef = func(pc *config.PluginConfiguration) (*types.NamespacedName, error) {
 			return pc.GetRecoveryStanzaRef()
 		}
 	}
 	if getStanzaRef == nil {
 		return nil, fmt.Errorf("recovery not configured")
 	}
-	stanza, err = operator.GetStanza(
+	stanza, err = config.GetStanza(
 		ctx,
 		request,
 		w.Client,
@@ -142,7 +142,7 @@ func (w WALSrvImplementation) Restore(
 	if err != nil {
 		return nil, err
 	}
-	env, err := operator.GetEnvVarConfig(ctx, stanza, w.Client)
+	env, err := config.GetEnvVarConfig(ctx, stanza, w.Client)
 	if err != nil {
 		return nil, err
 	}

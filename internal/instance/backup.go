@@ -11,8 +11,8 @@ import (
 
 	"github.com/cloudnative-pg/cnpg-i/pkg/backup"
 	pgbackrestapi "github.com/dalibo/cnpg-i-pgbackrest/api/v1"
+	"github.com/dalibo/cnpg-i-pgbackrest/internal/config"
 	"github.com/dalibo/cnpg-i-pgbackrest/internal/metadata"
-	"github.com/dalibo/cnpg-i-pgbackrest/internal/operator"
 	"github.com/dalibo/cnpg-i-pgbackrest/internal/pgbackrest"
 	"k8s.io/client-go/util/retry"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -91,16 +91,16 @@ func (b BackupServiceImplementation) Backup(
 	request *backup.BackupRequest,
 ) (*backup.BackupResult, error) {
 	contextLogger := log.FromContext(ctx)
-	stanza, err := operator.GetStanza(
+	stanza, err := config.GetStanza(
 		ctx,
 		request,
 		b.Client,
-		(*operator.PluginConfiguration).GetStanzaRef,
+		(*config.PluginConfiguration).GetStanzaRef,
 	)
 	if err != nil {
 		return nil, err
 	}
-	env, err := operator.GetEnvVarConfig(ctx, stanza, b.Client)
+	env, err := config.GetEnvVarConfig(ctx, stanza, b.Client)
 	if err != nil {
 		contextLogger.Error(err, "can't get envvar")
 		return nil, err

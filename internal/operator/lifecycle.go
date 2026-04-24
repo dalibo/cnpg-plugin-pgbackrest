@@ -17,6 +17,7 @@ import (
 	"github.com/cloudnative-pg/cnpg-i/pkg/lifecycle"
 	"github.com/cloudnative-pg/machinery/pkg/log"
 	pluginv1 "github.com/dalibo/cnpg-i-pgbackrest/api/v1"
+	"github.com/dalibo/cnpg-i-pgbackrest/internal/config"
 	"github.com/dalibo/cnpg-i-pgbackrest/internal/metadata"
 	batchv1 "k8s.io/api/batch/v1"
 	corev1 "k8s.io/api/core/v1"
@@ -91,7 +92,7 @@ func (impl LifecycleImplementation) LifecycleHook(
 	if err := decoder.DecodeObjectLenient(request.GetClusterDefinition(), &cluster); err != nil {
 		return nil, err
 	}
-	pluginConfig, err := NewFromCluster(&cluster)
+	pluginConfig, err := config.NewFromCluster(&cluster)
 	if err != nil {
 		return nil, fmt.Errorf("can't parse user parameters: %w", err)
 	}
@@ -419,7 +420,7 @@ func getSpoolWALSize(
 
 func (impl LifecycleImplementation) injectWALVolume(
 	ctx context.Context,
-	pluginConfig *PluginConfiguration,
+	pluginConfig *config.PluginConfiguration,
 	pod *corev1.Pod,
 	cluster *cnpgv1.Cluster,
 ) error {
@@ -486,7 +487,7 @@ func (impl LifecycleImplementation) injectWALVolume(
 func (impl LifecycleImplementation) getSharedPluginConfig(
 	ctx context.Context,
 	pc *pluginv1.PluginConfig,
-	pluginConfig *PluginConfiguration,
+	pluginConfig *config.PluginConfiguration,
 ) error {
 	if pluginConfig.PluginConfigRef != "" {
 		// first retrieve shared plugin config
@@ -504,7 +505,7 @@ func (impl LifecycleImplementation) reconcilePod(
 	ctx context.Context,
 	cluster *cnpgv1.Cluster,
 	request *lifecycle.OperatorLifecycleRequest,
-	pluginConfig *PluginConfiguration,
+	pluginConfig *config.PluginConfiguration,
 ) (*lifecycle.OperatorLifecycleResponse, error) {
 
 	logger := log.FromContext(ctx).WithName("lifecycle")
@@ -558,7 +559,12 @@ func (impl LifecycleImplementation) reconcilePod(
 		// If a plugin configuration is defined and a stanza can be retrivied,
 		// inject the WAL volume only when async archiving is enabled and ProcessMax != 1.
 		if len(pluginConfig.PluginConfigRef) != 0 && len(pluginConfig.StanzaRef) != 0 {
-			stanza, err := GetStanza(ctx, request, impl.Client, (*PluginConfiguration).GetStanzaRef)
+			stanza, err := config.GetStanza(
+				ctx,
+				request,
+				impl.Client,
+				(*config.PluginConfiguration).GetStanzaRef,
+			)
 			if err == nil {
 				conf := stanza.Spec.Configuration
 				if conf.ProcessMax != 1 && conf.Archive.Async {

@@ -26,8 +26,8 @@ import (
 
 	"github.com/cloudnative-pg/cnpg-i/pkg/metrics"
 	"github.com/cloudnative-pg/machinery/pkg/log"
+	"github.com/dalibo/cnpg-i-pgbackrest/internal/config"
 	"github.com/dalibo/cnpg-i-pgbackrest/internal/metadata"
-	"github.com/dalibo/cnpg-i-pgbackrest/internal/operator"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
@@ -127,11 +127,11 @@ func (m metricsImpl) Collect(
 ) (*metrics.CollectMetricsResult, error) {
 	contextLogger := log.FromContext(ctx)
 	contextLogger.Debug("metrics collect call received")
-	stanza, err := operator.GetStanza(
+	stanza, err := config.GetStanza(
 		ctx,
 		req,
 		m.Client,
-		(*operator.PluginConfiguration).GetStanzaRef,
+		(*config.PluginConfiguration).GetStanzaRef,
 	)
 	if err != nil {
 		return nil, err
