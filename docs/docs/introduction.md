@@ -14,13 +14,16 @@ This is an experimental CloudNativePG operator plugin to backup PostgreSQL insta
 - WALs archiving (using pgBackRest async feature)
 - Taking and restoring backup
 - Point-in-Time Recovery
-- Creating secondary based on _Log Shipping_
+- Creating secondary based on *Log Shipping*
 
-This plugin is currently only compatible with `s3` storage and have been
-tested with :
+This plugin is currently only compatible with `s3` and Azure Blob
+storage and have been tested with :
 
 - [minIO](https://min.io)
 - [Scaleway Object Storage](https://www.scaleway.com/en/object-storage/)
+- [Azure Blob
+  Storage](https://azure.microsoft.com/en-us/products/storage/blobs)
+  (without Workload Identity)
 
 ## Dependencies
 

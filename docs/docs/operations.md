@@ -13,7 +13,7 @@ import ScheduleBackup from '!!raw-loader!../../examples/schedule_backup.yaml';
 
 # Operations
 
-## Create a Cluster with pgBackRest
+## Create a Cluster with pgBackRest S3 repository
 
 The `examples` directory contains several pre-configured manifests
 designed to work with [`kind`](https://kind.sigs.k8s.io/) (Eg: the pull
@@ -36,9 +36,14 @@ To use this plugin with a `Cluster`, CloudNativePG users must :
 
     :::note
 
-    The `s3Repositories` variable is a list. You can configure multiple
-    repositories. You can then select the repository to which your
-    backup will be performed. By default :
+    The `s3Repositories` variable is a list. For Azure Blob Storage
+    repositories, use the `azureRepositories` key instead. more
+    information about the Azure Blob Storage can be found in the
+    [configuration
+    references](configuration#supported-repositories-types-s3-and-azure).
+    Both storage types can be configured at the same time if needed. You
+    can then select the repository to which your backup will be
+    performed. By default:
 
     - the first repository is selected for backup ;
     - WAL archiving always occurs on all repositories.
