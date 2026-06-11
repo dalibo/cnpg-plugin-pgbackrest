@@ -317,7 +317,7 @@ func TestDeployInstance(t *testing.T) {
 
 		memoryLimit, ok := ic.Resources.Limits[corev1.ResourceMemory]
 		if !ok {
-			t.Fatalf("Memory limit not set on plugin-pgbackrest container")
+			t.Fatalf("Memory limit not set on %s container", ic.Name)
 		}
 		if memoryLimit.Cmp(wantMemoryLimit) != 0 {
 			t.Errorf(
