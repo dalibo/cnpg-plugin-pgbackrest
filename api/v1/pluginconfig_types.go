@@ -21,6 +21,10 @@ type ExporterConfig struct {
 	// +kubebuilder:default=600
 	// +required
 	CollectInterval uint `json:"collectInterval"`
+
+	// Defines resource requests and limits for the pgBackRest exporter sidecar containers.
+	// +optional
+	Resources *corev1.ResourceRequirements `json:"resourcesRequirement,omitempty"`
 }
 
 // ToArgs converts the ExporterConfig into command-line flags for the

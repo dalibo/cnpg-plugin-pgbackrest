@@ -305,7 +305,7 @@ func TestDeployInstance(t *testing.T) {
 
 		cpuLimit, ok := ic.Resources.Limits[corev1.ResourceCPU]
 		if !ok {
-			t.Fatalf("CPU limit not set on plugin-pgbackrest container")
+			t.Fatalf("CPU limit not set on %s container", ic.Name)
 		}
 		if cpuLimit.Cmp(wantCpuLimit) != 0 {
 			t.Errorf(
