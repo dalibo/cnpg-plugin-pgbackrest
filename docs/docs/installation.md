@@ -114,3 +114,14 @@ spec:
             - name: SIDECAR_EXPORTER_IMAGE
                value: <my_own_image>
 ```
+
+By default, the plugin installation creates a Secret containing the
+image references used by the sidecar containers (and the exporter
+sidecar, when enabled). The controller reads these values through the
+`SIDECAR_IMAGE` and `SIDECAR_EXPORTER_IMAGE`environment variables.
+
+This mechanism allows image references to be managed declaratively by
+the installation manifests while still providing a simple way to
+override them. Users can customize the images either by updating the
+Secret or by explicitly setting the corresponding environment variables
+on the plugin controller Deployment.
