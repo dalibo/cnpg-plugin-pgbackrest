@@ -9,6 +9,17 @@ sidebar_position: 2
 This plugin can be installed and used by Kubernetes and CloudNativePG
 users via the manifest located at the root of the repository.
 
+:::note
+
+Currently this plugin depends on:
+
+- [CloudNativePG](https://cloudnative-pg.io/) (version 1.27 or later).
+- [cert-manager](https://cert-manager.io/) to manage TLS certificates
+  and secure authentication between the Plugin controller and the
+  CloudNativePG controller.
+
+:::
+
 ``` console
 kubectl apply -f \
   https://raw.githubusercontent.com/dalibo/cnpg-plugin-pgbackrest/main/manifest.yaml
