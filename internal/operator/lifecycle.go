@@ -265,16 +265,6 @@ func envFromContainer(
 	return env
 }
 
-func (impl LifecycleImplementation) injectSharedPluginConfig(
-	pc *pluginv1.PluginConfig,
-	sidecar *corev1.Container,
-) {
-	// then apply resources limit
-	if pc.Spec.Resources != nil {
-		sidecar.Resources = *pc.Spec.Resources
-	}
-}
-
 func (impl LifecycleImplementation) requestPVC(
 	ctx context.Context,
 	stClass,
@@ -445,7 +435,9 @@ func (impl LifecycleImplementation) reconcilePod(
 		if err := impl.getSharedPluginConfig(ctx, pc, pluginConfig); err != nil {
 			return nil, err
 		}
-		impl.injectSharedPluginConfig(pc, &sidecar)
+		if pc.Spec.Resources != nil {
+			sidecar.Resources = *pc.Spec.Resources
+		}
 
 		// Reuse reconcilePodSpec to mutate PodSpec
 		reconcilePodSpec(cluster, &mutatedPod.Spec, "postgres", &sidecar, false)
@@ -455,19 +447,21 @@ func (impl LifecycleImplementation) reconcilePod(
 
 		// inject sidecar exporter if requested
 		if pc.Spec.ExporterConfig != nil {
-			sidecar_exporter := corev1.Container{Args: []string{"exporter"}}
-			sidecar_exporter.Name = "plugin-pgbackrest-exporter"
-			sidecar_exporter.Ports = []corev1.ContainerPort{
+			sidecarExporter := corev1.Container{Args: []string{"exporter"}}
+			sidecarExporter.Name = "plugin-pgbackrest-exporter"
+			sidecarExporter.Ports = []corev1.ContainerPort{
 				{
 					ContainerPort: 9854,
 					Protocol:      corev1.ProtocolTCP,
 				},
 			}
-			reconcilePodSpec(cluster, &mutatedPod.Spec, "postgres", &sidecar_exporter, true)
-			impl.injectSharedPluginConfig(pc, &sidecar_exporter)
+			reconcilePodSpec(cluster, &mutatedPod.Spec, "postgres", &sidecarExporter, true)
+			if pc.Spec.ExporterConfig.Resources != nil {
+				sidecarExporter.Resources = *pc.Spec.ExporterConfig.Resources
+			}
 			if err := object.InjectPluginInitContainerSidecarSpec(
 				&mutatedPod.Spec,
-				&sidecar_exporter,
+				&sidecarExporter,
 				true,
 			); err != nil {
 				return nil, err

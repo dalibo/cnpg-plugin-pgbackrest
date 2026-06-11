@@ -126,6 +126,12 @@ func NewPluginConfig(ns, name, cpu_limit, memory_limit string) *pgbackrestapi.Pl
 			ExporterConfig: &pgbackrestapi.ExporterConfig{
 				Enabled:         true,
 				CollectInterval: 60,
+				Resources: &corev1.ResourceRequirements{
+					Limits: corev1.ResourceList{
+						corev1.ResourceCPU:    resource.MustParse(cpu_limit),
+						corev1.ResourceMemory: resource.MustParse(memory_limit),
+					},
+				},
 			},
 		},
 	}
