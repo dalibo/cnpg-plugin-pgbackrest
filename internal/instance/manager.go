@@ -22,7 +22,6 @@ import (
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/log"
-	"sigs.k8s.io/controller-runtime/pkg/scheme"
 )
 
 // Start starts the sidecar informers and pgbackrest plugin
@@ -91,7 +90,8 @@ func Start(ctx context.Context) error {
 // the plugin to be used in every CNPG-based operator.
 func generateScheme(ctx context.Context) *runtime.Scheme {
 	result := runtime.NewScheme()
-	utilruntime.Must(apipgbackrest.AddToScheme(result))
+
+	apipgbackrest.AddKnownTypes(result)
 	utilruntime.Must(clientgoscheme.AddToScheme(result))
 
 	cnpgGroup := viper.GetString("custom-cnpg-group")
@@ -105,11 +105,15 @@ func generateScheme(ctx context.Context) *runtime.Scheme {
 
 	// Proceed with custom registration of the CNPG scheme
 	schemeGroupVersion := schema.GroupVersion{Group: cnpgGroup, Version: cnpgVersion}
-	schemeBuilder := &scheme.Builder{GroupVersion: schemeGroupVersion}
-	schemeBuilder.Register(&cnpgv1.Cluster{}, &cnpgv1.ClusterList{})
-	schemeBuilder.Register(&cnpgv1.Backup{}, &cnpgv1.BackupList{})
-	schemeBuilder.Register(&cnpgv1.ScheduledBackup{}, &cnpgv1.ScheduledBackupList{})
-	utilruntime.Must(schemeBuilder.AddToScheme(result))
+	result.AddKnownTypes(
+		schemeGroupVersion,
+		&cnpgv1.Cluster{},
+		&cnpgv1.ClusterList{},
+		&cnpgv1.Backup{},
+		&cnpgv1.BackupList{},
+		&cnpgv1.ScheduledBackup{},
+		&cnpgv1.ScheduledBackupList{},
+	)
 
 	schemeLog := log.FromContext(ctx)
 	schemeLog.Info("CNPG types registration", "schemeGroupVersion", schemeGroupVersion)

@@ -102,7 +102,3 @@ type PluginConfigList struct {
 	metav1.ListMeta `json:"metadata"`
 	Items           []PluginConfig `json:"items"`
 }
-
-func init() {
-	SchemeBuilder.Register(&PluginConfig{}, &PluginConfigList{})
-}
