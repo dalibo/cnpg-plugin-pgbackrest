@@ -30,7 +30,7 @@ import (
 var scheme = runtime.NewScheme()
 
 func init() {
-	utilruntime.Must(apipgbackrest.AddToScheme(scheme))
+	apipgbackrest.AddKnownTypes(scheme)
 	utilruntime.Must(clientgoscheme.AddToScheme(scheme))
 	utilruntime.Must(cnpgv1.AddToScheme(scheme))
 	// +kubebuilder:scaffold:scheme

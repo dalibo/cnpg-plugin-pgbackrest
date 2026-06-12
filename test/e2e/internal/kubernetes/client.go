@@ -23,7 +23,6 @@ import (
 	"k8s.io/apimachinery/pkg/util/intstr"
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/kubernetes"
-	"k8s.io/client-go/kubernetes/scheme"
 	"k8s.io/client-go/rest"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/config"
@@ -36,10 +35,16 @@ type K8sClient struct {
 	ClientSet *kubernetes.Clientset
 }
 
-func init() {
-	_ = certmanagerv1.AddToScheme(scheme.Scheme)
-	_ = cloudnativepgv1.AddToScheme(scheme.Scheme)
-	_ = apipgbackrest.AddToScheme(scheme.Scheme)
+func addScheme(c client.Client) error {
+	scheme := c.Scheme()
+	apipgbackrest.AddKnownTypes(scheme)
+	if err := certmanagerv1.AddToScheme(scheme); err != nil {
+		return err
+	}
+	if err := cloudnativepgv1.AddToScheme(scheme); err != nil {
+		return err
+	}
+	return nil
 }
 
 // Client helps to create a Kubernetes client
@@ -55,6 +60,9 @@ func Client() (*K8sClient, error) {
 	c, err := client.New(conf, client.Options{})
 	if err != nil {
 		return nil, fmt.Errorf("can't create k8s client %w", err)
+	}
+	if err := addScheme(c); err != nil {
+		return nil, err
 	}
 	return &K8sClient{client: c, ClientSet: clientset, Cfg: conf}, nil
 }

@@ -412,11 +412,7 @@ type Stanza struct {
 
 // StanzaList contains a list of Stanza
 type StanzaList struct {
-	metav1.TypeMeta `json:",inline"`
-	metav1.ListMeta `json:"metadata"`
+	metav1.TypeMeta `         json:",inline"`
+	metav1.ListMeta `         json:"metadata"`
 	Items           []Stanza `json:"items"`
-}
-
-func init() {
-	SchemeBuilder.Register(&Stanza{}, &StanzaList{})
 }

@@ -23,7 +23,7 @@ import (
 var scheme = runtime.NewScheme()
 
 func init() {
-	utilruntime.Must(pgbackrestapi.AddToScheme(scheme))
+	pgbackrestapi.AddKnownTypes(scheme)
 	utilruntime.Must(cnpgv1.AddToScheme(scheme))
 	utilruntime.Must(clientgoscheme.AddToScheme(scheme))
 }
