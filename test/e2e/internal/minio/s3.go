@@ -6,7 +6,6 @@ package minio
 import (
 	"github.com/cloudnative-pg/machinery/pkg/api"
 	pgbackrestapi "github.com/dalibo/cnpg-i-pgbackrest/api/v1"
-	"k8s.io/utils/ptr"
 )
 
 func NewS3Repositories(name string) []pgbackrestapi.S3Repository {
@@ -15,7 +14,7 @@ func NewS3Repositories(name string) []pgbackrestapi.S3Repository {
 			Bucket:    BUCKET_NAME,
 			Endpoint:  SVC_NAME,
 			Region:    "us-east-1",
-			VerifyTLS: ptr.To(false),
+			VerifyTLS: false,
 			UriStyle:  "path",
 			RepoPath:  "/repo01" + name,
 			RetentionPolicy: pgbackrestapi.Retention{
