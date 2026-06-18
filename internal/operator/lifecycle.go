@@ -332,49 +332,38 @@ func (impl LifecycleImplementation) injectWALVolume(
 	pod *corev1.Pod,
 	cluster *cnpgv1.Cluster,
 ) error {
-	pc := pluginv1.PluginConfig{}
-	k := types.NamespacedName{
-		Namespace: cluster.Namespace,
-		Name:      pluginConfig.PluginConfigRef,
-	}
-	if err := impl.Client.Get(ctx, k, &pc); err != nil {
+	// Retrieve the custom resource's plugin configuration
+	var pc pluginv1.PluginConfig
+	if err := impl.getSharedPluginConfig(ctx, &pc, pluginConfig); err != nil {
 		return err
 	}
 
-	volume := pod.Name + "-wal-vol"
-
-	stSize := getSpoolWALSize(cluster.Spec.WalStorage, pc.Spec.StorageConfig)
-
 	// search for sidecar container
-	var sidecar int
-	var found bool
+	sidecar := -1
 	for i, ic := range pod.Spec.InitContainers {
 		if ic.Name == SIDECAR_NAME {
 			sidecar = i
-			found = true
 			break
 		}
 	}
-	if !found {
-		return nil // TODO: throw an error
+	if sidecar == -1 {
+		return fmt.Errorf("sidecar container %q not found", SIDECAR_NAME)
 	}
-	// create a PVC based on plugin config
-	pvcName, err := impl.requestPVC(
-		ctx,
-		pc.Spec.StorageConfig.StorageClass,
-		stSize,
-		cluster,
-		pod,
-	)
+
+	// create a PVC based on plugin config (or WAL size with fallback to 1Gi if required)
+	stSize := getSpoolWALSize(cluster.Spec.WalStorage, pc.Spec.StorageConfig)
+	pvcName, err := impl.requestPVC(ctx, pc.Spec.StorageConfig.StorageClass, stSize, cluster, pod)
 	if err != nil {
 		return err
 	}
 
-	// Add volume to Pod spec (if not already present) and add mount information
+	// Inject the volume and volume mount into the Pod Spec
+	volName := fmt.Sprintf("%s-wal-vol", pod.Name)
+
 	pod.Spec.Volumes = utils.EnsureVolume(
 		pod.Spec.Volumes,
 		corev1.Volume{
-			Name: volume,
+			Name: volName,
 			VolumeSource: corev1.VolumeSource{
 				PersistentVolumeClaim: &corev1.PersistentVolumeClaimVolumeSource{
 					ClaimName: pvcName,
@@ -382,13 +371,15 @@ func (impl LifecycleImplementation) injectWALVolume(
 			},
 		},
 	)
+
 	pod.Spec.InitContainers[sidecar].VolumeMounts = utils.EnsureVolumeMount(
 		pod.Spec.InitContainers[sidecar].VolumeMounts,
 		corev1.VolumeMount{
-			Name:      volume,
+			Name:      volName,
 			MountPath: "/var/spool/pgbackrest",
 		},
 	)
+
 	return nil
 }
 
