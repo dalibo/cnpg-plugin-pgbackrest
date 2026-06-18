@@ -10,6 +10,7 @@ import ClusterRestored from '!!raw-loader!../../examples/cluster_restored.yaml';
 import ClusterRestoredBackupID from '!!raw-loader!../../examples/cluster_restored_backupid.yaml';
 import Backup from '!!raw-loader!../../examples/backup.yaml';
 import ScheduleBackup from '!!raw-loader!../../examples/schedule_backup.yaml';
+import StanzaAsync from '!!raw-loader!../../examples/stanza_async.yaml';
 
 # Operations
 
@@ -155,12 +156,25 @@ pgBackRest automatically choose the optimal backup using its standard
 algorithm. For more details, see the [pgBackRest restore
 documentation](https://pgbackrest.org/command.html#command-restore).
 
-## WAL Archiving
+## WAL Archiving customization and async mode
 
 WAL archiving can be customized through the `Stanza` CRD. It is possible
 to define the WAL archiving strategy (e.g. [using the `asynchronous`
 mode](https://pgbackrest.org/configuration.html#section-archive/option-archive-async))
 as well as configure the `pgbackrest` queue size.
+
+<CodeBlock language="yaml">{StanzaAsync}</CodeBlock>
+
+To configure asynchronous mode, users must explicitly enable it using
+the following two configuration options: archive.async: enables
+asynchronous WAL archiving mode (push/pull supported depending on
+configuration) processMax: defines the maximum number of parallel
+pgBackRest processes used for WAL processing
+
+When asynchronous mode is enabled, the plugin will automatically request
+a PersistentVolumeClaim (PVC) to let pgBackRest store spool data. This
+PVC is used for transient WAL data buffering and is managed specifically
+for asynchronous processing workloads.
 
 ## Stanza Consideration
 
