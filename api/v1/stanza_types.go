@@ -89,7 +89,7 @@ type Retention struct {
 	// +kubebuilder:validation:Maximum=9999999
 	// +kubebuilder:validation:Minimum=1
 	// +optional
-	Archive int32 `json:"archive,omitempty" env:"ARCHIVE"`
+	Archive int32 `json:"archive,omitempty,omitzero" env:"ARCHIVE"`
 
 	// Backup type for WAL retention.
 	// It is recommended that this setting not be changed from the default which
@@ -97,7 +97,7 @@ type Retention struct {
 	// Available options are `full` (default), `diff` or `incr`.
 	// +kubebuilder:validation:Enum=full;diff;incr
 	// +optional
-	ArchiveType string `json:"archiveType,omitempty" env:"ARCHIVE_TYPE"`
+	ArchiveType string `json:"archiveType,omitempty,omitzero" env:"ARCHIVE_TYPE"`
 
 	// Full backup retention count/time (in days)
 	// When a full backup expires, all differential and incremental backups associated
@@ -105,7 +105,7 @@ type Retention struct {
 	// +kubebuilder:validation:Maximum=9999999
 	// +kubebuilder:validation:Minimum=1
 	// +optional
-	Full int32 `json:"full,omitempty" env:"FULL"`
+	Full int32 `json:"full,omitempty,omitzero" env:"FULL"`
 
 	// Retention type for full backups.
 	//  Determines whether the repo-retention-full setting represents a time period
@@ -113,7 +113,7 @@ type Retention struct {
 	// Available options are `count` (default) and `time`.
 	// +kubebuilder:validation:Enum=count;time
 	// +optional
-	FullType string `json:"fullType,omitempty" env:"FULL_TYPE"`
+	FullType string `json:"fullType,omitempty,omitzero" env:"FULL_TYPE"`
 
 	// Number of differential backups to retain.
 	// When a differential backup expires, all incremental backups associated
@@ -122,7 +122,7 @@ type Retention struct {
 	// +kubebuilder:validation:Maximum=9999999
 	// +kubebuilder:validation:Minimum=1
 	// +optional
-	Diff int32 `json:"diff,omitempty" env:"DIFF"`
+	Diff int32 `json:"diff,omitempty,omitzero" env:"DIFF"`
 
 	// Days of backup history manifests to retain.
 	// Set history to define the number of days of backup history manifests to
@@ -134,7 +134,7 @@ type Retention struct {
 	// +kubebuilder:validation:Maximum=9999999
 	// +kubebuilder:validation:Minimum=0
 	// +optional
-	History int32 `json:"history,omitempty" ENV:"HISTORY"`
+	History int32 `json:"history,omitempty,omitzero" ENV:"HISTORY"`
 }
 
 // S3SecretRef defines a reference to a Kubernetes Secret
@@ -156,7 +156,7 @@ type CipherConfig struct {
 	// +kubebuilder:validation:Enum="aes-256-cbc"
 	// +kubebuilder:default="aes-256-cbc"
 	// +optional
-	Type string `json:"type,omitempty" env:"TYPE"`
+	Type string `json:"type,omitempty,omitzero" env:"TYPE"`
 }
 
 type S3Repository struct {
@@ -317,11 +317,11 @@ type StanzaConfiguration struct {
 	// +kubebuilder:validation:Enum=error;warn;info;detail;debug;trace
 	// +kubebuilder:default=warn
 	// +optional
-	LogLevel string `json:"logLevel,omitempty" env:"LOG_LEVEL_CONSOLE"`
+	LogLevel string `json:"logLevel,omitempty,omitzero" env:"LOG_LEVEL_CONSOLE"`
 
 	// Custom environnement variables to use when running pgbackrest.
 	// +optional
-	CustomEnvVar map[string]string `json:"customEnvVar,omitempty"`
+	CustomEnvVar map[string]string `json:"customEnvVar,omitempty,omitzero"`
 }
 
 func (r *StanzaConfiguration) ToEnv() ([]string, error) {
