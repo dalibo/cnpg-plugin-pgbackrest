@@ -178,9 +178,8 @@ type S3Repository struct {
 	UriStyle string `json:"uriStyle" env:"_S3_URI_STYLE"`
 
 	// Repository storage certificate verify.
-	// +kubebuilder:default=true
 	// +optional
-	VerifyTLS *bool `json:"verifyTLS" env:"_S3_VERIFY_TLS"`
+	VerifyTLS bool `json:"verifyTLS,omitempty,omitzero" env:"_S3_VERIFY_TLS"`
 
 	// Reference to a Kubernetes Secret containing S3 credentials.
 	// +optional
@@ -234,7 +233,6 @@ type AzureRepository struct {
 	UriStyle string `json:"uriStyle" env:"_AZURE_URI_STYLE"`
 
 	// Repository storage certificate verify.
-	// +kubebuilder:default=true
 	// +optional
 	VerifyTLS *bool `json:"verifyTLS" env:"_STORAGE_VERIFY_TLS"`
 
@@ -247,9 +245,8 @@ type AzureRepository struct {
 }
 type ArchiveOption struct {
 
-	// +kubebuilder:default=false
 	// +optional
-	Async bool `json:"async" env:"_ASYNC"`
+	Async bool `json:"async,omitempty,omitzero" env:"_ASYNC"`
 
 	// +kubebuilder:validation:Pattern:="^(0B|[0-9]+(KiB|MiB|GiB|TiB)|([0-4])PiB)$"
 	// +optional
@@ -265,9 +262,8 @@ type CompressConfig struct {
 
 	// Type of compression to use.
 	// +kubebuilder:validation:Enum=bz2;gz;lz4;zst
-	// +kubebuilder:default=gz
 	// +optional
-	Type *string `json:"type" env:"_TYPE"`
+	Type *string `json:"type,omitempty,omitzero" env:"_TYPE"`
 
 	// File compression level.
 	// +optional
@@ -287,8 +283,7 @@ type StanzaConfiguration struct {
 	Name string `json:"name" env:"STANZA"`
 
 	// +optional
-	// +kubebuilder:default=1
-	ProcessMax uint `json:"processMax" env:"PROCESS_MAX"`
+	ProcessMax uint `json:"processMax,omitempty,omitzero" env:"PROCESS_MAX"`
 
 	// +optional
 	Archive ArchiveOption `json:"archive" nestedEnvPrefix:"ARCHIVE"`
@@ -303,9 +298,8 @@ type StanzaConfiguration struct {
 	// function) so the backup begins immediately. Otherwise the backup will start
 	// after the next regular checkpoint.
 	//
-	// +kubebuilder:default=true
 	// +optional
-	StartFast bool `json:"startFast" env:"START_FAST"`
+	StartFast bool `json:"startFast,omitempty,omitzero" env:"START_FAST"`
 
 	// Restore or backup using checksums.
 	// During a restore, by default the PostgreSQL data and tablespace directories
@@ -315,9 +309,8 @@ type StanzaConfiguration struct {
 	// During a backup, this option will use checksums instead of the timestamps to
 	// determine if files will be copied.
 	//
-	// +kubebuilder:default=true
 	// +optional
-	Delta bool `json:"delta" env:"DELTA"`
+	Delta bool `json:"delta,omitempty,omitzero" env:"DELTA"`
 
 	// Level for console logging.
 	//
