@@ -399,6 +399,54 @@ func (impl LifecycleImplementation) getSharedPluginConfig(
 	return nil
 }
 
+func createPatch(
+	logger log.Logger,
+	original, mutated *corev1.Pod,
+) (*lifecycle.OperatorLifecycleResponse, error) {
+	patch, err := object.CreatePatch(mutated, original)
+	if err != nil {
+		return nil, err
+	}
+
+	logger.Info("patched object", "patch", string(patch))
+	return &lifecycle.OperatorLifecycleResponse{
+		JsonPatch: patch,
+	}, nil
+}
+
+func (impl LifecycleImplementation) reconcileWALVolume(
+	ctx context.Context,
+	cluster *cnpgv1.Cluster,
+	request *lifecycle.OperatorLifecycleRequest,
+	pluginConfig *config.PluginConfiguration,
+	mutated *corev1.Pod,
+) error {
+	// If a plugin configuration is defined and a stanza can be retrieved,
+	// inject the WAL volume only when async archiving is enabled and ProcessMax != 1.
+	if pluginConfig.PluginConfigRef == "" || pluginConfig.StanzaRef == "" {
+		return nil
+	}
+
+	stanza, err := config.GetStanza(
+		ctx,
+		request,
+		impl.Client,
+		(*config.PluginConfiguration).GetStanzaRef,
+	)
+	if err != nil {
+		return err
+	}
+
+	conf := stanza.Spec.Configuration
+	if conf.ProcessMax != 1 && conf.Archive.Async {
+		if err := impl.injectWALVolume(ctx, pluginConfig, mutated, cluster); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
 // reconcilePod handles lifecycle reconciliation and injects the sidecar
 func (impl LifecycleImplementation) reconcilePod(
 	ctx context.Context,
@@ -411,81 +459,60 @@ func (impl LifecycleImplementation) reconcilePod(
 
 	// Decode pod
 	pod, err := decoder.DecodePodJSON(request.GetObjectDefinition())
+	if err != nil {
+		return nil, err
+	}
 	logger.Info("reconciling pod", "pod name", pod.Name)
-	if err != nil {
+
+	if pluginConfig.StanzaRef == "" && pluginConfig.ReplicaStanzaRef == "" {
+		return createPatch(logger, pod, pod)
+	}
+
+	var pc pluginv1.PluginConfig
+	if err := impl.getSharedPluginConfig(ctx, &pc, pluginConfig); err != nil {
 		return nil, err
 	}
+
+	// Build the container config using envVars from caller
+	sidecar := corev1.Container{Args: []string{"instance"}}
+	sidecar.Name = "plugin-pgbackrest"
+	if pc.Spec.Resources != nil {
+		sidecar.Resources = *pc.Spec.Resources
+	}
+
 	mutatedPod := pod.DeepCopy()
-
-	if len(pluginConfig.StanzaRef) != 0 || len(pluginConfig.ReplicaStanzaRef) != 0 {
-		// Build the container config using envVars from caller
-		sidecar := corev1.Container{Args: []string{"instance"}}
-		sidecar.Name = "plugin-pgbackrest"
-
-		pc := &pluginv1.PluginConfig{}
-		if err := impl.getSharedPluginConfig(ctx, pc, pluginConfig); err != nil {
-			return nil, err
-		}
-		if pc.Spec.Resources != nil {
-			sidecar.Resources = *pc.Spec.Resources
-		}
-
-		// Reuse reconcilePodSpec to mutate PodSpec
-		reconcilePodSpec(cluster, &mutatedPod.Spec, "postgres", &sidecar, false)
-		if err := object.InjectPluginInitContainerSidecarSpec(&mutatedPod.Spec, &sidecar, true); err != nil {
-			return nil, err
-		}
-
-		// inject sidecar exporter if requested
-		if pc.Spec.ExporterConfig != nil {
-			sidecarExporter := corev1.Container{Args: []string{"exporter"}}
-			sidecarExporter.Name = "plugin-pgbackrest-exporter"
-			sidecarExporter.Ports = []corev1.ContainerPort{
-				{
-					ContainerPort: 9854,
-					Protocol:      corev1.ProtocolTCP,
-				},
-			}
-			reconcilePodSpec(cluster, &mutatedPod.Spec, "postgres", &sidecarExporter, true)
-			if pc.Spec.ExporterConfig.Resources != nil {
-				sidecarExporter.Resources = *pc.Spec.ExporterConfig.Resources
-			}
-			if err := object.InjectPluginInitContainerSidecarSpec(
-				&mutatedPod.Spec,
-				&sidecarExporter,
-				true,
-			); err != nil {
-				return nil, err
-			}
-		}
-
-		// If a plugin configuration is defined and a stanza can be retrivied,
-		// inject the WAL volume only when async archiving is enabled and ProcessMax != 1.
-		if len(pluginConfig.PluginConfigRef) != 0 && len(pluginConfig.StanzaRef) != 0 {
-			stanza, err := config.GetStanza(
-				ctx,
-				request,
-				impl.Client,
-				(*config.PluginConfiguration).GetStanzaRef,
-			)
-			if err == nil {
-				conf := stanza.Spec.Configuration
-				if conf.ProcessMax != 1 && conf.Archive.Async {
-					if err := impl.injectWALVolume(ctx, pluginConfig, mutatedPod, cluster); err != nil {
-						return nil, err
-					}
-				}
-			}
-		}
-
-	}
-
-	// Create JSON patch
-	patch, err := object.CreatePatch(mutatedPod, pod)
-	if err != nil {
+	// Reuse reconcilePodSpec to mutate PodSpec
+	reconcilePodSpec(cluster, &mutatedPod.Spec, "postgres", &sidecar, false)
+	if err := object.InjectPluginInitContainerSidecarSpec(&mutatedPod.Spec, &sidecar, true); err != nil {
 		return nil, err
 	}
 
-	logger.Info("patched object", "patch", string(patch))
-	return &lifecycle.OperatorLifecycleResponse{JsonPatch: patch}, nil
+	// inject sidecar exporter if requested
+	if pc.Spec.ExporterConfig != nil {
+		sidecarExporter := corev1.Container{Args: []string{"exporter"}}
+		sidecarExporter.Name = "plugin-pgbackrest-exporter"
+		sidecarExporter.Ports = []corev1.ContainerPort{
+			{
+				ContainerPort: 9854,
+				Protocol:      corev1.ProtocolTCP,
+			},
+		}
+		reconcilePodSpec(cluster, &mutatedPod.Spec, "postgres", &sidecarExporter, true)
+		if pc.Spec.ExporterConfig.Resources != nil {
+			sidecarExporter.Resources = *pc.Spec.ExporterConfig.Resources
+		}
+		if err := object.InjectPluginInitContainerSidecarSpec(
+			&mutatedPod.Spec,
+			&sidecarExporter,
+			true,
+		); err != nil {
+			return nil, err
+		}
+	}
+
+	if err := impl.reconcileWALVolume(ctx, cluster, request, pluginConfig, mutatedPod); err != nil {
+		return nil, err
+	}
+
+	return createPatch(logger, pod, mutatedPod)
 }
