@@ -65,7 +65,7 @@ To use this plugin with a `Cluster`, CloudNativePG users must:
     can then select the repository to which your backup will be
     performed. By default:
 
-    - the first repository is selected for backup ;
+    - the first repository is selected for backup;
     - WAL archiving always occurs on all repositories.
 
     :::
