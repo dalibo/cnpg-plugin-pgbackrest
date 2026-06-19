@@ -93,7 +93,7 @@ There are two ways to backup a PostgreSQL Cluster with this plugin
 through the CloudNativePG operator:
 
 - One shot backup, equivalent to running it by hand but through a
-  `Backup` object definition ;
+  `Backup` object definition;
 - With `Scheduled Backup` object, equivalent to defining a crontab entry
   to run a backup periodically.
 
