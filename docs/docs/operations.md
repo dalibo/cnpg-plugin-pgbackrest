@@ -14,6 +14,25 @@ import StanzaAsync from '!!raw-loader!../../examples/stanza_async.yaml';
 
 # Operations
 
+This page provides a guide on how to configure and manage your
+PostgreSQL clusters using the pgBackRest CNPG plugin.
+
+It covers essential administrative basic tasks, including creating a
+cluster with a `S3` repository, performing on-demand or scheduled
+backups, restoring, and customizing WAL archiving for asynchronous
+performance.
+
+:::note
+
+To follow the instructions here, users need an up and running Kubernetes
+cluster, kubectl command-line, and probably a text editor to modify YAML
+configuration files.
+
+To keep the documentation clear and consistent, all the examples below
+reference a CNPG cluster named cluster-sample.
+
+:::
+
 ## Create a Cluster with pgBackRest S3 repository
 
 The `examples` directory contains several pre-configured manifests
@@ -21,7 +40,7 @@ designed to work with [`kind`](https://kind.sigs.k8s.io/) (Eg: the pull
 policy is set to `Never`). These files may require modifications to run
 on other types of Kubernetes clusters.
 
-To use this plugin with a `Cluster`, CloudNativePG users must :
+To use this plugin with a `Cluster`, CloudNativePG users must:
 
 1.  Create a `Secret` named `pgbackrest-s3-secret` in the namespace of
     the PostgreSQL `Cluster`. This secret must contain the `key` and
@@ -51,7 +70,7 @@ To use this plugin with a `Cluster`, CloudNativePG users must :
 
     :::
 
-3.  Create the PostgreSQL `Cluster` and adapt the manifest by :
+3.  Create the PostgreSQL `Cluster` and adapt the manifest by:
 
     - adding the plugin definition `pgbackrest.dalibo.com` under the
       `plugins` entry;
@@ -71,7 +90,7 @@ backup request is made.
 ## Backup a Cluster
 
 There are two ways to backup a PostgreSQL Cluster with this plugin
-through the CloudNativePG operator :
+through the CloudNativePG operator:
 
 - One shot backup, equivalent to running it by hand but through a
   `Backup` object definition ;
@@ -79,13 +98,13 @@ through the CloudNativePG operator :
   to run a backup periodically.
 
 Whatever the kind of backup, users can list and see them with the
-appropriate `kubectl` command :
+appropriate `kubectl` command:
 
 ``` console
 kubectl get backups.postgresql.cnpg.io
 ```
 
-### On-demand backups
+### On-demand backup
 
 Backup can be requested through a `Backup` object, using the default
 CloudNativePG CRD `Backup` definition. The pgbackrest plugin can be
@@ -99,7 +118,7 @@ plugin:
 <CodeBlock language="yaml">{Backup}</CodeBlock>
 
 It's also possible to use the `cnpg` plugin for `kubectl` to perform
-your backup :
+your backup:
 
 ``` console
 kubectl cnpg backup cluster-sample -m plugin --plugin-name pgbackrest.dalibo.com
@@ -137,7 +156,7 @@ pgBackRest plugin:
 
 <CodeBlock language="yaml">{ScheduleBackup}</CodeBlock>
 
-## Restoring a Cluster
+## Restore a Cluster
 
 To restore a `Cluster` from a backup, create a new `Cluster` that
 references the `Stanza` containing the backup. Below is an example:
