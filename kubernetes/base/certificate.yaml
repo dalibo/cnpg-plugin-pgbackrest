@@ -11,7 +11,7 @@ spec:
   issuerRef:
     group: cert-manager.io
     kind: Issuer
-    name: selfsigned-issuer
+    name: pgbackrest-selfsigned-issuer
   renewBefore: 360h
   secretName: pgbackrest-controller-client-tls
   usages:
@@ -31,7 +31,7 @@ spec:
   issuerRef:
     group: cert-manager.io
     kind: Issuer
-    name: selfsigned-issuer
+    name: pgbackrest-selfsigned-issuer
   renewBefore: 360h
   secretName: pgbackrest-controller-server-tls
   usages:
@@ -40,7 +40,7 @@ spec:
 apiVersion: cert-manager.io/v1
 kind: Issuer
 metadata:
-  name: selfsigned-issuer
+  name: pgbackrest-selfsigned-issuer
   namespace: cnpg-system
 spec:
   selfSigned: {}
