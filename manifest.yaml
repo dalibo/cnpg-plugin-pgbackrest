@@ -253,7 +253,6 @@ spec:
                   archive:
                     properties:
                       async:
-                        default: false
                         type: boolean
                       getQueueMax:
                         pattern: ^[0-9]+ ?(B|KiB|MiB|GiB|TiB|PiB)$
@@ -381,7 +380,6 @@ spec:
                           - path
                           type: string
                         verifyTLS:
-                          default: true
                           description: Repository storage certificate verify.
                           type: boolean
                       required:
@@ -397,7 +395,6 @@ spec:
                         description: File compression level.
                         type: integer
                       type:
-                        default: gz
                         description: Type of compression to use.
                         enum:
                         - bz2
@@ -413,7 +410,6 @@ spec:
                       pgbackrest.
                     type: object
                   delta:
-                    default: true
                     description: |-
                       Restore or backup using checksums.
                       During a restore, by default the PostgreSQL data and tablespace directories
@@ -438,7 +434,6 @@ spec:
                     minLength: 1
                     type: string
                   processMax:
-                    default: 1
                     type: integer
                   s3Repositories:
                     items:
@@ -587,7 +582,6 @@ spec:
                           - path
                           type: string
                         verifyTLS:
-                          default: true
                           description: Repository storage certificate verify.
                           type: boolean
                       required:
@@ -598,7 +592,6 @@ spec:
                       type: object
                     type: array
                   startFast:
-                    default: true
                     description: |-
                       Default behavior to Force a checkpoint to start backup quickly.
 
@@ -1094,13 +1087,13 @@ apiVersion: v1
 data:
   SIDECAR_EXPORTER_IMAGE: |
     cmVnaXN0cnkuaHViLmRvY2tlci5jb20vZGFsaWJvL2NucGctcGdiYWNrcmVzdC1zaWRlY2
-    FyLWV4cG9ydGVyOjAuMC4y
+    FyLWV4cG9ydGVyOjAuMC4z
   SIDECAR_IMAGE: |
     cmVnaXN0cnkuaHViLmRvY2tlci5jb20vZGFsaWJvL2NucGctcGdiYWNrcmVzdC1zaWRlY2
-    FyOjAuMC4y
+    FyOjAuMC4z
 kind: Secret
 metadata:
-  name: plugin-pgbackrest-t97787c98t
+  name: plugin-pgbackrest-df48cbmd95
   namespace: cnpg-system
 type: Opaque
 ---
@@ -1156,12 +1149,12 @@ spec:
           valueFrom:
             secretKeyRef:
               key: SIDECAR_IMAGE
-              name: plugin-pgbackrest-t97787c98t
+              name: plugin-pgbackrest-df48cbmd95
         - name: SIDECAR_EXPORTER_IMAGE
           valueFrom:
             secretKeyRef:
               key: SIDECAR_EXPORTER_IMAGE
-              name: plugin-pgbackrest-t97787c98t
+              name: plugin-pgbackrest-df48cbmd95
         image: registry.hub.docker.com/dalibo/cnpg-pgbackrest-controller:0.0.2
         name: pgbackrest-controller
         ports:
