@@ -12,7 +12,7 @@ const PluginName = "pgbackrest.dalibo.com"
 // Data is the metadata of this plugin
 var Data = identity.GetPluginMetadataResponse{
 	Name:          PluginName,
-	Version:       "0.0.2",
+	Version:       "0.0.3",
 	DisplayName:   "pgBackRest demo / experimental plugin",
 	ProjectUrl:    "https://github.com/dalibo/cnpg-i-pgbackrest",
 	RepositoryUrl: "https://github.com/dalibo/cnpg-i-pgbackrest",
