@@ -31,7 +31,7 @@ step-by-step guide to upgrading it:
 - Finally, you can verify that your Clusters and Pods are using the
   image of the newly requested version.
 
-  For example, you can check the sidecar container images used the first
+  For example, you can check the sidecar container images used by the first
   Pod (`cluster-sample-1`) of the `cluster-sample` Cluster by running:
 
   ``` console
