@@ -1155,7 +1155,7 @@ spec:
             secretKeyRef:
               key: SIDECAR_EXPORTER_IMAGE
               name: plugin-pgbackrest-df48cbmd95
-        image: registry.hub.docker.com/dalibo/cnpg-pgbackrest-controller:0.0.2
+        image: registry.hub.docker.com/dalibo/cnpg-pgbackrest-controller:0.0.3
         name: pgbackrest-controller
         ports:
         - containerPort: 9090
