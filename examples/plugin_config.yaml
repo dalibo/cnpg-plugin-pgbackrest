@@ -16,3 +16,10 @@ spec:
     storageClass: sample-storageclass
   exporterConfig:
     enabled: true
+    resourcesRequirement:
+      requests:
+        cpu: 300m
+        memory: 128Mi
+      limits:
+        cpu: 500m
+        memory: 512Mi
