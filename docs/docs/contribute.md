@@ -185,3 +185,51 @@ The `reuse` tool can be used to add it automatically ;
 ```
 reuse annotate -copyright="Dalibo" --year=2026 --license="Apache-2.0" <PATH>
 ```
+
+## Release
+
+- Verify that the CRD and auto-generated code are up-to-date:
+
+  ``` console
+  make generate manifests
+  ```
+
+- Update the image labels (to use the new version) in the following
+  files:
+
+  - `kubernetes/prod/deployment-image-patch.yaml`
+  - `kubernetes/prod/kustomization.yaml`
+
+- Generate the installation `manifest.yaml` file using this command:
+
+  ``` console
+  cd kubernetes/prod && kustomize build > ../../manifest.yaml && cd -
+  ```
+
+- Create a branch for the release and commit your changes:
+
+  ``` console
+  git checkout -B release/prepare-v1.x.x
+  git add -p .
+  git commit -s -m "prepare v1.x.x"
+  git push upstream release/prepare-v1.x.x
+  ```
+
+- Create a merge request for the branch and ask someone to review it.
+
+- After the merge request has been reviewed and merged, switch back to
+  the main branch and pull the latest changes:
+
+  ``` console
+  git checkout main
+  git pull upstream
+  ```
+
+- Finally, create the `v1.x.x` tag and push it to `upstream`:
+
+  ``` console
+  git tag v1.x.x -a -s
+  git push upstream v1.x.x
+  ```
+
+- After that you should find the new images available on DockerHub.
