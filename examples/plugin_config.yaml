@@ -7,11 +7,11 @@ metadata:
 spec:
   resourcesRequirement:
     requests:
-      cpu: "300m"
-      memory: "128Mi"
+      cpu: 300m
+      memory: 128Mi
     limits:
-      cpu: "500m"
-      memory: "512Mi"
+      cpu: 500m
+      memory: 512Mi
   storageConfig:
-    storageClass: "sample-storageclass"
+    storageClass: sample-storageclass
   injectExporter: true
