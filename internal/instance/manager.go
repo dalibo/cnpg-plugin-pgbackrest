@@ -14,6 +14,7 @@ import (
 	cnpgv1 "github.com/cloudnative-pg/cloudnative-pg/api/v1"
 	"github.com/spf13/viper"
 	corev1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/types"
@@ -117,6 +118,8 @@ func generateScheme(ctx context.Context) *runtime.Scheme {
 
 	schemeLog := log.FromContext(ctx)
 	schemeLog.Info("CNPG types registration", "schemeGroupVersion", schemeGroupVersion)
+
+	metav1.AddToGroupVersion(result, schemeGroupVersion)
 
 	return result
 }
