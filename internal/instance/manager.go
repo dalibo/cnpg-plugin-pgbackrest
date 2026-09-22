@@ -14,9 +14,7 @@ import (
 	cnpgv1 "github.com/cloudnative-pg/cloudnative-pg/api/v1"
 	"github.com/spf13/viper"
 	corev1 "k8s.io/api/core/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
-	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/types"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	clientgoscheme "k8s.io/client-go/kubernetes/scheme"
@@ -94,32 +92,10 @@ func generateScheme(ctx context.Context) *runtime.Scheme {
 
 	apipgbackrest.AddKnownTypes(result)
 	utilruntime.Must(clientgoscheme.AddToScheme(result))
-
-	cnpgGroup := viper.GetString("custom-cnpg-group")
-	cnpgVersion := viper.GetString("custom-cnpg-version")
-	if len(cnpgGroup) == 0 {
-		cnpgGroup = cnpgv1.SchemeGroupVersion.Group
-	}
-	if len(cnpgVersion) == 0 {
-		cnpgVersion = cnpgv1.SchemeGroupVersion.Version
-	}
-
-	// Proceed with custom registration of the CNPG scheme
-	schemeGroupVersion := schema.GroupVersion{Group: cnpgGroup, Version: cnpgVersion}
-	result.AddKnownTypes(
-		schemeGroupVersion,
-		&cnpgv1.Cluster{},
-		&cnpgv1.ClusterList{},
-		&cnpgv1.Backup{},
-		&cnpgv1.BackupList{},
-		&cnpgv1.ScheduledBackup{},
-		&cnpgv1.ScheduledBackupList{},
-	)
+	utilruntime.Must(cnpgv1.AddToScheme(result))
 
 	schemeLog := log.FromContext(ctx)
-	schemeLog.Info("CNPG types registration", "schemeGroupVersion", schemeGroupVersion)
-
-	metav1.AddToGroupVersion(result, schemeGroupVersion)
+	schemeLog.Info("CNPG types registration", "schemeGroupVersion", cnpgv1.SchemeGroupVersion)
 
 	return result
 }
