@@ -7,9 +7,9 @@ spec:
   stanzaConfiguration:
     name: main
     s3Repositories:
-      - bucket: bucket-01
-        endpoint: https://172.18.0.2:9000
-        region: fr-par
+      - bucket: pgbackrest-bucket
+        endpoint: http://10.96.57.153:3900
+        region: garage
         repoPath: /repo-01
         uriStyle: path
         verifyTLS: false
