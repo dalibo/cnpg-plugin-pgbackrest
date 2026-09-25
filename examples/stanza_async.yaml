@@ -25,8 +25,8 @@ spec:
           history: 30
         secretRef:
           accessKeyId:
-            name: minio
+            name: garage
             key: ACCESS_KEY_ID
           secretAccessKey:
-            name: minio
+            name: garage
             key: ACCESS_SECRET_KEY
