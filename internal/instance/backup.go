@@ -117,7 +117,7 @@ func (b BackupServiceImplementation) Backup(
 	contextLogger.Info("using repo", "repo", repoDestEnv)
 	backupType := request.Parameters["backupType"]
 	contextLogger.Info("Starting backup", "type", backupType)
-	pgb := pgbackrest.NewPgBackrest(env)
+	pgb := pgbackrest.NewPgBackrest(env, &stanza.Spec.Configuration)
 	if err := pgb.Backup(backupType); err != nil {
 		contextLogger.Error(err, "can't backup")
 		return nil, err

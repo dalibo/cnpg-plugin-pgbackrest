@@ -282,8 +282,36 @@ type StanzaConfiguration struct {
 	// +kubebuilder:validation:MinLength=1
 	Name string `json:"name" env:"STANZA"`
 
+	// Maximum number of parallel processes used by pgBackRest.
+	//
+	// This value acts as the global fallback when no action-specific process max
+	// is defined.
 	// +optional
 	ProcessMax uint `json:"processMax,omitempty,omitzero" env:"PROCESS_MAX"`
+
+	// Maximum number of parallel processes used for backup commands.
+	//
+	// When unset, the global ProcessMax value is used.
+	// +optional
+	BackupProcessMax uint `json:"backupProcessMax,omitempty,omitzero"`
+
+	// Maximum number of parallel processes used for restore commands.
+	//
+	// When unset, the global ProcessMax value is used.
+	// +optional
+	RestoreProcessMax uint `json:"restoreProcessMax,omitempty,omitzero"`
+
+	// Maximum number of parallel processes used for archive-push commands.
+	//
+	// When unset, the global ProcessMax value is used.
+	// +optional
+	ArchivePushProcessMax uint `json:"archivePushProcessMax,omitempty,omitzero"`
+
+	// Maximum number of parallel processes used for archive-get commands.
+	//
+	// When unset, the global ProcessMax value is used.
+	// +optional
+	ArchiveGetProcessMax uint `json:"archiveGetProcessMax,omitempty,omitzero"`
 
 	// +optional
 	Archive ArchiveOption `json:"archive" nestedEnvPrefix:"ARCHIVE"`
@@ -350,6 +378,29 @@ func (r *StanzaConfiguration) ToEnv() ([]string, error) {
 // StanzaSpec defines the desired state of Stanza
 type StanzaSpec struct {
 	Configuration StanzaConfiguration `json:"stanzaConfiguration"`
+}
+
+func (r StanzaConfiguration) EffectiveProcessMax(command string) uint {
+	switch command {
+	case "backup":
+		if r.BackupProcessMax != 0 {
+			return r.BackupProcessMax
+		}
+	case "restore":
+		if r.RestoreProcessMax != 0 {
+			return r.RestoreProcessMax
+		}
+	case "archive-push":
+		if r.ArchivePushProcessMax != 0 {
+			return r.ArchivePushProcessMax
+		}
+	case "archive-get":
+		if r.ArchiveGetProcessMax != 0 {
+			return r.ArchiveGetProcessMax
+		}
+	}
+
+	return r.ProcessMax
 }
 
 // StanzaStatus defines the observed state of Stanza.

@@ -13,6 +13,7 @@ import (
 	"io"
 	"os"
 	"os/exec"
+	"strings"
 	"sync"
 
 	pgbackrestapi "github.com/dalibo/cnpg-i-pgbackrest/api/v1"
@@ -80,9 +81,10 @@ type baseRunner struct {
 
 type PgBackrestRunner struct {
 	baseRunner
+	stanzaConfiguration *pgbackrestapi.StanzaConfiguration
 }
 
-func NewPgBackrest(env []string) *PgBackrestRunner {
+func NewPgBackrest(env []string, conf *pgbackrestapi.StanzaConfiguration) *PgBackrestRunner {
 	command := "pgbackrest"
 	return &PgBackrestRunner{
 		baseRunner: baseRunner{
@@ -92,12 +94,59 @@ func NewPgBackrest(env []string) *PgBackrestRunner {
 			},
 			baseEnv: env,
 		},
+		stanzaConfiguration: conf,
 	}
+}
+
+func (p *PgBackrestRunner) processMaxEnv(command string) []string {
+	if p.stanzaConfiguration == nil {
+		return nil
+	}
+
+	var processMax uint
+	switch command {
+	case "backup":
+		processMax = p.stanzaConfiguration.BackupProcessMax
+	case "restore":
+		processMax = p.stanzaConfiguration.RestoreProcessMax
+	case "archive-push":
+		processMax = p.stanzaConfiguration.ArchivePushProcessMax
+	case "archive-get":
+		processMax = p.stanzaConfiguration.ArchiveGetProcessMax
+	}
+
+	if processMax == 0 {
+		return nil
+	}
+
+	return []string{fmt.Sprintf("PGBACKREST_PROCESS_MAX=%d", processMax)}
 }
 
 func (p *baseRunner) run(args []string, extraEnv []string) CommandExecutor {
 	cmd := p.cmdRunner(args...)
 	cmd.SetEnv(append(os.Environ(), append(p.baseEnv, extraEnv...)...))
+	return cmd
+}
+
+func filterEnvVar(env []string, key string) []string {
+	prefix := key + "="
+	filtered := make([]string, 0, len(env))
+	for _, entry := range env {
+		if strings.HasPrefix(entry, prefix) {
+			continue
+		}
+		filtered = append(filtered, entry)
+	}
+	return filtered
+}
+
+func (p *PgBackrestRunner) runWithProcessMax(args []string, extraEnv []string) CommandExecutor {
+	commandEnv := p.processMaxEnv(args[0])
+	baseEnv := filterEnvVar(p.baseEnv, "PGBACKREST_PROCESS_MAX")
+	extraEnv = filterEnvVar(extraEnv, "PGBACKREST_PROCESS_MAX")
+
+	cmd := p.cmdRunner(args...)
+	cmd.SetEnv(append(os.Environ(), append(baseEnv, append(extraEnv, commandEnv...)...)...))
 	return cmd
 }
 
@@ -108,7 +157,7 @@ func (p *PgBackrestRunner) runBackgroundTask(
 ) <-chan error {
 	result := make(chan error, 1)
 	logger := log.FromContext(ctx)
-	cmd := p.run(args, extraEnv)
+	cmd := p.runWithProcessMax(args, extraEnv)
 	go func() {
 		defer close(result)
 
@@ -207,7 +256,7 @@ func (p *PgBackrestRunner) EnsureStanzaExists(stanza string) (bool, error) {
 	if repoConfigured {
 		return false, nil
 	}
-	cmd := p.run([]string{"stanza-create", "--stanza=" + stanza}, nil)
+	cmd := p.runWithProcessMax([]string{"stanza-create", "--stanza=" + stanza}, nil)
 	output, err := cmd.CombinedOutput()
 	if err != nil {
 		return false, fmt.Errorf("can't create stanza, stdout: %s, error : %w", string(output), err)
@@ -236,7 +285,7 @@ func (p *PgBackrestRunner) Backup(backupType string) error {
 		env = append(env, "PGBACKREST_TYPE="+backupType)
 	}
 	args := []string{"backup"}
-	cmd := p.run(args, env)
+	cmd := p.runWithProcessMax(args, env)
 	output, err := cmd.CombinedOutput()
 	if err != nil {
 		return fmt.Errorf("can't backup: %s, error : %w", string(output), err)
@@ -245,7 +294,7 @@ func (p *PgBackrestRunner) Backup(backupType string) error {
 }
 
 func (p *PgBackrestRunner) GetBackupInfo() ([]pgbackrestapi.BackupInfo, error) {
-	cmd := p.run([]string{"info", "--output", "json"}, nil)
+	cmd := p.runWithProcessMax([]string{"info", "--output", "json"}, nil)
 	output, err := cmd.CombinedOutput()
 	if err != nil {
 		return nil, fmt.Errorf("can't get pgbackrest info: %s, %w", string(output), err)

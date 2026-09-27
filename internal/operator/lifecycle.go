@@ -422,7 +422,8 @@ func (impl LifecycleImplementation) reconcileWALVolume(
 	mutated *corev1.Pod,
 ) error {
 	// If a plugin configuration is defined and a stanza can be retrieved,
-	// inject the WAL volume only when async archiving is enabled and ProcessMax != 1.
+	// inject the WAL volume only when async archiving is enabled and the effective
+	// archive-push process max is not set to 1.
 	if pluginConfig.PluginConfigRef == "" || pluginConfig.StanzaRef == "" {
 		return nil
 	}
@@ -438,7 +439,7 @@ func (impl LifecycleImplementation) reconcileWALVolume(
 	}
 
 	conf := stanza.Spec.Configuration
-	if conf.ProcessMax != 1 && conf.Archive.Async {
+	if conf.EffectiveProcessMax("archive-push") != 1 && conf.Archive.Async {
 		if err := impl.injectWALVolume(ctx, pluginConfig, mutated, cluster); err != nil {
 			return err
 		}

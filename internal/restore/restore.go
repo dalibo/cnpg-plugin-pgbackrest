@@ -131,7 +131,7 @@ func (impl JobHookImpl) Restore(
 		postgres.LogFileName,
 	)
 	env = append(env, "PGBACKREST_RECOVERY_OPTION=restore_command="+restoreCmd)
-	pgb := pgbackrest.NewPgBackrest(env)
+	pgb := pgbackrest.NewPgBackrest(env, &stanza.Spec.Configuration)
 	errCh := pgb.Restore(ctx)
 	if err := <-errCh; err != nil {
 		return nil, err
