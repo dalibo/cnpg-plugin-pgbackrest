@@ -134,7 +134,7 @@ type Retention struct {
 	// +kubebuilder:validation:Maximum=9999999
 	// +kubebuilder:validation:Minimum=0
 	// +optional
-	History int32 `json:"history,omitempty,omitzero" ENV:"HISTORY"`
+	History int32 `json:"history,omitempty,omitzero" env:"HISTORY"`
 }
 
 // S3SecretRef defines a reference to a Kubernetes Secret
