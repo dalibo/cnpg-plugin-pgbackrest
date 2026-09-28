@@ -8,21 +8,21 @@ spec:
     name: main
     s3Repositories:
       - bucket: demo
-        endpoint: s3.minio.svc.cluster.local
-        region: us-east-1
+        endpoint: garage.garage.svc.cluster.local
+        region: garage
         repoPath: /cluster-demo
         uriStyle: path
         verifyTLS: false
         cipherConfig:
           encryptionPass:
-            name: minio
+            name: garage
             key: ENCRYPTION_PASS
         secretRef:
           accessKeyId:
-            name: minio
+            name: garage
             key: ACCESS_KEY_ID
           secretAccessKey:
-            name: minio
+            name: garage
             key: ACCESS_SECRET_KEY
       CustomEnvVar:
         PGBACKREST_MY_CUSTOM: CNPG_ROCKS

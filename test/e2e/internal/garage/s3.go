@@ -1,0 +1,49 @@
+// SPDX-FileCopyrightText: 2026 Dalibo <contact@dalibo.com>
+//
+// SPDX-License-Identifier: Apache-2.0
+package garage
+
+import (
+	"github.com/cloudnative-pg/machinery/pkg/api"
+	pgbackrestapi "github.com/dalibo/cnpg-i-pgbackrest/api/v1"
+)
+
+func NewS3Repositories(name string) []pgbackrestapi.S3Repository {
+	return []pgbackrestapi.S3Repository{
+		{
+			Bucket:    GARAGE_DEFAULT_BUCKET,
+			Endpoint:  "http://" + SVC_NAME + ":3900",
+			VerifyTLS: false,
+			UriStyle:  "path",
+			Region:    "garage",
+			RepoPath:  "/repo01/" + name,
+			RetentionPolicy: pgbackrestapi.Retention{
+				FullType: "count",
+				Full:     7,
+			},
+			SecretRef: &pgbackrestapi.S3SecretRef{
+				AccessKeyIDReference: &api.SecretKeySelector{
+					LocalObjectReference: api.LocalObjectReference{
+						Name: "pgbackrest-s3-secret",
+					},
+					Key: "ACCESS_KEY_ID",
+				},
+				SecretAccessKeyReference: &api.SecretKeySelector{
+					LocalObjectReference: api.LocalObjectReference{
+						Name: "pgbackrest-s3-secret",
+					},
+					Key: "ACCESS_SECRET_KEY",
+				},
+			},
+			Cipher: &pgbackrestapi.CipherConfig{
+				Type: "aes-256-cbc",
+				PassReference: &api.SecretKeySelector{
+					LocalObjectReference: api.LocalObjectReference{
+						Name: "pgbackrest-s3-secret",
+					},
+					Key: "ENCRYPTION_PASS",
+				},
+			},
+		},
+	}
+}
