@@ -11,6 +11,7 @@ import ClusterRestoredBackupID from '!!raw-loader!../../examples/cluster_restore
 import Backup from '!!raw-loader!../../examples/backup.yaml';
 import ScheduleBackup from '!!raw-loader!../../examples/schedule_backup.yaml';
 import StanzaAsync from '!!raw-loader!../../examples/stanza_async.yaml';
+import PluginConfig from '!!raw-loader!../../examples/plugin_config.yaml';
 
 # Operations
 
@@ -70,7 +71,23 @@ To use this plugin with a `Cluster`, CloudNativePG users must:
 
     :::
 
-3.  Create the PostgreSQL `Cluster` and adapt the manifest by:
+3.  Create the `PluginConfig` resource before creating the `Cluster`:
+
+    ``` console
+    kubectl apply -f examples/plugin_config.yaml
+    ```
+
+    Run this command from the repository root. The sample `Cluster`
+    references the `sample-pluginconfig` resource, so it must exist in
+    the same namespace before the `Cluster` is created. Adapt the
+    resource requirements and storage class in the manifest to your
+    environment.
+
+    Example:
+
+    <CodeBlock language="yaml">{PluginConfig}</CodeBlock>
+
+4.  Create the PostgreSQL `Cluster` and adapt the manifest by:
 
     - adding the plugin definition `pgbackrest.dalibo.com` under the
       `plugins` entry;
