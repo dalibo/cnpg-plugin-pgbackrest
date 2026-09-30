@@ -53,6 +53,18 @@ spec:
                         pattern: ^(0B|[0-9]+(KiB|MiB|GiB|TiB)|([0-4])PiB)$
                         type: string
                     type: object
+                  archiveGetProcessMax:
+                    description: |-
+                      Maximum number of parallel processes used for archive-get commands.
+
+                      When unset, the global ProcessMax value is used.
+                    type: integer
+                  archivePushProcessMax:
+                    description: |-
+                      Maximum number of parallel processes used for archive-push commands.
+
+                      When unset, the global ProcessMax value is used.
+                    type: integer
                   azureRepositories:
                     items:
                       properties:
@@ -180,6 +192,12 @@ spec:
                       - repoPath
                       type: object
                     type: array
+                  backupProcessMax:
+                    description: |-
+                      Maximum number of parallel processes used for backup commands.
+
+                      When unset, the global ProcessMax value is used.
+                    type: integer
                   compressConfig:
                     description: Define compression settings for file compression.
                     properties:
@@ -226,6 +244,17 @@ spec:
                     minLength: 1
                     type: string
                   processMax:
+                    description: |-
+                      Maximum number of parallel processes used by pgBackRest.
+
+                      This value acts as the global fallback when no action-specific process max
+                      is defined.
+                    type: integer
+                  restoreProcessMax:
+                    description: |-
+                      Maximum number of parallel processes used for restore commands.
+
+                      When unset, the global ProcessMax value is used.
                     type: integer
                   s3Repositories:
                     items:

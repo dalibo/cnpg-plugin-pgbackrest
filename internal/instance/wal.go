@@ -73,7 +73,7 @@ func (w_impl *WALSrvImplementation) Archive(
 	if err != nil {
 		return nil, err
 	}
-	pgb := pgbackrest.NewPgBackrest(env)
+	pgb := pgbackrest.NewPgBackrest(env, &stanza.Spec.Configuration)
 	if !w_impl.StanzaCreated {
 		ok, err := pgb.EnsureStanzaExists(stanza.Spec.Configuration.Name)
 		if err != nil {
@@ -148,7 +148,7 @@ func (w WALSrvImplementation) Restore(
 	}
 	logger.Info("Restoring WAL", "WAL", walName, "destination", dstPath)
 
-	pgb := pgbackrest.NewPgBackrest(env)
+	pgb := pgbackrest.NewPgBackrest(env, &stanza.Spec.Configuration)
 	errCh := pgb.GetWAL(ctx, walName, dstPath)
 	if err := <-errCh; err != nil {
 		return nil, err

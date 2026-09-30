@@ -33,6 +33,21 @@ func newPgBackrestWithRunner(env []string, runner CmdRunner) *PgBackrestRunner {
 	}
 }
 
+func newPgBackrestWithRunnerAndConfig(
+	env []string,
+	conf *pgbackrestapi.StanzaConfiguration,
+	runner CmdRunner,
+) *PgBackrestRunner {
+	return &PgBackrestRunner{
+		baseRunner: baseRunner{
+			command:   "pgbackrest",
+			cmdRunner: runner,
+			baseEnv:   env,
+		},
+		stanzaConfiguration: conf,
+	}
+}
+
 var backupInfo = []pgbackrestapi.BackupInfo{
 	{
 		Archive: pgbackrestapi.Archive{
@@ -244,6 +259,103 @@ func TestBackup(t *testing.T) {
 			pgb.Backup("") //nolint:errcheck
 			if !reflect.DeepEqual(fExec, tc.want) {
 				t.Errorf("error want %v, got %v", fExec, tc.want)
+			}
+		})
+	}
+}
+
+func TestProcessMaxEnvByAction(t *testing.T) {
+	stdout := io.NopCloser(bytes.NewBufferString("stdout line\n"))
+	stderr := io.NopCloser(bytes.NewBufferString(""))
+
+	newMockCmd := func() *MockCommandExecutor {
+		return &MockCommandExecutor{
+			stdout:         stdout,
+			stderr:         stderr,
+			combinedOutput: []byte("ok"),
+		}
+	}
+
+	testCases := []struct {
+		name       string
+		command    string
+		conf       pgbackrestapi.StanzaConfiguration
+		run        func(*PgBackrestRunner) error
+		wantEnvVar string
+	}{
+		{
+			name:    "backup override",
+			command: "backup",
+			conf: pgbackrestapi.StanzaConfiguration{
+				ProcessMax:       2,
+				BackupProcessMax: 4,
+			},
+			run: func(p *PgBackrestRunner) error {
+				return p.Backup("")
+			},
+			wantEnvVar: "PGBACKREST_PROCESS_MAX=4",
+		},
+		{
+			name:    "restore override",
+			command: "restore",
+			conf: pgbackrestapi.StanzaConfiguration{
+				ProcessMax:        2,
+				RestoreProcessMax: 5,
+			},
+			run: func(p *PgBackrestRunner) error {
+				return <-p.Restore(context.Background())
+			},
+			wantEnvVar: "PGBACKREST_PROCESS_MAX=5",
+		},
+		{
+			name:    "archive push override",
+			command: "archive-push",
+			conf: pgbackrestapi.StanzaConfiguration{
+				ProcessMax:            2,
+				ArchivePushProcessMax: 6,
+			},
+			run: func(p *PgBackrestRunner) error {
+				return <-p.PushWal(context.Background(), "000000010000000000000001")
+			},
+			wantEnvVar: "PGBACKREST_PROCESS_MAX=6",
+		},
+		{
+			name:    "archive get override",
+			command: "archive-get",
+			conf: pgbackrestapi.StanzaConfiguration{
+				ProcessMax:           2,
+				ArchiveGetProcessMax: 7,
+			},
+			run: func(p *PgBackrestRunner) error {
+				return <-p.GetWAL(context.Background(), "000000010000000000000001", "/tmp/wal")
+			},
+			wantEnvVar: "PGBACKREST_PROCESS_MAX=7",
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			mockCmd := newMockCmd()
+			cmdRunner := func(args ...string) CommandExecutor {
+				return mockCmd
+			}
+
+			pg := newPgBackrestWithRunnerAndConfig([]string{"PGBACKREST_PROCESS_MAX=2"}, &tc.conf, cmdRunner)
+			if err := tc.run(pg); err != nil {
+				t.Fatalf("unexpected error for %s: %v", tc.command, err)
+			}
+
+			count := 0
+			for _, entry := range mockCmd.env {
+				if entry == tc.wantEnvVar {
+					count++
+				}
+				if entry == "PGBACKREST_PROCESS_MAX=2" {
+					t.Fatalf("unexpected global process max left in env: %v", mockCmd.env)
+				}
+			}
+			if count != 1 {
+				t.Fatalf("expected env %q exactly once in %v", tc.wantEnvVar, mockCmd.env)
 			}
 		})
 	}

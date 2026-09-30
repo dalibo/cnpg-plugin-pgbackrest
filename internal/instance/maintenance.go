@@ -115,7 +115,7 @@ func (c *StanzaMaintenanceRunnable) getBackupsInfo(
 	if err != nil {
 		return nil, err
 	}
-	pgbExec := pgbackrest.NewPgBackrest(env)
+	pgbExec := pgbackrest.NewPgBackrest(env, &stanza.Spec.Configuration)
 	return pgbExec.GetBackupInfo()
 }
 
