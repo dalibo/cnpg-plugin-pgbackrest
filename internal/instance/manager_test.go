@@ -7,17 +7,11 @@ import (
 	"context"
 	"testing"
 
-	"github.com/spf13/viper"
+	cnpgv1 "github.com/cloudnative-pg/cloudnative-pg/api/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 )
 
-func TestGenerateScheme_RegistersMetaTypes(t *testing.T) {
-	viper.Reset()
-	group := "postgresql.cnpg.io"
-	version := "v1"
-	viper.Set("custom-cnpg-group", group)
-	viper.Set("custom-cnpg-version", version)
-
+func TestGenerateScheme_RegistersCNPGTypes(t *testing.T) {
 	ctx := context.Background()
 	scheme := generateScheme(ctx)
 
@@ -30,16 +24,20 @@ func TestGenerateScheme_RegistersMetaTypes(t *testing.T) {
 		gvk  schema.GroupVersionKind
 	}{
 		{
-			name: "CNPG Cluster Custom Resource Type",
-			gvk:  schema.GroupVersionKind{Group: group, Version: version, Kind: "Cluster"},
+			name: "CNPG Cluster Type",
+			gvk:  cnpgv1.SchemeGroupVersion.WithKind("Cluster"),
 		},
 		{
-			name: "metav1 GetOptions under CNPG GroupVersion",
-			gvk:  schema.GroupVersionKind{Group: group, Version: version, Kind: "GetOptions"},
+			name: "CNPG Backup Type",
+			gvk:  cnpgv1.SchemeGroupVersion.WithKind("Backup"),
 		},
 		{
-			name: "metav1 ListOptions under CNPG GroupVersion",
-			gvk:  schema.GroupVersionKind{Group: group, Version: version, Kind: "ListOptions"},
+			name: "CNPG BackupList Type",
+			gvk:  cnpgv1.SchemeGroupVersion.WithKind("BackupList"),
+		},
+		{
+			name: "CNPG ScheduledBackup Type",
+			gvk:  cnpgv1.SchemeGroupVersion.WithKind("ScheduledBackup"),
 		},
 	}
 

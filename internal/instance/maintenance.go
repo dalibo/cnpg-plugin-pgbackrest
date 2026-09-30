@@ -23,26 +23,30 @@ const defaultRetentionPolicyInterval = time.Minute * 5
 // StanzaMaintenanceRunnable executes all the pgbackrest
 // stanza maintenance operations
 type StanzaMaintenanceRunnable struct {
-	Client         client.Client
-	ClusterKey     types.NamespacedName
-	CurrentPodName string
+	Client           client.Client
+	ClusterKey       types.NamespacedName
+	CurrentPodName   string
+	getBackupsInfoFn func(context.Context, *pgbackrestapi.Stanza) ([]pgbackrestapi.BackupInfo, error)
 }
 
 func (c *StanzaMaintenanceRunnable) Start(ctx context.Context) error {
-	contextLogger := log.FromContext(ctx)
-	contextLogger.Info("starting stanza maintenance runnable")
+	log.FromContext(ctx).Info("starting stanza maintenance runnable")
 
 	for {
-		err := c.cycle(ctx)
-		if err != nil {
-			contextLogger.Error(err, "stanza maintenance failed")
-		}
+		c.runOnce(ctx)
 
 		select {
 		case <-time.After(defaultRetentionPolicyInterval):
 		case <-ctx.Done():
 			return nil
 		}
+	}
+}
+
+func (c *StanzaMaintenanceRunnable) runOnce(ctx context.Context) {
+	contextLogger := log.FromContext(ctx)
+	if err := c.cycle(ctx); err != nil {
+		contextLogger.Error(err, "stanza maintenance failed")
 	}
 }
 
@@ -111,6 +115,10 @@ func (c *StanzaMaintenanceRunnable) getBackupsInfo(
 	ctx context.Context,
 	stanza *pgbackrestapi.Stanza,
 ) ([]pgbackrestapi.BackupInfo, error) {
+	if c.getBackupsInfoFn != nil {
+		return c.getBackupsInfoFn(ctx, stanza)
+	}
+
 	env, err := config.GetEnvVarConfig(ctx, stanza, c.Client)
 	if err != nil {
 		return nil, err
