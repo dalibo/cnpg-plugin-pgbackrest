@@ -80,7 +80,6 @@ func NewCmd() *cobra.Command {
 
 			for i, _ := range envvars {
 				if strings.Contains(envvars[i], "PGBACKREST_REPO1_S3_KEY_SECRET") {
-					fmt.Println("NOK")
 					envvars[i] = "PGBACKREST_REPO1_S3_KEY_SECRET="
 				}
 			}
