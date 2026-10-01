@@ -91,17 +91,6 @@ func manifest(
 			Template: corev1.PodTemplateSpec{
 				ObjectMeta: metav1.ObjectMeta{Labels: depSpec.label},
 				Spec: corev1.PodSpec{
-					// InitContainers: []corev1.Container{
-					// 	{
-					// 		Name:    "init-bucket",
-					// 		Image:   "busybox:1.37",
-					// 		Command: []string{"touch /etc/config.toml ; sh -c 'echo \"metadata_dir = \"/tmp/meta\"\ndata_dir = \"/tmp/data\"\ndb_engine = \"sqlite\"\nreplication_factor = 1\nrpc_bind_addr = \"[::]:3901\"\nrpc_public_addr = \"127.0.0.1:3901\"\nrpc_secret = \"$(openssl rand -hex 32)\"\n[s3_api]\ns3_region = \"garage\"\napi_bind_addr = \"[::]:3900\"\nroot_domain = \".s3.garage.localhost\"\n[s3_web]\nbind_addr = \"[::]:3902\"\nroot_domain = \".web.garage.localhost\"\nindex = \"index.html\"\n[admin]\napi_bind_addr = \"[::]:3903\"\nadmin_token = \"token\"\nmetrics_token = \"token\" > /etc/config.toml'"},
-					// 		VolumeMounts: []corev1.VolumeMount{
-					// 			{Name: "storage", MountPath: depSpec.vol},
-					// 		},
-					// 	},
-					// },
-					// FIXME Ajout du configmap, pour le test j'ai fait à la main.
 					Containers: []corev1.Container{
 						{
 							Name:  "garage",
