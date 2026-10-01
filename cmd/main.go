@@ -14,6 +14,7 @@ import (
 	"github.com/spf13/cobra"
 	ctrl "sigs.k8s.io/controller-runtime"
 
+	"github.com/dalibo/cnpg-i-pgbackrest/cmd/config"
 	"github.com/dalibo/cnpg-i-pgbackrest/cmd/exporter"
 	"github.com/dalibo/cnpg-i-pgbackrest/cmd/healthcheck"
 	"github.com/dalibo/cnpg-i-pgbackrest/cmd/instance"
@@ -40,6 +41,7 @@ func main() {
 	rootCmd.AddCommand(restore.NewCmd())
 	rootCmd.AddCommand(exporter.NewCmd())
 	rootCmd.AddCommand(healthcheck.NewCmd())
+	rootCmd.AddCommand(config.NewCmd())
 
 	if err := rootCmd.ExecuteContext(ctrl.SetupSignalHandler()); err != nil {
 		if !errors.Is(err, context.Canceled) {
