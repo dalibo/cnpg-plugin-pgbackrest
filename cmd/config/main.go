@@ -86,7 +86,7 @@ func NewCmd() *cobra.Command {
 
 			envvars, err := config.GetEnvVarConfig(cmd.Context(), stanza, cl)
 
-			for i, _ := range envvars {
+			for i := range envvars {
 				if strings.Contains(envvars[i], "PGBACKREST_REPO1_S3_KEY_SECRET") {
 					envvars[i] = "PGBACKREST_REPO1_S3_KEY_SECRET="
 				}
