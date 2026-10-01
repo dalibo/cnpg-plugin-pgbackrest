@@ -19,7 +19,7 @@ This is an experimental CloudNativePG operator plugin to backup PostgreSQL insta
 This plugin is currently only compatible with `s3` and Azure Blob
 storage and have been tested with :
 
-- [minIO](https://min.io)
+- [garage](https://garagehq.deuxfleurs.fr/)
 - [Scaleway Object Storage](https://www.scaleway.com/en/object-storage/)
 - [Azure Blob
   Storage](https://azure.microsoft.com/en-us/products/storage/blobs)

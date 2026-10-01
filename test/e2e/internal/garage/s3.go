@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: 2026 Dalibo <contact@dalibo.com>
 //
 // SPDX-License-Identifier: Apache-2.0
-package minio
+package garage
 
 import (
 	"github.com/cloudnative-pg/machinery/pkg/api"
@@ -11,12 +11,12 @@ import (
 func NewS3Repositories(name string) []pgbackrestapi.S3Repository {
 	return []pgbackrestapi.S3Repository{
 		{
-			Bucket:    BUCKET_NAME,
-			Endpoint:  SVC_NAME,
-			Region:    "us-east-1",
+			Bucket:    GARAGE_DEFAULT_BUCKET,
+			Endpoint:  "http://" + SVC_NAME + ":3900",
 			VerifyTLS: false,
 			UriStyle:  "path",
-			RepoPath:  "/repo01" + name,
+			Region:    "garage",
+			RepoPath:  "/repo01/" + name,
 			RetentionPolicy: pgbackrestapi.Retention{
 				FullType: "count",
 				Full:     7,

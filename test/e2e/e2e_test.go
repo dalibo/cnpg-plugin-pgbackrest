@@ -18,8 +18,8 @@ import (
 	"github.com/dalibo/cnpg-i-pgbackrest/test/e2e/internal/cluster"
 	"github.com/dalibo/cnpg-i-pgbackrest/test/e2e/internal/cnpg"
 	"github.com/dalibo/cnpg-i-pgbackrest/test/e2e/internal/command"
+	"github.com/dalibo/cnpg-i-pgbackrest/test/e2e/internal/garage"
 	"github.com/dalibo/cnpg-i-pgbackrest/test/e2e/internal/kubernetes"
-	"github.com/dalibo/cnpg-i-pgbackrest/test/e2e/internal/minio"
 	"github.com/dalibo/cnpg-i-pgbackrest/test/e2e/internal/pgbackrest"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
@@ -35,15 +35,15 @@ const (
 )
 
 var _S3_DATA_SECRET map[string]string = map[string]string{
-	"ACCESS_KEY_ID":     minio.ACCESS_KEY,
-	"ACCESS_SECRET_KEY": minio.SECRET_KEY,
+	"ACCESS_KEY_ID":     garage.GARAGE_DEFAULT_ACCESS_KEY,
+	"ACCESS_SECRET_KEY": garage.GARAGE_DEFAULT_SECRET_KEY,
 	"ENCRYPTION_PASS":   "3nCrypTi0n",
 }
 var _AZURE_DATA_SECRET map[string]string = map[string]string{
 	"KEY": azurite.ACCOUNT_SECRET,
 }
 
-// Deploy CNGP operator, certmanager, minio and our plugins
+// Deploy CNGP operator, certmanager, garage and our plugins
 func setup() {
 	k8sClient, err := kubernetes.Client()
 	logger := zap.New(zap.WriteTo(io.Discard), zap.UseDevMode(false))
@@ -63,8 +63,11 @@ func setup() {
 	if err := certmanager.Install(ctx, *k8sClient, s); err != nil {
 		panic("can't install certmanager")
 	}
-	if err = minio.Install(ctx, *k8sClient); err != nil {
-		panic("can't install minio")
+	if err = garage.CreateConfigMap(ctx, *k8sClient); err != nil {
+		panic("can't create garage configmap")
+	}
+	if err = garage.Install(ctx, *k8sClient); err != nil {
+		panic("can't install garage")
 	}
 	if err = azurite.Install(ctx, *k8sClient); err != nil {
 		panic("can't install azurite")
@@ -237,7 +240,7 @@ func TestDeployInstance(t *testing.T) {
 		*k8sClient,
 		"stanza",
 		NS,
-		minio.NewS3Repositories("stanza"),
+		garage.NewS3Repositories("stanza"),
 		nil,
 		true,
 	)
@@ -367,7 +370,7 @@ func TestCreateAndRestoreInstance(t *testing.T) {
 		*k8sClient,
 		"stanza-restored",
 		NS,
-		minio.NewS3Repositories("stanza-restored"),
+		garage.NewS3Repositories("stanza-restored"),
 		nil,
 		false,
 	)

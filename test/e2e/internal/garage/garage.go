@@ -2,7 +2,7 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
-package minio
+package garage
 
 import (
 	"context"
@@ -15,13 +15,14 @@ import (
 )
 
 const (
-	ACCESS_KEY  string = "minioKey"
-	SECRET_KEY  string = "minioKey"
-	SVC_NAME    string = "s3.minio.svc.cluster.local"
-	BUCKET_NAME string = "demo"
+	GARAGE_DEFAULT_ACCESS_KEY string = "090d883d46a4106b08b9d0fc0da1d1ed"
+	GARAGE_DEFAULT_SECRET_KEY string = "090d883d46a4106b08b9d0fc0da1d1ed"
+	SVC_NAME                  string = "s3.default.svc.cluster.local"
+	GARAGE_DEFAULT_BUCKET     string = "demo"
+	GARAGE_CONFIG_FILE        string = "/etc/garage/garage.toml"
 )
 
-type minioDeploymentSpec struct {
+type garageDeploymentSpec struct {
 	name      string
 	secretEnv []corev1.EnvVar
 	label     map[string]string
@@ -30,15 +31,15 @@ type minioDeploymentSpec struct {
 }
 
 func Install(ctx context.Context, k8sClient kubernetes.K8sClient) error {
-	label := map[string]string{"app": "minio"}
-	ns := "minio"
+	label := map[string]string{"app": "garage"}
+	ns := "default"
 	if err := k8sClient.CreateNs(ctx, ns); err != nil {
 		return err
 	}
 	certSpec := kubernetes.CertificateSpec{
-		AltName:          []string{"demo.s3.minio.svc.cluster.local"},
+		AltName:          []string{"demo.s3.default.svc.cluster.local"},
 		CommonName:       SVC_NAME,
-		IssuerName:       "minio-selfsigned-issuer",
+		IssuerName:       "garage-selfsigned-issuer",
 		Name:             "selfsigned-cert",
 		SecretName:       "selfsigned-cert-secret",
 		DurationInMinute: 24 * 60 * 30, // 30 days
@@ -49,14 +50,16 @@ func Install(ctx context.Context, k8sClient kubernetes.K8sClient) error {
 	if err := k8sClient.CreateCertificate(ctx, ns, certSpec); err != nil {
 		return err
 	}
-	spec := minioDeploymentSpec{
-		name: "minio",
+	spec := garageDeploymentSpec{
+		name: "garage",
 		secretEnv: []corev1.EnvVar{
-			{Name: "MINIO_ACCESS_KEY", Value: ACCESS_KEY},
-			{Name: "MINIO_SECRET_KEY", Value: SECRET_KEY},
+			{Name: "GARAGE_DEFAULT_ACCESS_KEY", Value: GARAGE_DEFAULT_ACCESS_KEY},
+			{Name: "GARAGE_DEFAULT_SECRET_KEY", Value: GARAGE_DEFAULT_SECRET_KEY},
+			{Name: "GARAGE_DEFAULT_BUCKET", Value: GARAGE_DEFAULT_BUCKET},
+			{Name: "GARAGE_CONFIG_FILE", Value: GARAGE_CONFIG_FILE},
 		},
 		label: label,
-		pvc:   "minio-pvc",
+		pvc:   "garage-pvc",
 		vol:   "/storage",
 	}
 	if err := k8sClient.CreatePvc(ctx, ns, spec.pvc, "1G"); err != nil {
@@ -69,7 +72,7 @@ func Install(ctx context.Context, k8sClient kubernetes.K8sClient) error {
 	if _, err := k8sClient.DeploymentIsReady(ctx, ns, spec.name, 20, 2); err != nil {
 		return err
 	}
-	if err := k8sClient.CreateService(ctx, ns, "s3", label, 443, intstr.FromInt32(9000)); err != nil {
+	if err := k8sClient.CreateService(ctx, ns, "s3", label, 3900, intstr.FromInt32(3900)); err != nil {
 		return err
 	}
 	return nil
@@ -77,7 +80,7 @@ func Install(ctx context.Context, k8sClient kubernetes.K8sClient) error {
 
 func manifest(
 	namespace string,
-	depSpec minioDeploymentSpec,
+	depSpec garageDeploymentSpec,
 	certSpec kubernetes.CertificateSpec,
 ) *appsv1.Deployment {
 	return &appsv1.Deployment{
@@ -88,30 +91,22 @@ func manifest(
 			Template: corev1.PodTemplateSpec{
 				ObjectMeta: metav1.ObjectMeta{Labels: depSpec.label},
 				Spec: corev1.PodSpec{
-					InitContainers: []corev1.Container{
-						{
-							Name:  "init-bucket",
-							Image: "minio/minio:latest",
-							Command: []string{
-								"mc",
-								"mb",
-								"--with-lock",
-								depSpec.vol + "/" + BUCKET_NAME,
-							},
-							VolumeMounts: []corev1.VolumeMount{
-								{Name: "storage", MountPath: depSpec.vol},
-							},
-						},
-					},
 					Containers: []corev1.Container{
 						{
-							Name:  "minio",
-							Image: "minio/minio:latest",
-							Args:  []string{"server", depSpec.vol},
-							Env:   depSpec.secretEnv,
+							Name:  "garage",
+							Image: "dxflrs/amd64_garage:v2.4.1",
+							Command: []string{
+								"/garage",
+								"server",
+								"--single-node",
+								"--default-bucket",
+							},
+							Env: depSpec.secretEnv,
 							VolumeMounts: []corev1.VolumeMount{
 								{Name: "storage", MountPath: depSpec.vol},
-								{Name: "tlskey", MountPath: "/root/.minio/certs"},
+								{Name: "tlskey", MountPath: "/root/.garage/certs"},
+								{Name: "config-garage", MountPath: "/etc/garage"},
+								// {Name: "config-garage", MountPath: "/etc/garage.toml"},
 							},
 						},
 					},
@@ -121,6 +116,16 @@ func manifest(
 							VolumeSource: corev1.VolumeSource{
 								PersistentVolumeClaim: &corev1.PersistentVolumeClaimVolumeSource{
 									ClaimName: depSpec.pvc,
+								},
+							},
+						},
+						{
+							Name: "config-garage",
+							VolumeSource: corev1.VolumeSource{
+								ConfigMap: &corev1.ConfigMapVolumeSource{
+									LocalObjectReference: corev1.LocalObjectReference{
+										Name: "config-garage",
+									},
 								},
 							},
 						},
