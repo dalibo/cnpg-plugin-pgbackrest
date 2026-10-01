@@ -39,9 +39,17 @@ func NewCmd() *cobra.Command {
 				}
 			}
 
-			corev1.AddToScheme(scheme)
-			cnpgv1.AddToScheme(scheme)
-			pgbackrestapi.AddKnownTypes(scheme)
+			err := corev1.AddToScheme(scheme)
+
+			if err != nil {
+				return err
+			}
+
+			err = cnpgv1.AddToScheme(scheme)
+
+			if err != nil {
+				return err
+			}
 
 			// initiate a client with cache disabled for stanza and cluster
 			clientOpt := client.Options{
