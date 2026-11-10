@@ -27,7 +27,7 @@ RUN curl --output /etc/apt/trusted.gpg.d/pgdg.asc https://www.postgresql.org/med
 RUN --mount=type=cache,target=/var/cache/apt \
     --mount=type=cache,target=/var/lib/apt \
     apt-get update && apt-get -y install --no-install-recommends  \
-    pgbackrest \
+    pgbackrest=2.60.0-1.pgdg13+1 \
     && rm -rf /var/lib/apt/lists/*
 
 RUN chmod 0744 /etc/pgbackrest.conf
